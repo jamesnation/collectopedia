@@ -58,3 +58,4 @@ NEXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY=
 2. Copy `.env.example` to `.env.local` and fill in the environment variables from above
 3. Run `npm install` to install dependencies
 4. Run `npm run dev` to run the app locally
+# collectopedia2
