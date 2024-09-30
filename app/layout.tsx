@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <body className={inter.className}>
           <Providers
             attribute="class"
-            defaultTheme="dark"
+            defaultTheme="light"
             disableTransitionOnChange
           >
             <Header />

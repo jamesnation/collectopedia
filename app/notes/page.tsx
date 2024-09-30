@@ -1,6 +1,7 @@
 import { getProfileByUserId } from "@/db/queries/profiles-queries";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { CatalogPageWrapper } from "@/components/catalog-page-wrapper";
 
 export default async function NotesPage() {
   const { userId } = auth();
@@ -19,7 +20,8 @@ export default async function NotesPage() {
     return redirect("/pricing");
   }
 
-  return <div>Notes 1234</div>;
+  // Render the CatalogPageWrapper instead of the CatalogPageComponent
+  return <CatalogPageWrapper />;
 }
 
 
