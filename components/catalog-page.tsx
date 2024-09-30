@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Search, ArrowUpDown, PlusCircle, Filter, Trash2, RefreshCw, Edit, ChevronDown } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import Link from 'next/link'
@@ -33,6 +34,15 @@ const collectionValueData = [
 export function CatalogPageComponent() {
   const [ebayValueType, setEbayValueType] = useState("active")
   const [isChartOpen, setIsChartOpen] = useState(false)
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false)
+  const [newItem, setNewItem] = useState({
+    name: '',
+    type: '',
+    acquired: '',
+    cost: '',
+    value: '',
+    image: ''
+  })
 
   const totalCollectionValue = toyData.reduce((sum, toy) => sum + toy.value, 0)
   const totalEbayListedValue = toyData.reduce((sum, toy) => sum + toy.ebayList, 0)
@@ -53,14 +63,114 @@ export function CatalogPageComponent() {
     // Implement eBay API call here
   }
 
+  const handleAddItem = (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log('New item:', newItem)
+    // Implement add item functionality here
+    setIsAddItemOpen(false)
+    setNewItem({ name: '', type: '', acquired: '', cost: '', value: '', image: '' })
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setNewItem(prev => ({ ...prev, [name]: value }))
+  }
+
   return (
     <div className="min-h-screen bg-[#FDF7F5]">
       <main className="container mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-serif text-purple-900">Your Collection Catalog</h1>
-          <Button className="bg-purple-700 text-white hover:bg-purple-600">
-            <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
-          </Button>
+          <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-purple-700 text-white hover:bg-purple-600">
+                <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px] bg-[#FDF7F5] border-purple-200">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-serif text-purple-900">Add New Item</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleAddItem} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium text-purple-700">Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={newItem.name}
+                    onChange={handleInputChange}
+                    required
+                    className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type" className="text-sm font-medium text-purple-700">Type</Label>
+                  <Select name="type" value={newItem.type} onValueChange={(value) => handleInputChange({ target: { name: 'type', value } } as any)}>
+                    <SelectTrigger className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Doll">Doll</SelectItem>
+                      <SelectItem value="Building Set">Building Set</SelectItem>
+                      <SelectItem value="Trading Card">Trading Card</SelectItem>
+                      <SelectItem value="Die-cast Car">Die-cast Car</SelectItem>
+                      <SelectItem value="Action Figure">Action Figure</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="acquired" className="text-sm font-medium text-purple-700">Date Acquired</Label>
+                  <Input
+                    id="acquired"
+                    name="acquired"
+                    type="date"
+                    value={newItem.acquired}
+                    onChange={handleInputChange}
+                    required
+                    className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cost" className="text-sm font-medium text-purple-700">Cost</Label>
+                  <Input
+                    id="cost"
+                    name="cost"
+                    type="number"
+                    value={newItem.cost}
+                    onChange={handleInputChange}
+                    required
+                    className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="value" className="text-sm font-medium text-purple-700">Estimated Value</Label>
+                  <Input
+                    id="value"
+                    name="value"
+                    type="number"
+                    value={newItem.value}
+                    onChange={handleInputChange}
+                    required
+                    className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="image" className="text-sm font-medium text-purple-700">Image URL</Label>
+                  <Input
+                    id="image"
+                    name="image"
+                    type="url"
+                    value={newItem.image}
+                    onChange={handleInputChange}
+                    className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                  />
+                </div>
+                <Button type="submit" className="w-full bg-purple-700 text-white hover:bg-purple-600">
+                  Add Item
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <Card className="bg-white shadow-xl mb-8">
