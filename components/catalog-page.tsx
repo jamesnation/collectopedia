@@ -2,16 +2,16 @@
 
 import React, { useState } from 'react'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Search, ArrowUpDown, PlusCircle, Filter, Trash2, RefreshCw, Edit, ChevronDown } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Package, Search, PlusCircle, Filter, Edit, Trash2, RefreshCw, ChevronDown, ArrowUpDown, LayoutGrid, LayoutList } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { Toggle } from "@/components/ui/toggle"
 import Link from 'next/link'
 
 const toyData = [
@@ -43,6 +43,7 @@ export function CatalogPageComponent() {
     value: '',
     image: ''
   })
+  const [view, setView] = useState('list') // Changed default to 'list'
 
   const totalCollectionValue = toyData.reduce((sum, toy) => sum + toy.value, 0)
   const totalEbayListedValue = toyData.reduce((sum, toy) => sum + toy.ebayList, 0)
@@ -232,7 +233,25 @@ export function CatalogPageComponent() {
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 bg-white rounded-md p-1">
+              <Toggle
+                pressed={view === 'list'}
+                onPressedChange={() => setView('list')}
+                aria-label="List view"
+                className={`${view === 'list' ? 'bg-purple-100 text-purple-700' : ''} p-2 rounded-md`}
+              >
+                <LayoutList className="h-5 w-5" />
+              </Toggle>
+              <Toggle
+                pressed={view === 'grid'}
+                onPressedChange={() => setView('grid')}
+                aria-label="Grid view"
+                className={`${view === 'grid' ? 'bg-purple-100 text-purple-700' : ''} p-2 rounded-md`}
+              >
+                <LayoutGrid className="h-5 w-5" />
+              </Toggle>
+            </div>
             <Select>
               <SelectTrigger className="w-[180px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
                 <SelectValue placeholder="Filter by type" />
@@ -252,102 +271,132 @@ export function CatalogPageComponent() {
           </div>
         </div>
 
-        <div className="mb-4">
-          <RadioGroup defaultValue="active" onValueChange={setEbayValueType} className="flex space-x-4">
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="active" id="active" />
-              <Label htmlFor="active">eBay Active Listings</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="sold" id="sold" />
-              <Label htmlFor="sold">eBay Sold Listings</Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        <Card>
-          <CardContent className="p-0 overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-purple-50">
-                  <TableHead>Image</TableHead>
-                  <TableHead>
-                    <Button variant="ghost" className="font-bold text-purple-700">
-                      Name <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>
-                    <Button variant="ghost" className="font-bold text-purple-700">
-                      Acquired <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">
-                    <Button variant="ghost" className="font-bold text-purple-700">
-                      Cost <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">
-                    <Button variant="ghost" className="font-bold text-purple-700">
-                      Value <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">eBay API</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {toyData.map((toy) => (
-                  <TableRow key={toy.id} className="hover:bg-purple-50 transition-colors">
-                    <TableCell>
-                      <img
-                        src={toy.image}
-                        alt={toy.name}
-                        className="w-[150px] h-[150px] object-cover rounded-md"
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">{toy.name}</TableCell>
-                    <TableCell>{toy.type}</TableCell>
-                    <TableCell>{new Date(toy.acquired).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">${toy.cost.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-bold text-purple-700">${toy.value.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                      ${ebayValueType === "active" ? toy.ebayList.toFixed(2) : toy.ebaySold.toFixed(2)}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEbayRefresh(toy.id)}
-                        className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
-                      >
-                        <RefreshCw className="h-4 w-4" />
+        {view === 'list' ? (
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-purple-50">
+                    <TableHead>Image</TableHead>
+                    <TableHead>
+                      <Button variant="ghost" className="font-bold text-purple-700">
+                        Name <ArrowUpDown className="ml-2 h-4 w-4" />
                       </Button>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(toy.id)}
-                          className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(toy.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-100"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    </TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>
+                      <Button variant="ghost" className="font-bold text-purple-700">
+                        Acquired <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <Button variant="ghost" className="font-bold text-purple-700">
+                        Cost <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <Button variant="ghost" className="font-bold text-purple-700">
+                        Value <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-right">eBay API</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {toyData.map((toy) => (
+                    <TableRow key={toy.id} className="hover:bg-purple-50 transition-colors">
+                      <TableCell>
+                        <img
+                          src={toy.image}
+                          alt={toy.name}
+                          className="w-[150px] h-[150px] object-cover rounded-md"
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">{toy.name}</TableCell>
+                      <TableCell>{toy.type}</TableCell>
+                      <TableCell>{new Date(toy.acquired).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">${toy.cost.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-bold text-purple-700">${toy.value.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        ${ebayValueType === "active" ? toy.ebayList.toFixed(2) : toy.ebaySold.toFixed(2)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEbayRefresh(toy.id)}
+                          className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(toy.id)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(toy.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {toyData.map((toy) => (
+              <Card key={toy.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <CardHeader className="p-0">
+                  <img
+                    src={toy.image}
+                    alt={toy.name}
+                    className="w-full h-64 object-cover"
+                  />
+                </CardHeader>
+                <CardContent className="p-4">
+                  <CardTitle className="text-xl mb-2">{toy.name}</CardTitle>
+                  <p className="text-sm text-gray-500 mb-1">{toy.type}</p>
+                  <p className="text-sm text-gray-500 mb-2">Acquired: {new Date(toy.acquired).toLocaleDateString()}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Cost: ${toy.cost.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-purple-700">Value: ${toy.value.toFixed(2)}</span>
+                  </div>
+                </CardContent>
+                <CardFooter className="bg-gray-50 p-4 flex justify-end space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(toy.id)}
+                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(toy.id)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
 
         <div className="mt-6 flex justify-between items-center">
           <div className="text-sm text-gray-500">Showing {toyData.length} of {toyData.length} items</div>
