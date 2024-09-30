@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Package, Search, ArrowUpDown, PlusCircle, Filter, Trash2, RefreshCw, Edit, ChevronDown } from "lucide-react"
+import { Search, ArrowUpDown, PlusCircle, Filter, Trash2, RefreshCw, Edit, ChevronDown } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import Link from 'next/link'
 
@@ -55,21 +55,6 @@ export function CatalogPageComponent() {
 
   return (
     <div className="min-h-screen bg-[#FDF7F5]">
-      <header className="container mx-auto py-4 px-4 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Package className="h-8 w-8 text-purple-700" />
-          <span className="text-2xl font-bold text-purple-700">Collectopedia</span>
-        </div>
-        <nav className="hidden md:flex space-x-6">
-          <Link href="/dashboard" className="text-purple-700 hover:text-purple-500">Dashboard</Link>
-          <Link href="/catalog" className="text-purple-700 hover:text-purple-500">Catalog</Link>
-        </nav>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">Welcome, Collector</span>
-          <Button variant="outline" className="border-purple-700 text-purple-700 hover:bg-purple-100">Log out</Button>
-        </div>
-      </header>
-
       <main className="container mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-serif text-purple-900">Your Collection Catalog</h1>
