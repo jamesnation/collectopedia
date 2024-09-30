@@ -19,5 +19,7 @@ export default async function NotesPage() {
     return redirect("/pricing");
   }
 
-  return <div>Notes</div>;
+  return <div>Notes 1234</div>;
 }
+
+
