@@ -335,7 +335,11 @@ export function CatalogPageComponent() {
                           className="object-cover rounded-md"
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{toy.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <Link href={`/item/${toy.id}`} className="text-purple-700 hover:text-purple-500">
+                          {toy.name}
+                        </Link>
+                      </TableCell>
                       <TableCell>{toy.type}</TableCell>
                       <TableCell>{new Date(toy.acquired).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">${toy.cost.toFixed(2)}</TableCell>
@@ -402,7 +406,11 @@ export function CatalogPageComponent() {
                   />
                 </CardHeader>
                 <CardContent className="p-4">
-                  <CardTitle className="text-xl mb-2">{toy.name}</CardTitle>
+                  <CardTitle className="text-xl mb-2">
+                    <Link href={`/item/${toy.id}`} className="text-purple-700 hover:text-purple-500">
+                      {toy.name}
+                    </Link>
+                  </CardTitle>
                   <p className="text-sm text-gray-500 mb-1">{toy.type}</p>
                   <p className="text-sm text-gray-500 mb-2">Acquired: {new Date(toy.acquired).toLocaleDateString()}</p>
                   <div className="flex justify-between items-center mb-2">
