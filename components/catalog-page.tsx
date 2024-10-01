@@ -59,8 +59,8 @@ export function CatalogPageComponent() {
     // Implement edit functionality here
   }
 
-  const handleEbayRefresh = (id: number) => {
-    console.log(`Refresh eBay data for item with id: ${id}`)
+  const handleEbayRefresh = (id: number, type: 'sold' | 'listed') => {
+    console.log(`Refresh eBay ${type} data for item with id: ${id}`)
     // Implement eBay API call here
   }
 
@@ -299,7 +299,16 @@ export function CatalogPageComponent() {
                         Value <ArrowUpDown className="ml-2 h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead className="text-right">eBay API</TableHead>
+                    <TableHead className="text-right">
+                      <Button variant="ghost" className="font-bold text-purple-700">
+                        eBay Sold <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <Button variant="ghost" className="font-bold text-purple-700">
+                        eBay Listed <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -319,11 +328,22 @@ export function CatalogPageComponent() {
                       <TableCell className="text-right">${toy.cost.toFixed(2)}</TableCell>
                       <TableCell className="text-right font-bold text-purple-700">${toy.value.toFixed(2)}</TableCell>
                       <TableCell className="text-right">
-                        ${ebayValueType === "active" ? toy.ebayList.toFixed(2) : toy.ebaySold.toFixed(2)}
+                        ${toy.ebaySold.toFixed(2)}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEbayRefresh(toy.id)}
+                          onClick={() => handleEbayRefresh(toy.id, 'sold')}
+                          className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${toy.ebayList.toFixed(2)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEbayRefresh(toy.id, 'listed')}
                           className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
                         >
                           <RefreshCw className="h-4 w-4" />
@@ -370,9 +390,31 @@ export function CatalogPageComponent() {
                   <CardTitle className="text-xl mb-2">{toy.name}</CardTitle>
                   <p className="text-sm text-gray-500 mb-1">{toy.type}</p>
                   <p className="text-sm text-gray-500 mb-2">Acquired: {new Date(toy.acquired).toLocaleDateString()}</p>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center mb-2">
                     <span className="text-sm">Cost: ${toy.cost.toFixed(2)}</span>
                     <span className="text-lg font-bold text-purple-700">Value: ${toy.value.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm mb-1">
+                    <span>eBay Sold: ${toy.ebaySold.toFixed(2)}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEbayRefresh(toy.id, 'sold')}
+                      className="text-purple-500 hover:text-purple-700 hover:bg-purple-100 p-1"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span>eBay Listed: ${toy.ebayList.toFixed(2)}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEbayRefresh(toy.id, 'listed')}
+                      className="text-purple-500 hover:text-purple-700 hover:bg-purple-100 p-1"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
                 <CardFooter className="bg-gray-50 p-4 flex justify-end space-x-2">
