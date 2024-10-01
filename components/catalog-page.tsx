@@ -14,13 +14,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Toggle } from "@/components/ui/toggle"
 import Link from 'next/link'
 
-const toyData = [
-  { id: 1, name: "Vintage Barbie", type: "Doll", acquired: "2023-01-15", cost: 150, value: 1200, ebaySold: 1100, ebayList: 1300, image: "/placeholder.svg?height=150&width=150" },
-  { id: 2, name: "LEGO Millennium Falcon", type: "Building Set", acquired: "2022-11-30", cost: 800, value: 950, ebaySold: 900, ebayList: 1000, image: "/placeholder.svg?height=150&width=150" },
-  { id: 3, name: "Pokémon Charizard Card", type: "Trading Card", acquired: "2023-03-22", cost: 500, value: 750, ebaySold: 700, ebayList: 800, image: "/placeholder.svg?height=150&width=150" },
-  { id: 4, name: "Hot Wheels '67 Camaro", type: "Die-cast Car", acquired: "2023-02-14", cost: 5, value: 25, ebaySold: 20, ebayList: 30, image: "/placeholder.svg?height=150&width=150" },
-  { id: 5, name: "Transformers Optimus Prime", type: "Action Figure", acquired: "2022-12-25", cost: 100, value: 180, ebaySold: 170, ebayList: 200, image: "/placeholder.svg?height=150&width=150" },
-]
+
 
 const collectionValueData = [
   { date: '2023-01', value: 2000 },
@@ -29,6 +23,23 @@ const collectionValueData = [
   { date: '2023-04', value: 2600 },
   { date: '2023-05', value: 2800 },
   { date: '2023-06', value: 3105 },
+]
+
+// ... (previous imports remain the same)
+
+// Add this new import for the placeholder image
+import Image from 'next/image'
+
+// Add this constant for the placeholder image
+const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
+
+// Update the toyData to use the placeholder image
+const toyData = [
+  { id: 1, name: "Vintage Barbie", type: "Doll", acquired: "2023-01-15", cost: 150, value: 1200, ebaySold: 1100, ebayList: 1300, image: placeholderImage },
+  { id: 2, name: "LEGO Millennium Falcon", type: "Building Set", acquired: "2022-11-30", cost: 800, value: 950, ebaySold: 900, ebayList: 1000, image: placeholderImage },
+  { id: 3, name: "Pokémon Charizard Card", type: "Trading Card", acquired: "2023-03-22", cost: 500, value: 750, ebaySold: 700, ebayList: 800, image: placeholderImage },
+  { id: 4, name: "Hot Wheels '67 Camaro", type: "Die-cast Car", acquired: "2023-02-14", cost: 5, value: 25, ebaySold: 20, ebayList: 30, image: placeholderImage },
+  { id: 5, name: "Transformers Optimus Prime", type: "Action Figure", acquired: "2022-12-25", cost: 100, value: 180, ebaySold: 170, ebayList: 200, image: placeholderImage },
 ]
 
 export function CatalogPageComponent() {
@@ -316,10 +327,12 @@ export function CatalogPageComponent() {
                   {toyData.map((toy) => (
                     <TableRow key={toy.id} className="hover:bg-purple-50 transition-colors">
                       <TableCell>
-                        <img
+                        <Image
                           src={toy.image}
                           alt={toy.name}
-                          className="w-[150px] h-[150px] object-cover rounded-md"
+                          width={100}
+                          height={100}
+                          className="object-cover rounded-md"
                         />
                       </TableCell>
                       <TableCell className="font-medium">{toy.name}</TableCell>
@@ -380,9 +393,11 @@ export function CatalogPageComponent() {
             {toyData.map((toy) => (
               <Card key={toy.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                 <CardHeader className="p-0">
-                  <img
+                  <Image
                     src={toy.image}
                     alt={toy.name}
+                    width={400}
+                    height={400}
                     className="w-full h-64 object-cover"
                   />
                 </CardHeader>
