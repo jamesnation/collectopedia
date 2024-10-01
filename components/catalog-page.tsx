@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectValue, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -13,8 +13,13 @@ import { Package, Search, PlusCircle, Filter, Edit, Trash2, RefreshCw, ChevronDo
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Toggle } from "@/components/ui/toggle"
 import Link from 'next/link'
+import Image from 'next/image'
+import { createItemAction, getItemsByUserIdAction, updateItemAction, deleteItemAction } from "@/actions/items-actions"
+import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
+import { useAuth } from "@clerk/nextjs"
+import { v4 as uuidv4 } from 'uuid';
 
-
+const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
 const collectionValueData = [
   { date: '2023-01', value: 2000 },
@@ -23,23 +28,6 @@ const collectionValueData = [
   { date: '2023-04', value: 2600 },
   { date: '2023-05', value: 2800 },
   { date: '2023-06', value: 3105 },
-]
-
-// ... (previous imports remain the same)
-
-// Add this new import for the placeholder image
-import Image from 'next/image'
-
-// Add this constant for the placeholder image
-const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
-
-// Update the toyData to use the placeholder image
-const toyData = [
-  { id: 1, name: "Vintage Barbie", type: "Doll", acquired: "2023-01-15", cost: 150, value: 1200, ebaySold: 1100, ebayList: 1300, image: placeholderImage },
-  { id: 2, name: "LEGO Millennium Falcon", type: "Building Set", acquired: "2022-11-30", cost: 800, value: 950, ebaySold: 900, ebayList: 1000, image: placeholderImage },
-  { id: 3, name: "Pokémon Charizard Card", type: "Trading Card", acquired: "2023-03-22", cost: 500, value: 750, ebaySold: 700, ebayList: 800, image: placeholderImage },
-  { id: 4, name: "Hot Wheels '67 Camaro", type: "Die-cast Car", acquired: "2023-02-14", cost: 5, value: 25, ebaySold: 20, ebayList: 30, image: placeholderImage },
-  { id: 5, name: "Transformers Optimus Prime", type: "Action Figure", acquired: "2022-12-25", cost: 100, value: 180, ebaySold: 170, ebayList: 200, image: placeholderImage },
 ]
 
 export function CatalogPageComponent() {
@@ -54,33 +42,66 @@ export function CatalogPageComponent() {
     value: '',
     image: ''
   })
-  const [view, setView] = useState('list') // Changed default to 'list'
+  const [view, setView] = useState('list')
+  const [items, setItems] = useState<SelectItemType[]>([])
+  const { userId } = useAuth()
 
-  const totalCollectionValue = toyData.reduce((sum, toy) => sum + toy.value, 0)
-  const totalEbayListedValue = toyData.reduce((sum, toy) => sum + toy.ebayList, 0)
-  const totalEbaySoldValue = toyData.reduce((sum, toy) => sum + toy.ebaySold, 0)
+  useEffect(() => {
+    if (userId) {
+      fetchItems()
+    }
+  }, [userId])
 
-  const handleDelete = (id: number) => {
-    console.log(`Delete item with id: ${id}`)
-    // Implement delete functionality here
+  const fetchItems = async () => {
+    if (userId) {
+      const result = await getItemsByUserIdAction(userId)
+      if (result.isSuccess && result.data) {
+        setItems(result.data)
+      }
+    }
   }
 
-  const handleEdit = (id: number) => {
-    console.log(`Edit item with id: ${id}`)
-    // Implement edit functionality here
+  const totalCollectionValue = items.reduce((sum, item) => sum + item.value, 0)
+  const totalEbayListedValue = items.reduce((sum, item) => sum + (item.ebayListed || 0), 0)
+  const totalEbaySoldValue = items.reduce((sum, item) => sum + (item.ebaySold || 0), 0)
+
+  const handleDelete = async (id: string) => {
+    const result = await deleteItemAction(id)
+    if (result.isSuccess) {
+      fetchItems()
+    }
   }
 
-  const handleEbayRefresh = (id: number, type: 'sold' | 'listed') => {
-    console.log(`Refresh eBay ${type} data for item with id: ${id}`)
+  const handleEdit = async (id: string, data: Partial<SelectItemType>) => {
+    const result = await updateItemAction(id, data)
+    if (result.isSuccess) {
+      fetchItems()
+    }
+  }
+
+  const handleEbayRefresh = async (id: string, type: 'sold' | 'listed') => {
     // Implement eBay API call here
+    console.log(`Refresh eBay ${type} data for item with id: ${id}`)
   }
 
-  const handleAddItem = (e: React.FormEvent) => {
+  const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('New item:', newItem)
-    // Implement add item functionality here
-    setIsAddItemOpen(false)
-    setNewItem({ name: '', type: '', acquired: '', cost: '', value: '', image: '' })
+    if (userId) {
+      const result = await createItemAction({
+        ...newItem,
+        userId,
+        cost: parseInt(newItem.cost),
+        value: parseInt(newItem.value),
+        acquired: new Date(newItem.acquired),
+        id: uuidv4(), // Add this line to generate a unique ID
+        type: newItem.type as "Doll" | "Building Set" | "Trading Card" | "Die-cast Car" | "Action Figure",
+      })
+      if (result.isSuccess) {
+        setIsAddItemOpen(false)
+        setNewItem({ name: '', type: '', acquired: '', cost: '', value: '', image: '' })
+        fetchItems()
+      }
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -193,7 +214,7 @@ export function CatalogPageComponent() {
                 <div className="text-sm text-gray-500">Total Collection Value</div>
               </div>
               <div>
-                <div className="text-3xl font-bold mb-2">{toyData.length}</div>
+                <div className="text-3xl font-bold mb-2">{items.length}</div>
                 <div className="text-sm text-gray-500">Total Items</div>
               </div>
               <div>
@@ -267,14 +288,6 @@ export function CatalogPageComponent() {
               <SelectTrigger className="w-[180px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="doll">Doll</SelectItem>
-                <SelectItem value="building-set">Building Set</SelectItem>
-                <SelectItem value="trading-card">Trading Card</SelectItem>
-                <SelectItem value="die-cast-car">Die-cast Car</SelectItem>
-                <SelectItem value="action-figure">Action Figure</SelectItem>
-              </SelectContent>
             </Select>
             <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100">
               <Filter className="mr-2 h-4 w-4" /> More Filters
@@ -324,43 +337,43 @@ export function CatalogPageComponent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {toyData.map((toy) => (
-                    <TableRow key={toy.id} className="hover:bg-purple-50 transition-colors">
+                  {items.map((item) => (
+                    <TableRow key={item.id} className="hover:bg-purple-50 transition-colors">
                       <TableCell>
                         <Image
-                          src={toy.image}
-                          alt={toy.name}
+                          src={item.image || placeholderImage}
+                          alt={item.name}
                           width={100}
                           height={100}
                           className="object-cover rounded-md"
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        <Link href={`/item/${toy.id}`} className="text-purple-700 hover:text-purple-500">
-                          {toy.name}
+                        <Link href={`/item/${item.id}`} className="text-purple-700 hover:text-purple-500">
+                          {item.name}
                         </Link>
                       </TableCell>
-                      <TableCell>{toy.type}</TableCell>
-                      <TableCell>{new Date(toy.acquired).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-right">${toy.cost.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-bold text-purple-700">${toy.value.toFixed(2)}</TableCell>
+                      <TableCell>{item.type}</TableCell>
+                      <TableCell>{new Date(item.acquired).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">${item.cost.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-bold text-purple-700">${item.value.toFixed(2)}</TableCell>
                       <TableCell className="text-right">
-                        ${toy.ebaySold.toFixed(2)}
+                        ${item.ebaySold?.toFixed(2) || 'N/A'}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEbayRefresh(toy.id, 'sold')}
+                          onClick={() => handleEbayRefresh(item.id, 'sold')}
                           className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
                         >
                           <RefreshCw className="h-4 w-4" />
                         </Button>
                       </TableCell>
                       <TableCell className="text-right">
-                        ${toy.ebayList.toFixed(2)}
+                        ${item.ebayListed?.toFixed(2) || 'N/A'}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEbayRefresh(toy.id, 'listed')}
+                          onClick={() => handleEbayRefresh(item.id, 'listed')}
                           className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
                         >
                           <RefreshCw className="h-4 w-4" />
@@ -371,7 +384,7 @@ export function CatalogPageComponent() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEdit(toy.id)}
+                            onClick={() => handleEdit(item.id, {})} // You'll need to implement an edit dialog
                             className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
                           >
                             <Edit className="h-4 w-4" />
@@ -379,7 +392,7 @@ export function CatalogPageComponent() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDelete(toy.id)}
+                            onClick={() => handleDelete(item.id)}
                             className="text-red-500 hover:text-red-700 hover:bg-red-100"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -394,12 +407,12 @@ export function CatalogPageComponent() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {toyData.map((toy) => (
-              <Card key={toy.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+            {items.map((item) => (
+              <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                 <CardHeader className="p-0">
                   <Image
-                    src={toy.image}
-                    alt={toy.name}
+                    src={item.image || placeholderImage}
+                    alt={item.name}
                     width={400}
                     height={400}
                     className="w-full h-64 object-cover"
@@ -407,33 +420,33 @@ export function CatalogPageComponent() {
                 </CardHeader>
                 <CardContent className="p-4">
                   <CardTitle className="text-xl mb-2">
-                    <Link href={`/item/${toy.id}`} className="text-purple-700 hover:text-purple-500">
-                      {toy.name}
+                    <Link href={`/item/${item.id}`} className="text-purple-700 hover:text-purple-500">
+                      {item.name}
                     </Link>
                   </CardTitle>
-                  <p className="text-sm text-gray-500 mb-1">{toy.type}</p>
-                  <p className="text-sm text-gray-500 mb-2">Acquired: {new Date(toy.acquired).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-500 mb-1">{item.type}</p>
+                  <p className="text-sm text-gray-500 mb-2">Acquired: {new Date(item.acquired).toLocaleDateString()}</p>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm">Cost: ${toy.cost.toFixed(2)}</span>
-                    <span className="text-lg font-bold text-purple-700">Value: ${toy.value.toFixed(2)}</span>
+                    <span className="text-sm">Cost: ${item.cost.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-purple-700">Value: ${item.value.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm mb-1">
-                    <span>eBay Sold: ${toy.ebaySold.toFixed(2)}</span>
+                    <span>eBay Sold: ${item.ebaySold?.toFixed(2) || 'N/A'}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleEbayRefresh(toy.id, 'sold')}
+                      onClick={() => handleEbayRefresh(item.id, 'sold')}
                       className="text-purple-500 hover:text-purple-700 hover:bg-purple-100 p-1"
                     >
                       <RefreshCw className="h-4 w-4" />
                     </Button>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span>eBay Listed: ${toy.ebayList.toFixed(2)}</span>
+                    <span>eBay Listed: ${item.ebayListed?.toFixed(2) || 'N/A'}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleEbayRefresh(toy.id, 'listed')}
+                      onClick={() => handleEbayRefresh(item.id, 'listed')}
                       className="text-purple-500 hover:text-purple-700 hover:bg-purple-100 p-1"
                     >
                       <RefreshCw className="h-4 w-4" />
@@ -444,7 +457,7 @@ export function CatalogPageComponent() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleEdit(toy.id)}
+                    onClick={() => handleEdit(item.id, {})} // You'll need to implement an edit dialog
                     className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
                   >
                     <Edit className="h-4 w-4" />
@@ -452,7 +465,7 @@ export function CatalogPageComponent() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDelete(toy.id)}
+                    onClick={() => handleDelete(item.id)}
                     className="text-red-500 hover:text-red-700 hover:bg-red-100"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -464,7 +477,7 @@ export function CatalogPageComponent() {
         )}
 
         <div className="mt-6 flex justify-between items-center">
-          <div className="text-sm text-gray-500">Showing {toyData.length} of {toyData.length} items</div>
+          <div className="text-sm text-gray-500">Showing {items.length} of {items.length} items</div>
           <div className="flex space-x-2">
             <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100" disabled>Previous</Button>
             <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100" disabled>Next</Button>
