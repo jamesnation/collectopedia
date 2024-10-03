@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,10 @@ import { createItemAction, getItemsByUserIdAction, updateItemAction, deleteItemA
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
 import { useAuth } from "@clerk/nextjs"
 import { v4 as uuidv4 } from 'uuid';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useToast } from "@/components/ui/use-toast"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import debounce from 'lodash/debounce'
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
@@ -30,7 +34,7 @@ const collectionValueData = [
   { date: '2023-06', value: 3105 },
 ]
 
-export function CatalogPageComponent() {
+export default function CatalogPage() {
   const [ebayValueType, setEbayValueType] = useState("active")
   const [isChartOpen, setIsChartOpen] = useState(false)
   const [isAddItemOpen, setIsAddItemOpen] = useState(false)
@@ -47,6 +51,11 @@ export function CatalogPageComponent() {
   const { userId } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [loadingItemId, setLoadingItemId] = useState<string | null>(null)
+  const { toast } = useToast()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingItem, setEditingItem] = useState<SelectItemType | null>(null)
+  const [editingField, setEditingField] = useState<string | null>(null)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
 
   useEffect(() => {
     if (userId) {
@@ -67,33 +76,102 @@ export function CatalogPageComponent() {
   const totalEbayListedValue = items.reduce((sum, item) => sum + (item.ebayListed || 0), 0)
   const totalEbaySoldValue = items.reduce((sum, item) => sum + (item.ebaySold || 0), 0)
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     setIsLoading(true)
     setLoadingItemId(id)
     try {
       const result = await deleteItemAction(id)
       if (result.isSuccess) {
-        await fetchItems()
+        setItems(items.filter(item => item.id !== id))
+        toast({
+          title: "Item deleted",
+          description: "The item has been removed from your collection.",
+        })
+      } else {
+        throw new Error('Action failed')
       }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete item. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
       setLoadingItemId(null)
     }
-  }
+  }, [items, toast])
 
-  const handleEdit = async (id: string, data: Partial<SelectItemType>) => {
-    setIsLoading(true)
-    setLoadingItemId(id)
-    try {
-      const result = await updateItemAction(id, data)
-      if (result.isSuccess) {
-        await fetchItems()
+  const handleEditStart = (item: SelectItemType, field: string) => {
+    setEditingItem({ ...item });
+    setEditingItemId(item.id);
+    setEditingField(field);
+  };
+
+  const handleEditCancel = () => {
+    setEditingItem(null);
+    setEditingItemId(null);
+    setEditingField(null);
+  };
+
+  const handleEditSave = async () => {
+    if (editingItem) {
+      setIsLoading(true);
+      setLoadingItemId(editingItem.id);
+      try {
+        const result = await updateItemAction(editingItem.id, editingItem);
+        if (result.isSuccess) {
+          setItems(items.map(item => item.id === editingItem.id ? editingItem : item));
+          toast({
+            title: "Item updated",
+            description: "Your changes have been saved successfully.",
+          });
+          handleEditCancel();
+        } else {
+          throw new Error('Action failed');
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update item. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+        setLoadingItemId(null);
       }
-    } finally {
-      setIsLoading(false)
-      setLoadingItemId(null)
     }
-  }
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (editingItem) {
+      setEditingItem({ ...editingItem, name: e.target.value });
+    }
+  };
+
+  const handleTypeChange = (value: string) => {
+    if (editingItem) {
+      setEditingItem({ ...editingItem, type: value as "Doll" | "Building Set" | "Trading Card" | "Die-cast Car" | "Action Figure" });
+    }
+  };
+
+  const handleAcquiredChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (editingItem) {
+      setEditingItem({ ...editingItem, acquired: new Date(e.target.value) });
+    }
+  };
+
+  const handleCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (editingItem) {
+      setEditingItem({ ...editingItem, cost: parseInt(e.target.value) });
+    }
+  };
+
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (editingItem) {
+      setEditingItem({ ...editingItem, value: parseInt(e.target.value) });
+    }
+  };
 
   const handleEbayRefresh = async (id: string, type: 'sold' | 'listed') => {
     // Implement eBay API call here
@@ -328,125 +406,283 @@ export function CatalogPageComponent() {
         </div>
 
         {view === 'list' ? (
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-purple-50">
-                    <TableHead>Image</TableHead>
-                    <TableHead>
-                      <Button variant="ghost" className="font-bold text-purple-700">
-                        Name <ArrowUpDown className="ml-2 h-4 w-4" />
+          <div className="bg-[#FDF7F5] rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-purple-50">
+                  <TableHead>Image</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" className="font-bold text-purple-700">
+                      Name <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" className="font-bold text-purple-700">
+                      Acquired <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" className="font-bold text-purple-700">
+                      Cost <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" className="font-bold text-purple-700">
+                      Value <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" className="font-bold text-purple-700">
+                      eBay Sold <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" className="font-bold text-purple-700">
+                      eBay Listed <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id} className="bg-white hover:bg-purple-50 transition-colors">
+                    <TableCell>
+                      <Image
+                        src={item.image || placeholderImage}
+                        alt={item.name}
+                        width={100}
+                        height={100}
+                        className="object-cover rounded-md"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <Popover open={editingItemId === item.id && editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <button 
+                            className="text-sm font-medium hover:text-purple-700 transition-colors"
+                            onClick={() => handleEditStart(item, 'name')}
+                          >
+                            {item.name}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-purple-900">Edit Item Name</h4>
+                            <div className="space-y-2">
+                              <Label htmlFor={`name-${item.id}`} className="text-sm font-medium text-purple-700">Name</Label>
+                              <Input
+                                id={`name-${item.id}`}
+                                value={editingItem?.name || ''}
+                                onChange={handleNameChange}
+                                className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell>
+                      <Popover open={editingItemId === item.id && editingField === 'type'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <button 
+                            className="text-sm hover:text-purple-700 transition-colors"
+                            onClick={() => handleEditStart(item, 'type')}
+                          >
+                            {item.type}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-purple-900">Edit Item Type</h4>
+                            <div className="space-y-2">
+                              <Label htmlFor={`type-${item.id}`} className="text-sm font-medium text-purple-700">Type</Label>
+                              <Select value={editingItem?.type || ''} onValueChange={handleTypeChange}>
+                                <SelectTrigger id={`type-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Doll">Doll</SelectItem>
+                                  <SelectItem value="Building Set">Building Set</SelectItem>
+                                  <SelectItem value="Trading Card">Trading Card</SelectItem>
+                                  <SelectItem value="Die-cast Car">Die-cast Car</SelectItem>
+                                  <SelectItem value="Action Figure">Action Figure</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell>
+                      <Popover open={editingItemId === item.id && editingField === 'acquired'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <button 
+                            className="text-sm hover:text-purple-700 transition-colors"
+                            onClick={() => handleEditStart(item, 'acquired')}
+                          >
+                            {new Date(item.acquired).toLocaleDateString()}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-purple-900">Edit Acquired Date</h4>
+                            <div className="space-y-2">
+                              <Label htmlFor={`acquired-${item.id}`} className="text-sm font-medium text-purple-700">Acquired Date</Label>
+                              <Input
+                                id={`acquired-${item.id}`}
+                                type="date"
+                                value={editingItem?.acquired ? new Date(editingItem.acquired).toISOString().split('T')[0] : ''}
+                                onChange={handleAcquiredChange}
+                                className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Popover open={editingItemId === item.id && editingField === 'cost'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <button 
+                            className="text-sm hover:text-purple-700 transition-colors"
+                            onClick={() => handleEditStart(item, 'cost')}
+                          >
+                            ${item.cost.toFixed(2)}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-purple-900">Edit Item Cost</h4>
+                            <div className="space-y-2">
+                              <Label htmlFor={`cost-${item.id}`} className="text-sm font-medium text-purple-700">Cost</Label>
+                              <Input
+                                id={`cost-${item.id}`}
+                                type="number"
+                                value={editingItem?.cost || ''}
+                                onChange={handleCostChange}
+                                className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-purple-700">
+                      <Popover open={editingItemId === item.id && editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <button 
+                            className="text-sm font-bold text-purple-700 hover:text-purple-600 transition-colors"
+                            onClick={() => handleEditStart(item, 'value')}
+                          >
+                            ${item.value.toFixed(2)}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-purple-900">Edit Item Value</h4>
+                            <div className="space-y-2">
+                              <Label htmlFor={`value-${item.id}`} className="text-sm font-medium text-purple-700">Value</Label>
+                              <Input
+                                id={`value-${item.id}`}
+                                type="number"
+                                value={editingItem?.value || ''}
+                                onChange={handleValueChange}
+                                className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      ${item.ebaySold?.toFixed(2) || 'N/A'}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEbayRefresh(item.id, 'sold')}
+                        className="ml-2 text-purple-500 hoverxw:text-purple-700 hover:bg-purple-100"
+                      >
+                        <RefreshCw className="h-4 w-4" />
                       </Button>
-                    </TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>
-                      <Button variant="ghost" className="font-bold text-purple-700">
-                        Acquired <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      ${item.ebayListed?.toFixed(2) || 'N/A'}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEbayRefresh(item.id, 'listed')}
+                        className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
+                      >
+                        <RefreshCw className="h-4 w-4" />
                       </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button variant="ghost" className="font-bold text-purple-700">
-                        Cost <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button variant="ghost" className="font-bold text-purple-700">
-                        Value <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button variant="ghost" className="font-bold text-purple-700">
-                        eBay Sold <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button variant="ghost" className="font-bold text-purple-700">
-                        eBay Listed <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id} className="hover:bg-purple-50 transition-colors">
-                      <TableCell>
-                        <Image
-                          src={item.image || placeholderImage}
-                          alt={item.name}
-                          width={100}
-                          height={100}
-                          className="object-cover rounded-md"
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <Link href={`/item/${item.id}`} className="text-purple-700 hover:text-purple-500">
-                          {item.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{item.type}</TableCell>
-                      <TableCell>{new Date(item.acquired).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-right">${item.cost.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-bold text-purple-700">${item.value.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">
-                        ${item.ebaySold?.toFixed(2) || 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEbayRefresh(item.id, 'sold')}
-                          className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
+                          onClick={() => handleEditStart(item, 'name')}
+                          className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
+                          disabled={isLoading && loadingItemId === item.id}
                         >
-                          <RefreshCw className="h-4 w-4" />
+                          {isLoading && loadingItemId === item.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Edit className="h-4 w-4" />
+                          )}
                         </Button>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${item.ebayListed?.toFixed(2) || 'N/A'}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEbayRefresh(item.id, 'listed')}
-                          className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(item.id, {})}
-                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
-                            disabled={isLoading && loadingItemId === item.id}
-                          >
-                            {isLoading && loadingItemId === item.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Edit className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(item.id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-100"
-                            disabled={isLoading && loadingItemId === item.id}
-                          >
-                            {isLoading && loadingItemId === item.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                            >
                               <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the item from your collection.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {items.map((item) => (
@@ -461,16 +697,160 @@ export function CatalogPageComponent() {
                   />
                 </CardHeader>
                 <CardContent className="p-4">
-                  <CardTitle className="text-xl mb-2">
-                    <Link href={`/item/${item.id}`} className="text-purple-700 hover:text-purple-500">
-                      {item.name}
-                    </Link>
-                  </CardTitle>
-                  <p className="text-sm text-gray-500 mb-1">{item.type}</p>
-                  <p className="text-sm text-gray-500 mb-2">Acquired: {new Date(item.acquired).toLocaleDateString()}</p>
+                  <Popover open={editingItemId === item.id && editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
+                    <PopoverTrigger asChild>
+                      <button 
+                        className="text-xl font-semibold mb-2 hover:text-purple-700 transition-colors"
+                        onClick={() => handleEditStart(item, 'name')}
+                      >
+                        {item.name}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm text-purple-900">Edit Item Name</h4>
+                        <div className="space-y-2">
+                          <Label htmlFor={`name-${item.id}`} className="text-sm font-medium text-purple-700">Name</Label>
+                          <Input
+                            id={`name-${item.id}`}
+                            value={editingItem?.name || ''}
+                            onChange={handleNameChange}
+                            className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                          <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  {/* Move the type Popover here, on a new line */}
+                  <Popover open={editingItemId === item.id && editingField === 'type'} onOpenChange={(open) => !open && handleEditCancel()}>
+                    <PopoverTrigger asChild>
+                      <button 
+                        className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors"
+                        onClick={() => handleEditStart(item, 'type')}
+                      >
+                        Type: {item.type}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm text-purple-900">Edit Item Type</h4>
+                        <div className="space-y-2">
+                          <Label htmlFor={`type-${item.id}`} className="text-sm font-medium text-purple-700">Type</Label>
+                          <Select value={editingItem?.type || ''} onValueChange={handleTypeChange}>
+                            <SelectTrigger id={`type-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Doll">Doll</SelectItem>
+                              <SelectItem value="Building Set">Building Set</SelectItem>
+                              <SelectItem value="Trading Card">Trading Card</SelectItem>
+                              <SelectItem value="Die-cast Car">Die-cast Car</SelectItem>
+                              <SelectItem value="Action Figure">Action Figure</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                          <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Popover open={editingItemId === item.id && editingField === 'acquired'} onOpenChange={(open) => !open && handleEditCancel()}>
+                    <PopoverTrigger asChild>
+                      <button 
+                        className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors"
+                        onClick={() => handleEditStart(item, 'acquired')}
+                      >
+                        Acquired: {new Date(item.acquired).toLocaleDateString()}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm text-purple-900">Edit Acquired Date</h4>
+                        <div className="space-y-2">
+                          <Label htmlFor={`acquired-${item.id}`} className="text-sm font-medium text-purple-700">Acquired Date</Label>
+                          <Input
+                            id={`acquired-${item.id}`}
+                            type="date"
+                            value={editingItem?.acquired ? new Date(editingItem.acquired).toISOString().split('T')[0] : ''}
+                            onChange={handleAcquiredChange}
+                            className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                          <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm">Cost: ${item.cost.toFixed(2)}</span>
-                    <span className="text-lg font-bold text-purple-700">Value: ${item.value.toFixed(2)}</span>
+                    <Popover open={editingItemId === item.id && editingField === 'cost'} onOpenChange={(open) => !open && handleEditCancel()}>
+                      <PopoverTrigger asChild>
+                        <button 
+                          className="text-sm hover:text-purple-700 transition-colors"
+                          onClick={() => handleEditStart(item, 'cost')}
+                        >
+                          Cost: ${item.cost.toFixed(2)}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                        <div className="space-y-4">
+                          <h4 className="font-semibold text-sm text-purple-900">Edit Item Cost</h4>
+                          <div className="space-y-2">
+                            <Label htmlFor={`cost-${item.id}`} className="text-sm font-medium text-purple-700">Cost</Label>
+                            <Input
+                              id={`cost-${item.id}`}
+                              type="number"
+                              value={editingItem?.cost || ''}
+                              onChange={handleCostChange}
+                              className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                            <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Popover open={editingItemId === item.id && editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
+                      <PopoverTrigger asChild>
+                        <button 
+                          className="text-lg font-bold text-purple-700 hover:text-purple-600 transition-colors"
+                          onClick={() => handleEditStart(item, 'value')}
+                        >
+                          Value: ${item.value.toFixed(2)}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                        <div className="space-y-4">
+                          <h4 className="font-semibold text-sm text-purple-900">Edit Item Value</h4>
+                          <div className="space-y-2">
+                            <Label htmlFor={`value-${item.id}`} className="text-sm font-medium text-purple-700">Value</Label>
+                            <Input
+                              id={`value-${item.id}`}
+                              type="number"
+                              value={editingItem?.value || ''}
+                              onChange={handleValueChange}
+                              className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                            <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="flex justify-between items-center text-sm mb-1">
                     <span>eBay Sold: ${item.ebaySold?.toFixed(2) || 'N/A'}</span>
@@ -499,7 +879,7 @@ export function CatalogPageComponent() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleEdit(item.id, {})}
+                    onClick={() => handleEditStart(item, 'name')}
                     className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
                     disabled={isLoading && loadingItemId === item.id}
                   >
@@ -509,19 +889,29 @@ export function CatalogPageComponent() {
                       <Edit className="h-4 w-4" />
                     )}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(item.id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-100"
-                    disabled={isLoading && loadingItemId === item.id}
-                  >
-                    {isLoading && loadingItemId === item.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the item from your collection.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </CardFooter>
               </Card>
             ))}
