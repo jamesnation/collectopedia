@@ -449,13 +449,15 @@ export default function CatalogPage() {
                 {items.map((item) => (
                   <TableRow key={item.id} className="bg-white hover:bg-purple-50 transition-colors">
                     <TableCell>
-                      <Image
-                        src={item.image || placeholderImage}
-                        alt={item.name}
-                        width={100}
-                        height={100}
-                        className="object-cover rounded-md"
-                      />
+                      <Link href={`/item/${item.id}`}>
+                        <Image
+                          src={item.image || placeholderImage}
+                          alt={item.name}
+                          width={100}
+                          height={100}
+                          className="object-cover rounded-md cursor-pointer"
+                        />
+                      </Link>
                     </TableCell>
                     <TableCell className="font-medium">
                       <Popover open={editingItemId === item.id && editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
@@ -687,15 +689,17 @@ export default function CatalogPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {items.map((item) => (
               <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                <CardHeader className="p-0">
-                  <Image
-                    src={item.image || placeholderImage}
-                    alt={item.name}
-                    width={400}
-                    height={400}
-                    className="w-full h-64 object-cover"
-                  />
-                </CardHeader>
+                <Link href={`/item/${item.id}`}>
+                  <CardHeader className="p-0">
+                    <Image
+                      src={item.image || placeholderImage}
+                      alt={item.name}
+                      width={400}
+                      height={400}
+                      className="w-full h-64 object-cover cursor-pointer"
+                    />
+                  </CardHeader>
+                </Link>
                 <CardContent className="p-4">
                   <Popover open={editingItemId === item.id && editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
                     <PopoverTrigger asChild>
