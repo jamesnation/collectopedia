@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Package, Search, PlusCircle, Filter, Edit, Trash2, RefreshCw, ChevronDown, ArrowUpDown, LayoutGrid, LayoutList } from "lucide-react"
+import { Package, Search, PlusCircle, Filter, Edit, Trash2, RefreshCw, ChevronDown, ArrowUpDown, LayoutGrid, LayoutList, Loader2 } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Toggle } from "@/components/ui/toggle"
 import Link from 'next/link'
@@ -45,6 +45,8 @@ export function CatalogPageComponent() {
   const [view, setView] = useState('list')
   const [items, setItems] = useState<SelectItemType[]>([])
   const { userId } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadingItemId, setLoadingItemId] = useState<string | null>(null)
 
   useEffect(() => {
     if (userId) {
@@ -66,16 +68,30 @@ export function CatalogPageComponent() {
   const totalEbaySoldValue = items.reduce((sum, item) => sum + (item.ebaySold || 0), 0)
 
   const handleDelete = async (id: string) => {
-    const result = await deleteItemAction(id)
-    if (result.isSuccess) {
-      fetchItems()
+    setIsLoading(true)
+    setLoadingItemId(id)
+    try {
+      const result = await deleteItemAction(id)
+      if (result.isSuccess) {
+        await fetchItems()
+      }
+    } finally {
+      setIsLoading(false)
+      setLoadingItemId(null)
     }
   }
 
   const handleEdit = async (id: string, data: Partial<SelectItemType>) => {
-    const result = await updateItemAction(id, data)
-    if (result.isSuccess) {
-      fetchItems()
+    setIsLoading(true)
+    setLoadingItemId(id)
+    try {
+      const result = await updateItemAction(id, data)
+      if (result.isSuccess) {
+        await fetchItems()
+      }
+    } finally {
+      setIsLoading(false)
+      setLoadingItemId(null)
     }
   }
 
@@ -87,19 +103,24 @@ export function CatalogPageComponent() {
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault()
     if (userId) {
-      const result = await createItemAction({
-        ...newItem,
-        userId,
-        cost: parseInt(newItem.cost),
-        value: parseInt(newItem.value),
-        acquired: new Date(newItem.acquired),
-        id: uuidv4(), // Add this line to generate a unique ID
-        type: newItem.type as "Doll" | "Building Set" | "Trading Card" | "Die-cast Car" | "Action Figure",
-      })
-      if (result.isSuccess) {
-        setIsAddItemOpen(false)
-        setNewItem({ name: '', type: '', acquired: '', cost: '', value: '', image: '' })
-        fetchItems()
+      setIsLoading(true)
+      try {
+        const result = await createItemAction({
+          ...newItem,
+          userId,
+          cost: parseInt(newItem.cost),
+          value: parseInt(newItem.value),
+          acquired: new Date(newItem.acquired),
+          id: uuidv4(),
+          type: newItem.type as "Doll" | "Building Set" | "Trading Card" | "Die-cast Car" | "Action Figure",
+        })
+        if (result.isSuccess) {
+          setIsAddItemOpen(false)
+          setNewItem({ name: '', type: '', acquired: '', cost: '', value: '', image: '' })
+          await fetchItems()
+        }
+      } finally {
+        setIsLoading(false)
       }
     }
   }
@@ -198,8 +219,19 @@ export function CatalogPageComponent() {
                     className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
                   />
                 </div>
-                <Button type="submit" className="w-full bg-purple-700 text-white hover:bg-purple-600">
-                  Add Item
+                <Button 
+                  type="submit" 
+                  className="w-full bg-purple-700 text-white hover:bg-purple-600"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    'Add Item'
+                  )}
                 </Button>
               </form>
             </DialogContent>
@@ -384,18 +416,28 @@ export function CatalogPageComponent() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEdit(item.id, {})} // You'll need to implement an edit dialog
+                            onClick={() => handleEdit(item.id, {})}
                             className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
+                            disabled={isLoading && loadingItemId === item.id}
                           >
-                            <Edit className="h-4 w-4" />
+                            {isLoading && loadingItemId === item.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Edit className="h-4 w-4" />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDelete(item.id)}
                             className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                            disabled={isLoading && loadingItemId === item.id}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {isLoading && loadingItemId === item.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -457,18 +499,28 @@ export function CatalogPageComponent() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleEdit(item.id, {})} // You'll need to implement an edit dialog
+                    onClick={() => handleEdit(item.id, {})}
                     className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
+                    disabled={isLoading && loadingItemId === item.id}
                   >
-                    <Edit className="h-4 w-4" />
+                    {isLoading && loadingItemId === item.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Edit className="h-4 w-4" />
+                    )}
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(item.id)}
                     className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                    disabled={isLoading && loadingItemId === item.id}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    {isLoading && loadingItemId === item.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
