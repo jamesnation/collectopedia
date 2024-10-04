@@ -36,6 +36,7 @@ export const itemsTable = pgTable("items", {
   ebaySold: integer("ebay_sold"),
   ebayListed: integer("ebay_listed"),
   image: text("image"),
+  notes: text("notes"), // Add this line
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });

@@ -57,6 +57,7 @@ export default function CatalogPage() {
     acquired: '',
     cost: '',
     value: '',
+    notes: '',
     image: null as File | null
   })
   const [view, setView] = useState('list')
@@ -201,7 +202,7 @@ export default function CatalogPage() {
     console.log(`Refresh eBay ${type} data for item with id: ${id}`)
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setNewItem(prev => ({ ...prev, [name]: value }))
   }
@@ -226,11 +227,12 @@ export default function CatalogPage() {
           brand: newItem.brand as typeof brandEnum.enumValues[number],
           acquired: new Date(newItem.acquired),
           value: parseInt(newItem.value),
+          notes: newItem.notes,
           image: newItemImage,
         })
         if (result.isSuccess) {
           setIsAddItemOpen(false)
-          setNewItem({ name: '', type: '', brand: '', acquired: '', cost: '', value: '', image: null })
+          setNewItem({ name: '', type: '', brand: '', acquired: '', cost: '', value: '', notes: '', image: null })
           setNewItemImage(null)
           await fetchItems()
         }
@@ -376,6 +378,17 @@ export default function CatalogPage() {
                     onChange={handleInputChange}
                     required
                     className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-sm font-medium text-purple-700">Notes</Label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    value={newItem.notes}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    rows={4}
                   />
                 </div>
                 <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />

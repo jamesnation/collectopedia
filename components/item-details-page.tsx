@@ -70,7 +70,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (item) {
       setItem({ ...item, [e.target.name]: e.target.value })
     }
@@ -323,6 +323,41 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     </Button>
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Notes</Label>
+                <Popover open={editingField === 'notes'} onOpenChange={(open) => !open && handleEditCancel()}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left font-normal"
+                      onClick={() => handleEditStart('notes')}
+                    >
+                      <span className="text-lg text-purple-700">{item.notes || 'No notes'}</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-sm text-purple-900">Edit Notes</h4>
+                      <div className="space-y-2">
+                        <Label htmlFor="notes" className="text-sm font-medium text-purple-700">Notes</Label>
+                        <textarea
+                          id="notes"
+                          name="notes"
+                          value={item.notes || ''}
+                          onChange={handleInputChange}
+                          className="w-full p-2 border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          rows={4}
+                        />
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                        <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </CardContent>
           </Card>
