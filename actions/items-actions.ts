@@ -1,7 +1,7 @@
 "use server";
 
 import { createItem, getItemById, getItemsByUserId, updateItem, deleteItem } from "@/db/queries/items-queries";
-import { InsertItem, SelectItem } from "@/db/schema/items-schema";
+import { InsertItem, SelectItem, itemTypeEnum } from "@/db/schema/items-schema";
 import { ActionResult } from "@/types/actions/actions-types";
 import { revalidatePath } from "next/cache";
 

@@ -1,6 +1,14 @@
 import { pgTable, text, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
 
-export const itemTypeEnum = pgEnum("item_type", ["Doll", "Building Set", "Trading Card", "Die-cast Car", "Action Figure"]);
+export const itemTypeEnum = pgEnum("item_type", [
+  "Vintage - MISB",
+  "Vintage - opened",
+  "New - MISB",
+  "New - opened",
+  "New - KO",
+  "Cel",
+  "Other"
+]);
 
 export const itemsTable = pgTable("items", {
   id: text("id").primaryKey().notNull(),

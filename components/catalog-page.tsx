@@ -166,7 +166,7 @@ export default function CatalogPage() {
 
   const handleTypeChange = (value: string) => {
     if (editingItem) {
-      setEditingItem({ ...editingItem, type: value as "Doll" | "Building Set" | "Trading Card" | "Die-cast Car" | "Action Figure" });
+      setEditingItem({ ...editingItem, type: value as "Vintage - MISB" | "Vintage - opened" | "New - MISB" | "New - opened" | "New - KO" | "Cel" | "Other" });
     }
   };
 
@@ -214,7 +214,7 @@ export default function CatalogPage() {
           id: crypto.randomUUID(),
           userId,
           cost: parseInt(newItem.cost),
-          type: newItem.type as "Doll" | "Building Set" | "Trading Card" | "Die-cast Car" | "Action Figure",
+          type: newItem.type as "Vintage - MISB" | "Vintage - opened" | "New - MISB" | "New - opened" | "New - KO" | "Cel" | "Other",
           acquired: new Date(newItem.acquired),
           value: parseInt(newItem.value),
           image: newItemImage, // Use the uploaded image URL
@@ -309,11 +309,13 @@ export default function CatalogPage() {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Doll">Doll</SelectItem>
-                      <SelectItem value="Building Set">Building Set</SelectItem>
-                      <SelectItem value="Trading Card">Trading Card</SelectItem>
-                      <SelectItem value="Die-cast Car">Die-cast Car</SelectItem>
-                      <SelectItem value="Action Figure">Action Figure</SelectItem>
+                      <SelectItem value="Vintage - MISB">Vintage - MISB</SelectItem>
+                      <SelectItem value="Vintage - opened">Vintage - opened</SelectItem>
+                      <SelectItem value="New - MISB">New - MISB</SelectItem>
+                      <SelectItem value="New - opened">New - opened</SelectItem>
+                      <SelectItem value="New - KO">New - KO</SelectItem>
+                      <SelectItem value="Cel">Cel</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -568,11 +570,13 @@ export default function CatalogPage() {
                                       <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="Doll">Doll</SelectItem>
-                                      <SelectItem value="Building Set">Building Set</SelectItem>
-                                      <SelectItem value="Trading Card">Trading Card</SelectItem>
-                                      <SelectItem value="Die-cast Car">Die-cast Car</SelectItem>
-                                      <SelectItem value="Action Figure">Action Figure</SelectItem>
+                                      <SelectItem value="Vintage - MISB">Vintage - MISB</SelectItem>
+                                      <SelectItem value="Vintage - opened">Vintage - opened</SelectItem>
+                                      <SelectItem value="New - MISB">New - MISB</SelectItem>
+                                      <SelectItem value="New - opened">New - opened</SelectItem>
+                                      <SelectItem value="New - KO">New - KO</SelectItem>
+                                      <SelectItem value="Cel">Cel</SelectItem>
+                                      <SelectItem value="Other">Other</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
@@ -809,11 +813,13 @@ export default function CatalogPage() {
                                   <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="Doll">Doll</SelectItem>
-                                  <SelectItem value="Building Set">Building Set</SelectItem>
-                                  <SelectItem value="Trading Card">Trading Card</SelectItem>
-                                  <SelectItem value="Die-cast Car">Die-cast Car</SelectItem>
-                                  <SelectItem value="Action Figure">Action Figure</SelectItem>
+                                  <SelectItem value="Vintage - MISB">Vintage - MISB</SelectItem>
+                                  <SelectItem value="Vintage - opened">Vintage - opened</SelectItem>
+                                  <SelectItem value="New - MISB">New - MISB</SelectItem>
+                                  <SelectItem value="New - opened">New - opened</SelectItem>
+                                  <SelectItem value="New - KO">New - KO</SelectItem>
+                                  <SelectItem value="Cel">Cel</SelectItem>
+                                  <SelectItem value="Other">Other</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
