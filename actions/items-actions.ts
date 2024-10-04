@@ -1,56 +1,48 @@
 "use server";
 
-import { createItem, getItemById, getItemsByUserId, updateItem, deleteItem } from "@/db/queries/items-queries";
-import { InsertItem, SelectItem, itemTypeEnum } from "@/db/schema/items-schema";
-import { ActionResult } from "@/types/actions/actions-types";
 import { revalidatePath } from "next/cache";
+import { getItemsByUserId, insertItem, updateItem, deleteItem } from "@/db/queries/items-queries";
+import { itemsTable } from "@/db/schema";
 
-export async function createItemAction(data: InsertItem): Promise<ActionResult<SelectItem>> {
-  try {
-    // If there's an image URL, we don't need to do anything special here
-    // as we're now passing the URL directly
-    const newItem = await createItem(data);
-    revalidatePath("/");
-    return { isSuccess: true, message: "Item created successfully", data: newItem };
-  } catch (error) {
-    return { isSuccess: false, message: "Failed to create item" };
-  }
-}
-
-export async function getItemByIdAction(id: string): Promise<ActionResult<SelectItem | null>> {
-  try {
-    const item = await getItemById(id);
-    return { isSuccess: true, message: "Item retrieved successfully", data: item };
-  } catch (error) {
-    return { isSuccess: false, message: "Failed to get item" };
-  }
-}
-
-export async function getItemsByUserIdAction(userId: string): Promise<ActionResult<SelectItem[]>> {
+export const getItemsByUserIdAction = async (userId: string) => {
   try {
     const items = await getItemsByUserId(userId);
-    return { isSuccess: true, message: "Items retrieved successfully", data: items };
+    return { isSuccess: true, data: items };
   } catch (error) {
-    return { isSuccess: false, message: "Failed to get items" };
+    console.error("Failed to get items:", error);
+    return { isSuccess: false, error: "Failed to get items" };
   }
-}
+};
 
-export async function updateItemAction(id: string, data: Partial<InsertItem>): Promise<ActionResult<SelectItem>> {
+export const createItemAction = async (item: typeof itemsTable.$inferInsert) => {
   try {
-    const updatedItem = await updateItem(id, data);
+    await insertItem(item);
     revalidatePath("/");
-    return { isSuccess: true, message: "Item updated successfully", data: updatedItem };
+    return { isSuccess: true };
   } catch (error) {
-    return { isSuccess: false, message: "Failed to update item" };
+    console.error("Failed to create item:", error);
+    return { isSuccess: false, error: "Failed to create item" };
   }
-}
+};
 
-export async function deleteItemAction(id: string): Promise<ActionResult<void>> {
+export const updateItemAction = async (id: string, item: Partial<typeof itemsTable.$inferInsert>) => {
+  try {
+    await updateItem(id, item);
+    revalidatePath("/");
+    return { isSuccess: true };
+  } catch (error) {
+    console.error("Failed to update item:", error);
+    return { isSuccess: false, error: "Failed to update item" };
+  }
+};
+
+export const deleteItemAction = async (id: string) => {
   try {
     await deleteItem(id);
     revalidatePath("/");
-    return { isSuccess: true, message: "Item deleted successfully" };
+    return { isSuccess: true };
   } catch (error) {
-    return { isSuccess: false, message: "Failed to delete item" };
+    console.error("Failed to delete item:", error);
+    return { isSuccess: false, error: "Failed to delete item" };
   }
-}
+};

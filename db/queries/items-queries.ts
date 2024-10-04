@@ -1,30 +1,23 @@
 import { db } from "@/db/db";
-import { itemsTable, InsertItem, SelectItem } from "@/db/schema/items-schema";
+import { itemsTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-export async function createItem(data: InsertItem): Promise<SelectItem> {
-  const [newItem] = await db.insert(itemsTable).values(data).returning();
-  return newItem;
-}
-
-export async function getItemById(id: string): Promise<SelectItem | null> {
-  const [item] = await db.select().from(itemsTable).where(eq(itemsTable.id, id));
-  return item || null;
-}
-
-export async function getItemsByUserId(userId: string): Promise<SelectItem[]> {
+export const getItemsByUserId = (userId: string) => {
   return db.select().from(itemsTable).where(eq(itemsTable.userId, userId));
-}
+};
 
-export async function updateItem(id: string, data: Partial<InsertItem>): Promise<SelectItem> {
-  const [updatedItem] = await db
-    .update(itemsTable)
-    .set(data)
-    .where(eq(itemsTable.id, id))
-    .returning();
-  return updatedItem;
-}
+export const getItemById = (id: string) => {
+  return db.select().from(itemsTable).where(eq(itemsTable.id, id));
+};
 
-export async function deleteItem(id: string): Promise<void> {
-  await db.delete(itemsTable).where(eq(itemsTable.id, id));
-}
+export const insertItem = (item: typeof itemsTable.$inferInsert) => {
+  return db.insert(itemsTable).values(item);
+};
+
+export const updateItem = (id: string, item: Partial<typeof itemsTable.$inferInsert>) => {
+  return db.update(itemsTable).set(item).where(eq(itemsTable.id, id));
+};
+
+export const deleteItem = (id: string) => {
+  return db.delete(itemsTable).where(eq(itemsTable.id, id));
+};

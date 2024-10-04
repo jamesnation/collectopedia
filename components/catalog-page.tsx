@@ -23,6 +23,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import debounce from 'lodash/debounce'
 import { Skeleton } from "@/components/ui/skeleton";
+import { brandEnum, itemTypeEnum } from "@/db/schema/items-schema";
 
 // Dynamically import components that might cause hydration issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -52,6 +53,7 @@ export default function CatalogPage() {
   const [newItem, setNewItem] = useState({
     name: '',
     type: '',
+    brand: '',
     acquired: '',
     cost: '',
     value: '',
@@ -166,7 +168,13 @@ export default function CatalogPage() {
 
   const handleTypeChange = (value: string) => {
     if (editingItem) {
-      setEditingItem({ ...editingItem, type: value as "Vintage - MISB" | "Vintage - opened" | "New - MISB" | "New - opened" | "New - KO" | "Cel" | "Other" });
+      setEditingItem({ ...editingItem, type: value as typeof itemTypeEnum.enumValues[number] });
+    }
+  };
+
+  const handleBrandChange = (value: string) => {
+    if (editingItem) {
+      setEditingItem({ ...editingItem, brand: value as typeof brandEnum.enumValues[number] });
     }
   };
 
@@ -214,14 +222,15 @@ export default function CatalogPage() {
           id: crypto.randomUUID(),
           userId,
           cost: parseInt(newItem.cost),
-          type: newItem.type as "Vintage - MISB" | "Vintage - opened" | "New - MISB" | "New - opened" | "New - KO" | "Cel" | "Other",
+          type: newItem.type as typeof itemTypeEnum.enumValues[number],
+          brand: newItem.brand as typeof brandEnum.enumValues[number],
           acquired: new Date(newItem.acquired),
           value: parseInt(newItem.value),
-          image: newItemImage, // Use the uploaded image URL
+          image: newItemImage,
         })
         if (result.isSuccess) {
           setIsAddItemOpen(false)
-          setNewItem({ name: '', type: '', acquired: '', cost: '', value: '', image: null })
+          setNewItem({ name: '', type: '', brand: '', acquired: '', cost: '', value: '', image: null })
           setNewItemImage(null)
           await fetchItems()
         }
@@ -239,6 +248,7 @@ export default function CatalogPage() {
     <TableRow className="bg-white hover:bg-purple-50 transition-colors">
       <TableCell><Skeleton className="h-16 w-16" /></TableCell>
       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
@@ -316,6 +326,19 @@ export default function CatalogPage() {
                       <SelectItem value="New - KO">New - KO</SelectItem>
                       <SelectItem value="Cel">Cel</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="brand" className="text-sm font-medium text-purple-700">Brand</Label>
+                  <Select name="brand" value={newItem.brand} onValueChange={(value) => handleInputChange({ target: { name: 'brand', value } } as any)}>
+                    <SelectTrigger className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                      <SelectValue placeholder="Select brand" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brandEnum.enumValues.map((brand) => (
+                        <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -476,6 +499,7 @@ export default function CatalogPage() {
                     </Button>
                   </TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Brand</TableHead> {/* Add this line */}
                   <TableHead>
                     <Button variant="ghost" className="font-bold text-purple-700">
                       Acquired <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -577,6 +601,40 @@ export default function CatalogPage() {
                                       <SelectItem value="New - KO">New - KO</SelectItem>
                                       <SelectItem value="Cel">Cel</SelectItem>
                                       <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="flex justify-end space-x-2">
+                                  <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                                  <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </TableCell>
+                        <TableCell>
+                          <Popover open={editingItemId === item.id && editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
+                            <PopoverTrigger asChild>
+                              <button 
+                                className="text-sm hover:text-purple-700 transition-colors"
+                                onClick={() => handleEditStart(item, 'brand')}
+                              >
+                                {item.brand}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                              <div className="space-y-4">
+                                <h4 className="font-semibold text-sm text-purple-900">Edit Item Brand</h4>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`brand-${item.id}`} className="text-sm font-medium text-purple-700">Brand</Label>
+                                  <Select value={editingItem?.brand || ''} onValueChange={handleBrandChange}>
+                                    <SelectTrigger id={`brand-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                                      <SelectValue placeholder="Select brand" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {brandEnum.enumValues.map((brand) => (
+                                        <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                                      ))}
                                     </SelectContent>
                                   </Select>
                                 </div>
@@ -831,27 +889,30 @@ export default function CatalogPage() {
                         </PopoverContent>
                       </Popover>
                       
-                      <Popover open={editingItemId === item.id && editingField === 'acquired'} onOpenChange={(open) => !open && handleEditCancel()}>
+                      <Popover open={editingItemId === item.id && editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
                         <PopoverTrigger asChild>
                           <button 
                             className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors"
-                            onClick={() => handleEditStart(item, 'acquired')}
+                            onClick={() => handleEditStart(item, 'brand')}
                           >
-                            Acquired: {new Date(item.acquired).toLocaleDateString()}
+                            Brand: {item.brand}
                           </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
                           <div className="space-y-4">
-                            <h4 className="font-semibold text-sm text-purple-900">Edit Acquired Date</h4>
+                            <h4 className="font-semibold text-sm text-purple-900">Edit Item Brand</h4>
                             <div className="space-y-2">
-                              <Label htmlFor={`acquired-${item.id}`} className="text-sm font-medium text-purple-700">Acquired Date</Label>
-                              <Input
-                                id={`acquired-${item.id}`}
-                                type="date"
-                                value={editingItem?.acquired ? new Date(editingItem.acquired).toISOString().split('T')[0] : ''}
-                                onChange={handleAcquiredChange}
-                                className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
-                              />
+                              <Label htmlFor={`brand-${item.id}`} className="text-sm font-medium text-purple-700">Brand</Label>
+                              <Select value={editingItem?.brand || ''} onValueChange={handleBrandChange}>
+                                <SelectTrigger id={`brand-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                                  <SelectValue placeholder="Select brand" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {brandEnum.enumValues.map((brand) => (
+                                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div className="flex justify-end space-x-2">
                               <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>

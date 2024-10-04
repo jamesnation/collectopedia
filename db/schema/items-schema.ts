@@ -10,11 +10,26 @@ export const itemTypeEnum = pgEnum("item_type", [
   "Other"
 ]);
 
+export const brandEnum = pgEnum("brand", [
+  'Transformers',
+  'TMNT',
+  'M.A.S.K',
+  'Visionaries',
+  'WWF',
+  'Warhammer',
+  'Monsters in My Pocket',
+  'Senate',
+  'Skating (other)',
+  'Other',
+  'Unknown'
+]);
+
 export const itemsTable = pgTable("items", {
   id: text("id").primaryKey().notNull(),
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
   type: itemTypeEnum("type").notNull(),
+  brand: brandEnum("brand").notNull(),
   acquired: timestamp("acquired").notNull(),
   cost: integer("cost").notNull(),
   value: integer("value").notNull(),

@@ -22,6 +22,13 @@
       "when": 1728046351135,
       "tag": "0002_material_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1728050931412,
+      "tag": "0003_complete_xorn",
+      "breakpoints": true
     }
   ]
 }
