@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getItemsByUserId, insertItem, updateItem, deleteItem } from "@/db/queries/items-queries";
+import { getItemsByUserId, getItemById, insertItem, updateItem, deleteItem } from "@/db/queries/items-queries";
 import { itemsTable } from "@/db/schema";
 
 export const getItemsByUserIdAction = async (userId: string) => {
@@ -11,6 +11,16 @@ export const getItemsByUserIdAction = async (userId: string) => {
   } catch (error) {
     console.error("Failed to get items:", error);
     return { isSuccess: false, error: "Failed to get items" };
+  }
+};
+
+export const getItemByIdAction = async (id: string) => {
+  try {
+    const item = await getItemById(id);
+    return { isSuccess: true, data: item[0] };
+  } catch (error) {
+    console.error("Failed to get item:", error);
+    return { isSuccess: false, error: "Failed to get item" };
   }
 };
 
