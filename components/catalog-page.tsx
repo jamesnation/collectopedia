@@ -1,16 +1,16 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectValue, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Package, Search, PlusCircle, Filter, Edit, Trash2, RefreshCw, ChevronDown, ArrowUpDown, LayoutGrid, LayoutList, Loader2 } from "lucide-react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Toggle } from "@/components/ui/toggle"
 import Link from 'next/link'
 import Image from 'next/image'
@@ -24,7 +24,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import debounce from 'lodash/debounce'
 import { Skeleton } from "@/components/ui/skeleton";
 
-
+// Dynamically import components that might cause hydration issues
+const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
+// const DynamicLineChart = dynamic(() => import('recharts').then((mod) => mod.LineChart), { ssr: false })
+// const DynamicLine = dynamic(() => import('recharts').then((mod) => mod.Line), { ssr: false })
+// const DynamicXAxis = dynamic(() => import('recharts').then((mod) => mod.XAxis), { ssr: false })
+// const DynamicYAxis = dynamic(() => import('recharts').then((mod) => mod.YAxis), { ssr: false })
+// const DynamicCartesianGrid = dynamic(() => import('recharts').then((mod) => mod.CartesianGrid), { ssr: false })
+// const DynamicTooltip = dynamic(() => import('recharts').then((mod) => mod.Tooltip), { ssr: false })
+// const DynamicResponsiveContainer = dynamic(() => import('recharts').then((mod) => mod.ResponsiveContainer), { ssr: false })
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
@@ -47,7 +55,7 @@ export default function CatalogPage() {
     acquired: '',
     cost: '',
     value: '',
-    image: ''
+    image: null as File | null
   })
   const [view, setView] = useState('list')
   const [items, setItems] = useState<SelectItemType[]>([])
@@ -59,6 +67,8 @@ export default function CatalogPage() {
   const [editingItem, setEditingItem] = useState<SelectItemType | null>(null)
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [newItemImage, setNewItemImage] = useState<string | null>(null)
 
   useEffect(() => {
     if (userId) {
@@ -183,6 +193,17 @@ export default function CatalogPage() {
     console.log(`Refresh eBay ${type} data for item with id: ${id}`)
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setNewItem(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewItem(prev => ({ ...prev, image: e.target.files![0] }))
+    }
+  }
+
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault()
     if (userId) {
@@ -190,16 +211,18 @@ export default function CatalogPage() {
       try {
         const result = await createItemAction({
           ...newItem,
+          id: crypto.randomUUID(),
           userId,
           cost: parseInt(newItem.cost),
-          value: parseInt(newItem.value),
-          acquired: new Date(newItem.acquired),
-          id: uuidv4(),
           type: newItem.type as "Doll" | "Building Set" | "Trading Card" | "Die-cast Car" | "Action Figure",
+          acquired: new Date(newItem.acquired),
+          value: parseInt(newItem.value),
+          image: newItemImage, // Use the uploaded image URL
         })
         if (result.isSuccess) {
           setIsAddItemOpen(false)
-          setNewItem({ name: '', type: '', acquired: '', cost: '', value: '', image: '' })
+          setNewItem({ name: '', type: '', acquired: '', cost: '', value: '', image: null })
+          setNewItemImage(null)
           await fetchItems()
         }
       } finally {
@@ -208,9 +231,8 @@ export default function CatalogPage() {
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setNewItem(prev => ({ ...prev, [name]: value }))
+  const handleImageUpload = (url: string) => {
+    setNewItemImage(url)
   }
 
   const TableRowSkeleton = () => (
@@ -264,6 +286,9 @@ export default function CatalogPage() {
             <DialogContent className="sm:max-w-[425px] bg-[#FDF7F5] border-purple-200">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-serif text-purple-900">Add New Item</DialogTitle>
+                <DialogDescription>
+                  Fill in the details of your new collection item.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddItem} className="space-y-6">
                 <div className="space-y-2">
@@ -328,17 +353,7 @@ export default function CatalogPage() {
                     className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="image" className="text-sm font-medium text-purple-700">Image URL</Label>
-                  <Input
-                    id="image"
-                    name="image"
-                    type="url"
-                    value={newItem.image}
-                    onChange={handleInputChange}
-                    className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
-                  />
-                </div>
+                <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
                 <Button 
                   type="submit" 
                   className="w-full bg-purple-700 text-white hover:bg-purple-600"
@@ -395,15 +410,15 @@ export default function CatalogPage() {
           <CollapsibleContent className="mt-4">
             <Card>
               <CardContent className="p-6">
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={collectionValueData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="value" stroke="#8884d8" activeDot={{ r: 8 }} />
-                  </LineChart>
-                </ResponsiveContainer>
+                {/* <DynamicResponsiveContainer width="100%" height={300}>
+                  <DynamicLineChart data={collectionValueData}>
+                    <DynamicCartesianGrid strokeDasharray="3 3" />
+                    <DynamicXAxis dataKey="date" />
+                    <DynamicYAxis />
+                    <DynamicTooltip />
+                    <DynamicLine type="monotone" dataKey="value" stroke="#8884d8" activeDot={{ r: 8 }} />
+                  </DynamicLineChart>
+                </DynamicResponsiveContainer> */}
               </CardContent>
             </Card>
           </CollapsibleContent>
@@ -648,8 +663,7 @@ export default function CatalogPage() {
                                   <Label htmlFor={`value-${item.id}`} className="text-sm font-medium text-purple-700">Value</Label>
                                   <Input
                                     id={`value-${item.id}`}
-                                    type="number"
-                                    value={editingItem?.value || ''}
+                                    type="number"                                    value={editingItem?.value || ''}
                                     onChange={handleValueChange}
                                     className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
                                   />

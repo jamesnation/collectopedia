@@ -11,7 +11,9 @@ Your goal is to completely finish whatever the user asks for.
 ## Steps
 
 - All new components should go in `/components` at the root (not in the app folder) and be named like `example-component.tsx` unless otherwise specified
-- All new pages go in `/app`
+- All new pages go in `/app` DO NOT CREATE THEM ELSEWHERE
+- All new actions go in `/actions` and the items file is `/actions/items-actions.ts`
+
 
 ## Reminders
 

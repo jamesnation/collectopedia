@@ -7,6 +7,8 @@ import { revalidatePath } from "next/cache";
 
 export async function createItemAction(data: InsertItem): Promise<ActionResult<SelectItem>> {
   try {
+    // If there's an image URL, we don't need to do anything special here
+    // as we're now passing the URL directly
     const newItem = await createItem(data);
     revalidatePath("/");
     return { isSuccess: true, message: "Item created successfully", data: newItem };
