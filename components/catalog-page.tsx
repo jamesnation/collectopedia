@@ -248,16 +248,16 @@ export default function CatalogPage() {
 
   const TableRowSkeleton = () => (
     <TableRow className="bg-white hover:bg-purple-50 transition-colors">
-      <TableCell><Skeleton className="h-16 w-16" /></TableCell>
+      <TableCell className="p-2"><Skeleton className="h-20 w-20" /></TableCell>
       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-4 w-36" /></TableCell>
       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
       <TableCell><Skeleton className="h-8 w-8" /></TableCell>
     </TableRow>
   )
@@ -506,45 +506,37 @@ export default function CatalogPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-purple-50">
-                  <TableHead>Image</TableHead>
+                  <TableHead className="w-24">Image</TableHead>
                   <TableHead>
-                    <Button variant="ghost" className="font-bold text-purple-700">
+                    <Button variant="ghost" className="font-bold text-purple-700 px-0">
                       Name <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Brand</TableHead> {/* Add this line */}
-                  <TableHead>
-                    <Button variant="ghost" className="font-bold text-purple-700">
+                  <TableHead className="w-40">Type</TableHead>
+                  <TableHead className="w-32">Brand</TableHead>
+                  <TableHead className="w-32">
+                    <Button variant="ghost" className="font-bold text-purple-700 px-0">
                       Acquired <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="text-right">
-                    <Button variant="ghost" className="font-bold text-purple-700">
+                  <TableHead className="w-24 text-right">
+                    <Button variant="ghost" className="font-bold text-purple-700 px-0">
                       Cost <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="text-right">
-                    <Button variant="ghost" className="font-bold text-purple-700">
+                  <TableHead className="w-24 text-right">
+                    <Button variant="ghost" className="font-bold text-purple-700 px-0">
                       Value <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="text-right">
-                    <Button variant="ghost" className="font-bold text-purple-700">
-                      eBay Sold <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">
-                    <Button variant="ghost" className="font-bold text-purple-700">
-                      eBay Listed <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button variant="ghost" className="font-bold text-purple-700">
+                  <TableHead className="w-32 text-right">eBay Sold</TableHead>
+                  <TableHead className="w-32 text-right">eBay Listed</TableHead>
+                  <TableHead className="w-40">
+                    <Button variant="ghost" className="font-bold text-purple-700 px-0">
                       Last Updated <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -552,13 +544,13 @@ export default function CatalogPage() {
                   ? Array(5).fill(0).map((_, index) => <TableRowSkeleton key={index} />)
                   : items.map((item) => (
                       <TableRow key={item.id} className="bg-white hover:bg-purple-50 transition-colors">
-                        <TableCell>
+                        <TableCell className="p-2">
                           <Link href={`/item/${item.id}`}>
                             <Image
                               src={item.image || placeholderImage}
                               alt={item.name}
-                              width={100}
-                              height={100}
+                              width={80}
+                              height={80}
                               className="object-cover rounded-md cursor-pointer"
                             />
                           </Link>
@@ -597,7 +589,7 @@ export default function CatalogPage() {
                           <Popover open={editingItemId === item.id && editingField === 'type'} onOpenChange={(open) => !open && handleEditCancel()}>
                             <PopoverTrigger asChild>
                               <button 
-                                className="text-sm hover:text-purple-700 transition-colors"
+                                className="text-sm hover:text-purple-700 transition-colors whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px]"
                                 onClick={() => handleEditStart(item, 'type')}
                               >
                                 {item.type}
