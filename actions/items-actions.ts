@@ -37,7 +37,11 @@ export const createItemAction = async (item: typeof itemsTable.$inferInsert) => 
 
 export const updateItemAction = async (id: string, item: Partial<typeof itemsTable.$inferInsert>) => {
   try {
-    await updateItem(id, item);
+    const updatedItem = {
+      ...item,
+      updatedAt: new Date(), // Automatically set the updatedAt field to the current date and time
+    };
+    await updateItem(id, updatedItem);
     revalidatePath("/");
     return { isSuccess: true };
   } catch (error) {

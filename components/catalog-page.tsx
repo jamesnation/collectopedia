@@ -257,7 +257,8 @@ export default function CatalogPage() {
       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-      <TableCell><Skeleton className="h-8 w-16" /></TableCell>
+      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-8 w-8" /></TableCell>
     </TableRow>
   )
 
@@ -538,6 +539,11 @@ export default function CatalogPage() {
                       eBay Listed <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" className="font-bold text-purple-700">
+                      Last Updated <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -774,20 +780,10 @@ export default function CatalogPage() {
                           </Button>
                         </TableCell>
                         <TableCell>
+                          {new Date(item.updatedAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditStart(item, 'name')}
-                              className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
-                              disabled={isLoading && loadingItemId === item.id}
-                            >
-                              {isLoading && loadingItemId === item.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Edit className="h-4 w-4" />
-                              )}
-                            </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
@@ -1017,21 +1013,11 @@ export default function CatalogPage() {
                           <RefreshCw className="h-4 w-4" />
                         </Button>
                       </div>
+                      <div className="text-sm text-gray-500 mt-2">
+                        Last Updated: {new Date(item.updatedAt).toLocaleDateString()}
+                      </div>
                     </CardContent>
                     <CardFooter className="bg-gray-50 p-4 flex justify-end space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditStart(item, 'name')}
-                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
-                        disabled={isLoading && loadingItemId === item.id}
-                      >
-                        {isLoading && loadingItemId === item.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Edit className="h-4 w-4" />
-                        )}
-                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
