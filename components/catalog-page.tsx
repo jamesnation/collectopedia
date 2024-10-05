@@ -27,6 +27,7 @@ import { brandEnum, itemTypeEnum } from "@/db/schema/items-schema";
 import { updateEbayPrices } from "@/actions/ebay-actions"
 import { Checkbox } from "@/components/ui/checkbox"
 import { SortDescriptor } from '@/types/sort'
+import { useDebouncedCallback } from 'use-debounce';
 
 // Dynamically import components that might cause hydration issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -80,6 +81,8 @@ export default function CatalogPage() {
   const [brandFilter, setBrandFilter] = useState<string | 'all'>('all')
   const [typeFilters, setTypeFilters] = useState<string[]>([])
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'name', direction: 'ascending' })
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
   useEffect(() => {
     if (userId) {
@@ -87,40 +90,59 @@ export default function CatalogPage() {
     }
   }, [userId])
 
+  const debouncedSetSearch = useDebouncedCallback(
+    (value) => setDebouncedSearchQuery(value),
+    300
+  );
+
   const filteredAndSortedItems = useMemo(() => {
-    let result = items
-    if (brandFilter !== 'all') {
-      result = result.filter(item => item.brand === brandFilter)
+    let result = items;
+    
+    // Apply search filter
+    if (debouncedSearchQuery) {
+      const lowercasedQuery = debouncedSearchQuery.toLowerCase();
+      result = result.filter(item => 
+        item.name.toLowerCase().includes(lowercasedQuery) ||
+        item.type.toLowerCase().includes(lowercasedQuery) ||
+        item.brand.toLowerCase().includes(lowercasedQuery)
+      );
     }
+    
+    // Apply brand filter
+    if (brandFilter !== 'all') {
+      result = result.filter(item => item.brand === brandFilter);
+    }
+    
+    // Apply type filters
     if (typeFilters.length > 0) {
-      result = result.filter(item => typeFilters.includes(item.type))
+      result = result.filter(item => typeFilters.includes(item.type));
     }
 
     // Apply sorting
     result.sort((a, b) => {
-      const { column, direction } = sortDescriptor
-      let comparison = 0
+      const { column, direction } = sortDescriptor;
+      let comparison = 0;
 
       switch (column) {
         case 'name':
-          comparison = a.name.localeCompare(b.name)
-          break
+          comparison = a.name.localeCompare(b.name);
+          break;
         case 'acquired':
-          comparison = new Date(a.acquired).getTime() - new Date(b.acquired).getTime()
-          break
+          comparison = new Date(a.acquired).getTime() - new Date(b.acquired).getTime();
+          break;
         case 'cost':
-          comparison = a.cost - b.cost
-          break
+          comparison = a.cost - b.cost;
+          break;
         case 'value':
-          comparison = a.value - b.value
-          break
+          comparison = a.value - b.value;
+          break;
       }
 
-      return direction === 'ascending' ? comparison : -comparison
-    })
+      return direction === 'ascending' ? comparison : -comparison;
+    });
 
-    return result
-  }, [items, brandFilter, typeFilters, sortDescriptor])
+    return result;
+  }, [items, debouncedSearchQuery, brandFilter, typeFilters, sortDescriptor]);
 
   const fetchItems = async () => {
     setIsLoading(true)
@@ -565,6 +587,11 @@ export default function CatalogPage() {
             <Input
               placeholder="Search items..."
               className="pl-10 border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                debouncedSetSearch(e.target.value);
+              }}
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           </div>
