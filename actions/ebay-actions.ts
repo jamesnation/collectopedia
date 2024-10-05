@@ -7,18 +7,18 @@ import { updateItemAction } from './items-actions' // Import your database updat
 const API_URL = '/api/ebay';
 
 export async function fetchEbayPrices(toyName: string, listingType: 'listed' | 'sold') {
-  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
-    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
-    : 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
   
-  const url = new URL('/api/ebay', baseUrl);
+  const url = new URL(API_URL, baseUrl);
   url.searchParams.append('toyName', toyName);
   url.searchParams.append('listingType', listingType);
 
+  console.log('NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
   console.log('Fetching eBay prices from:', url.toString());
 
   try {
     const response = await fetch(url.toString(), { next: { revalidate: 3600 } });
+    console.log('Fetch response status:', response.status);
     if (!response.ok) {
       console.error('Fetch error:', response.status, response.statusText);
       const text = await response.text();
