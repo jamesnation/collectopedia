@@ -110,7 +110,10 @@ export async function GET(request: Request) {
   const toyName = searchParams.get('toyName');
   const listingType = searchParams.get('listingType') as 'listed' | 'sold';
 
+  console.log('Received request for:', { toyName, listingType });
+
   if (!toyName || !listingType) {
+    console.error('Missing parameters:', { toyName, listingType });
     return NextResponse.json({ error: 'Missing toyName or listingType parameter' }, { status: 400 });
   }
 
@@ -120,6 +123,6 @@ export async function GET(request: Request) {
     return NextResponse.json(prices);
   } catch (error) {
     console.error('Error fetching eBay prices:', error);
-    return NextResponse.json({ error: 'Failed to fetch eBay prices' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch eBay prices', details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }
