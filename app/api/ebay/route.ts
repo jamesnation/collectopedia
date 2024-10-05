@@ -6,6 +6,10 @@ const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 
+console.log('EBAY_APP_ID:', EBAY_APP_ID ? 'Set' : 'Not set');
+console.log('EBAY_CERT_ID:', EBAY_CERT_ID ? 'Set' : 'Not set');
+console.log('RAPIDAPI_KEY:', RAPIDAPI_KEY ? 'Set' : 'Not set');
+
 async function getEbayToken() {
   const auth = Buffer.from(`${EBAY_APP_ID}:${EBAY_CERT_ID}`).toString('base64');
   const data = qs.stringify({ grant_type: 'client_credentials', scope: 'https://api.ebay.com/oauth/api_scope' });
@@ -19,12 +23,8 @@ async function getEbayToken() {
     });
 
     return response.data.access_token;
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('Error getting eBay token:', error.message);
-    } else {
-      console.error('Error getting eBay token:', String(error));
-    }
+  } catch (error) {
+    console.error('Error getting eBay token:', error.response ? error.response.data : error.message);
     throw error;
   }
 }
@@ -115,6 +115,7 @@ export async function GET(request: Request) {
   const listingType = searchParams.get('listingType') as 'listed' | 'sold';
 
   console.log('Received request for:', { toyName, listingType });
+  console.log('Environment:', process.env.NODE_ENV);
 
   if (!toyName || !listingType) {
     console.error('Missing parameters:', { toyName, listingType });
