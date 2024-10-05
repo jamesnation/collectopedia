@@ -17,6 +17,8 @@ async function getEbayToken() {
   try {
     console.log('Requesting eBay token...');
     console.log('Auth header (first 10 chars):', auth.substring(0, 10));
+    console.log('Token request URL:', 'https://api.ebay.com/identity/v1/oauth2/token');
+    console.log('Token request data:', data);
     const response = await axios.post('https://api.ebay.com/identity/v1/oauth2/token', data, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -82,6 +84,7 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold')
         limit: 100,
         filter: 'deliveryCountry:GB,itemLocationCountry:GB'
       });
+      console.log('eBay API token (first 10 chars):', token.substring(0, 10));
       const response = await axios.get('https://api.ebay.com/buy/browse/v1/item_summary/search', {
         headers: {
           'Authorization': `Bearer ${token}`,
