@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,6 +25,8 @@ import debounce from 'lodash/debounce'
 import { Skeleton } from "@/components/ui/skeleton";
 import { brandEnum, itemTypeEnum } from "@/db/schema/items-schema";
 import { updateEbayPrices } from "@/actions/ebay-actions"
+import { Checkbox } from "@/components/ui/checkbox"
+import { SortDescriptor } from '@/types/sort'
 
 // Dynamically import components that might cause hydration issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -75,12 +77,50 @@ export default function CatalogPage() {
   const [newItemImage, setNewItemImage] = useState<string | null>(null)
   const [loadingListedItemId, setLoadingListedItemId] = useState<string | null>(null);
   const [loadingSoldItemId, setLoadingSoldItemId] = useState<string | null>(null);
+  const [brandFilter, setBrandFilter] = useState<string | 'all'>('all')
+  const [typeFilters, setTypeFilters] = useState<string[]>([])
+  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'name', direction: 'ascending' })
 
   useEffect(() => {
     if (userId) {
       fetchItems()
     }
   }, [userId])
+
+  const filteredAndSortedItems = useMemo(() => {
+    let result = items
+    if (brandFilter !== 'all') {
+      result = result.filter(item => item.brand === brandFilter)
+    }
+    if (typeFilters.length > 0) {
+      result = result.filter(item => typeFilters.includes(item.type))
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      const { column, direction } = sortDescriptor
+      let comparison = 0
+
+      switch (column) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name)
+          break
+        case 'acquired':
+          comparison = new Date(a.acquired).getTime() - new Date(b.acquired).getTime()
+          break
+        case 'cost':
+          comparison = a.cost - b.cost
+          break
+        case 'value':
+          comparison = a.value - b.value
+          break
+      }
+
+      return direction === 'ascending' ? comparison : -comparison
+    })
+
+    return result
+  }, [items, brandFilter, typeFilters, sortDescriptor])
 
   const fetchItems = async () => {
     setIsLoading(true)
@@ -288,6 +328,19 @@ export default function CatalogPage() {
 
   const handleImageUpload = (url: string) => {
     setNewItemImage(url)
+  }
+
+  const handleTypeFilterChange = (type: string) => {
+    setTypeFilters(prev => 
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    )
+  }
+
+  const handleSort = (column: string) => {
+    setSortDescriptor(prev => ({
+      column,
+      direction: prev.column === column && prev.direction === 'ascending' ? 'descending' : 'ascending'
+    }))
   }
 
   const TableRowSkeleton = () => (
@@ -534,14 +587,48 @@ export default function CatalogPage() {
                 <LayoutGrid className="h-5 w-5" />
               </Toggle>
             </div>
-            <Select>
+            <Select value={brandFilter} onValueChange={setBrandFilter}>
               <SelectTrigger className="w-[180px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
-                <SelectValue placeholder="Filter by type" />
+                <SelectValue placeholder="Filter by brand" />
               </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                {brandEnum.enumValues.map((brand) => (
+                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                ))}
+              </SelectContent>
             </Select>
-            <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100">
-              <Filter className="mr-2 h-4 w-4" /> More Filters
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100">
+                  <Filter className="mr-2 h-4 w-4" /> More Filters
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Filter Options</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-1 gap-2">
+                    {itemTypeEnum.enumValues.map((type) => (
+                      <div key={type} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={type}
+                          checked={typeFilters.includes(type)}
+                          onCheckedChange={() => handleTypeFilterChange(type)}
+                        />
+                        <label
+                          htmlFor={type}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {type}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -552,25 +639,41 @@ export default function CatalogPage() {
                 <TableRow className="bg-purple-50">
                   <TableHead className="w-24">Image</TableHead>
                   <TableHead>
-                    <Button variant="ghost" className="font-bold text-purple-700 px-0">
-                      Name <ArrowUpDown className="ml-2 h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      className="font-bold text-purple-700 px-0"
+                      onClick={() => handleSort('name')}
+                    >
+                      Name <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'name' ? 'opacity-100' : 'opacity-50'}`} />
                     </Button>
                   </TableHead>
                   <TableHead className="w-40">Type</TableHead>
                   <TableHead className="w-32">Brand</TableHead>
                   <TableHead className="w-32">
-                    <Button variant="ghost" className="font-bold text-purple-700 px-0">
-                      Acquired <ArrowUpDown className="ml-2 h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      className="font-bold text-purple-700 px-0"
+                      onClick={() => handleSort('acquired')}
+                    >
+                      Acquired <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'acquired' ? 'opacity-100' : 'opacity-50'}`} />
                     </Button>
                   </TableHead>
                   <TableHead className="w-24 text-right">
-                    <Button variant="ghost" className="font-bold text-purple-700 px-0">
-                      Cost <ArrowUpDown className="ml-2 h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      className="font-bold text-purple-700 px-0"
+                      onClick={() => handleSort('cost')}
+                    >
+                      Cost <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'cost' ? 'opacity-100' : 'opacity-50'}`} />
                     </Button>
                   </TableHead>
                   <TableHead className="w-24 text-right">
-                    <Button variant="ghost" className="font-bold text-purple-700 px-0">
-                      Value <ArrowUpDown className="ml-2 h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      className="font-bold text-purple-700 px-0"
+                      onClick={() => handleSort('value')}
+                    >
+                      Value <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'value' ? 'opacity-100' : 'opacity-50'}`} />
                     </Button>
                   </TableHead>
                   <TableHead className="w-32 text-right">eBay Sold</TableHead>
@@ -586,7 +689,7 @@ export default function CatalogPage() {
               <TableBody>
                 {isLoading
                   ? Array(5).fill(0).map((_, index) => <TableRowSkeleton key={index} />)
-                  : items.map((item) => (
+                  : filteredAndSortedItems.map((item) => (
                       <TableRow key={item.id} className="bg-white hover:bg-purple-50 transition-colors">
                         <TableCell className="p-2">
                           <Link href={`/item/${item.id}`}>
@@ -856,7 +959,7 @@ export default function CatalogPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {isLoading
               ? Array(8).fill(0).map((_, index) => <GridItemSkeleton key={index} />)
-              : items.map((item) => (
+              : filteredAndSortedItems.map((item) => (
                   <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                     <Link href={`/item/${item.id}`}>
                       <CardHeader className="p-0">
@@ -1088,7 +1191,7 @@ export default function CatalogPage() {
         )}
 
         <div className="mt-6 flex justify-between items-center">
-          <div className="text-sm text-gray-500">Showing {items.length} of {items.length} items</div>
+          <div className="text-sm text-gray-500">Showing {filteredAndSortedItems.length} of {items.length} items</div>
           <div className="flex space-x-2">
             <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100" disabled>Previous</Button>
             <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100" disabled>Next</Button>
