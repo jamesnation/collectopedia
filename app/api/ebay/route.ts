@@ -23,8 +23,12 @@ async function getEbayToken() {
     });
 
     return response.data.access_token;
-  } catch (error) {
-    console.error('Error getting eBay token:', error.response ? error.response.data : error.message);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error getting eBay token:', error.message);
+    } else {
+      console.error('Error getting eBay token:', String(error));
+    }
     throw error;
   }
 }
