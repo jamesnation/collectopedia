@@ -19,8 +19,12 @@ async function getEbayToken() {
     });
 
     return response.data.access_token;
-  } catch (error) {
-    console.error('Error getting eBay token:', error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error getting eBay token:', error.message);
+    } else {
+      console.error('Error getting eBay token:', String(error));
+    }
     throw error;
   }
 }
@@ -123,6 +127,10 @@ export async function GET(request: Request) {
     return NextResponse.json(prices);
   } catch (error) {
     console.error('Error fetching eBay prices:', error);
-    return NextResponse.json({ error: 'Failed to fetch eBay prices', details: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to fetch eBay prices', 
+      details: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    }, { status: 500 });
   }
 }
