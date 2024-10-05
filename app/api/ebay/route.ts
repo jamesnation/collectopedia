@@ -16,6 +16,7 @@ async function getEbayToken() {
 
   try {
     console.log('Requesting eBay token...');
+    console.log('Auth header (first 10 chars):', auth.substring(0, 10));
     const response = await axios.post('https://api.ebay.com/identity/v1/oauth2/token', data, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
