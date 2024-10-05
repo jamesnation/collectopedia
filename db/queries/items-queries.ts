@@ -14,8 +14,9 @@ export const insertItem = (item: typeof itemsTable.$inferInsert) => {
   return db.insert(itemsTable).values(item);
 };
 
-export const updateItem = (id: string, item: Partial<typeof itemsTable.$inferInsert>) => {
-  return db.update(itemsTable).set(item).where(eq(itemsTable.id, id));
+export const updateItem = async (id: string, item: Partial<typeof itemsTable.$inferInsert>) => {
+  await db.update(itemsTable).set(item).where(eq(itemsTable.id, id));
+  return getItemById(id);
 };
 
 export const deleteItem = (id: string) => {

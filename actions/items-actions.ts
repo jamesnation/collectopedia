@@ -35,18 +35,14 @@ export const createItemAction = async (item: typeof itemsTable.$inferInsert) => 
   }
 };
 
-export const updateItemAction = async (id: string, item: Partial<typeof itemsTable.$inferInsert>) => {
+export const updateItemAction = async (id: string, data: Partial<typeof itemsTable.$inferSelect>) => {
   try {
-    const updatedItem = {
-      ...item,
-      updatedAt: new Date(), // Automatically set the updatedAt field to the current date and time
-    };
-    await updateItem(id, updatedItem);
-    revalidatePath("/");
-    return { isSuccess: true };
+    const updatedItem = await updateItem(id, data);
+    revalidatePath("/catalog");
+    return { isSuccess: true, data: updatedItem };
   } catch (error) {
-    console.error("Failed to update item:", error);
-    return { isSuccess: false, error: "Failed to update item" };
+    console.error('Error updating item:', error);
+    return { isSuccess: false, error: 'Failed to update item' };
   }
 };
 

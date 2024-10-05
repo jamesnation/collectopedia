@@ -24,6 +24,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import debounce from 'lodash/debounce'
 import { Skeleton } from "@/components/ui/skeleton";
 import { brandEnum, itemTypeEnum } from "@/db/schema/items-schema";
+import { updateEbayPrices } from "@/actions/ebay-actions"
 
 // Dynamically import components that might cause hydration issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -72,6 +73,8 @@ export default function CatalogPage() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [newItemImage, setNewItemImage] = useState<string | null>(null)
+  const [loadingListedItemId, setLoadingListedItemId] = useState<string | null>(null);
+  const [loadingSoldItemId, setLoadingSoldItemId] = useState<string | null>(null);
 
   useEffect(() => {
     if (userId) {
@@ -197,10 +200,51 @@ export default function CatalogPage() {
     }
   };
 
-  const handleEbayRefresh = async (id: string, type: 'sold' | 'listed') => {
-    // Implement eBay API call here
-    console.log(`Refresh eBay ${type} data for item with id: ${id}`)
-  }
+  const handleEbayRefresh = async (id: string, name: string, type: 'sold' | 'listed') => {
+    if (type === 'listed') {
+      setLoadingListedItemId(id);
+    } else {
+      setLoadingSoldItemId(id);
+    }
+
+    try {
+      const result = await updateEbayPrices(id, name, type);
+      if (result.success) {
+        console.log('eBay update result:', result);
+
+        setItems(prevItems => prevItems.map(item => {
+          if (item.id === id) {
+            return {
+              ...item,
+              ebayListed: type === 'listed' ? result.prices.median : item.ebayListed,
+              ebaySold: type === 'sold' ? result.prices.median : item.ebaySold
+            };
+          }
+          return item;
+        }));
+
+        toast({
+          title: "eBay prices updated",
+          description: `Successfully updated ${type} prices for ${name}.`,
+        });
+      } else {
+        throw new Error(result.error || 'Failed to update eBay prices');
+      }
+    } catch (error) {
+      console.error(`Error refreshing eBay ${type} data:`, error);
+      toast({
+        title: "Error",
+        description: `Failed to update ${type} prices. Please try again.`,
+        variant: "destructive",
+      });
+    } finally {
+      if (type === 'listed') {
+        setLoadingListedItemId(null);
+      } else {
+        setLoadingSoldItemId(null);
+      }
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -754,10 +798,11 @@ export default function CatalogPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEbayRefresh(item.id, 'sold')}
+                            onClick={() => handleEbayRefresh(item.id, item.name, 'sold')}
                             className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
+                            disabled={loadingSoldItemId === item.id}
                           >
-                            <RefreshCw className="h-4 w-4" />
+                            {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                           </Button>
                         </TableCell>
                         <TableCell className="text-right">
@@ -765,10 +810,11 @@ export default function CatalogPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEbayRefresh(item.id, 'listed')}
+                            onClick={() => handleEbayRefresh(item.id, item.name, 'listed')}
                             className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
+                            disabled={loadingListedItemId === item.id}
                           >
-                            <RefreshCw className="h-4 w-4" />
+                            {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                           </Button>
                         </TableCell>
                         <TableCell>
@@ -988,10 +1034,11 @@ export default function CatalogPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEbayRefresh(item.id, 'sold')}
+                          onClick={() => handleEbayRefresh(item.id, item.name, 'sold')}
                           className="text-purple-500 hover:text-purple-700 hover:bg-purple-100 p-1"
+                          disabled={loadingSoldItemId === item.id}
                         >
-                          <RefreshCw className="h-4 w-4" />
+                          {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                         </Button>
                       </div>
                       <div className="flex justify-between items-center text-sm">
@@ -999,10 +1046,11 @@ export default function CatalogPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEbayRefresh(item.id, 'listed')}
+                          onClick={() => handleEbayRefresh(item.id, item.name, 'listed')}
                           className="text-purple-500 hover:text-purple-700 hover:bg-purple-100 p-1"
+                          disabled={loadingListedItemId === item.id}
                         >
-                          <RefreshCw className="h-4 w-4" />
+                          {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                         </Button>
                       </div>
                       <div className="text-sm text-gray-500 mt-2">
