@@ -15,19 +15,21 @@ async function getEbayToken() {
   const data = qs.stringify({ grant_type: 'client_credentials', scope: 'https://api.ebay.com/oauth/api_scope' });
 
   try {
+    console.log('Requesting eBay token...');
     const response = await axios.post('https://api.ebay.com/identity/v1/oauth2/token', data, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${auth}`
       }
     });
-
+    console.log('eBay token response:', response.status, response.statusText);
     return response.data.access_token;
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('Error getting eBay token:', error.message);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Error getting eBay token:', error.response?.status, error.response?.statusText);
+      console.error('Error response data:', error.response?.data);
     } else {
-      console.error('Error getting eBay token:', String(error));
+      console.error('Error getting eBay token:', error);
     }
     throw error;
   }
@@ -72,6 +74,13 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold')
     } else {
       // Use eBay API for active listings
       const token = await getEbayToken();
+      console.log('eBay API request URL:', 'https://api.ebay.com/buy/browse/v1/item_summary/search');
+      console.log('eBay API request params:', {
+        q: searchTerm,
+        sort: 'price',
+        limit: 100,
+        filter: 'deliveryCountry:GB,itemLocationCountry:GB'
+      });
       const response = await axios.get('https://api.ebay.com/buy/browse/v1/item_summary/search', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -84,6 +93,7 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold')
           filter: 'deliveryCountry:GB,itemLocationCountry:GB'
         }
       });
+      console.log('eBay API response:', response.status, response.statusText);
 
       const items = response.data.itemSummaries;
       if (!items || items.length === 0) {
@@ -108,7 +118,12 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold')
       };
     }
   } catch (error) {
-    console.error('Error in getEbayPrices:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Error in getEbayPrices:', error.response?.status, error.response?.statusText);
+      console.error('Error response data:', error.response?.data);
+    } else {
+      console.error('Error in getEbayPrices:', error);
+    }
     return { lowest: null, median: null, highest: null, listingType, message: 'Error fetching eBay prices' };
   }
 }
