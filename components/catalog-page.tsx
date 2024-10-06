@@ -665,17 +665,15 @@ export default function CatalogPage() {
               <TableHeader>
                 <TableRow className="bg-purple-50">
                   <TableHead className="w-24">Image</TableHead>
-                  <TableHead>
+                  <TableHead className="w-1/4">
                     <Button 
                       variant="ghost" 
                       className="font-bold text-purple-700 px-0"
                       onClick={() => handleSort('name')}
                     >
-                      Name <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'name' ? 'opacity-100' : 'opacity-50'}`} />
+                      Item Details <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'name' ? 'opacity-100' : 'opacity-50'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-40">Type</TableHead>
-                  <TableHead className="w-32">Brand</TableHead>
                   <TableHead className="w-32">
                     <Button 
                       variant="ghost" 
@@ -729,107 +727,111 @@ export default function CatalogPage() {
                             />
                           </Link>
                         </TableCell>
-                        <TableCell className="font-medium">
-                          <Popover open={editingItemId === item.id && editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
-                            <PopoverTrigger asChild>
-                              <button 
-                                className="text-sm font-medium hover:text-purple-700 transition-colors"
-                                onClick={() => handleEditStart(item, 'name')}
-                              >
-                                {item.name}
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
-                              <div className="space-y-4">
-                                <h4 className="font-semibold text-sm text-purple-900">Edit Item Name</h4>
-                                <div className="space-y-2">
-                                  <Label htmlFor={`name-${item.id}`} className="text-sm font-medium text-purple-700">Name</Label>
-                                  <Input
-                                    id={`name-${item.id}`}
-                                    value={editingItem?.name || ''}
-                                    onChange={handleNameChange}
-                                    className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
-                                  />
-                                </div>
-                                <div className="flex justify-end space-x-2">
-                                  <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                                  <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </TableCell>
                         <TableCell>
-                          <Popover open={editingItemId === item.id && editingField === 'type'} onOpenChange={(open) => !open && handleEditCancel()}>
-                            <PopoverTrigger asChild>
-                              <button 
-                                className="text-sm hover:text-purple-700 transition-colors whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px]"
-                                onClick={() => handleEditStart(item, 'type')}
-                              >
-                                {item.type}
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
-                              <div className="space-y-4">
-                                <h4 className="font-semibold text-sm text-purple-900">Edit Item Type</h4>
-                                <div className="space-y-2">
-                                  <Label htmlFor={`type-${item.id}`} className="text-sm font-medium text-purple-700">Type</Label>
-                                  <Select value={editingItem?.type || ''} onValueChange={handleTypeChange}>
-                                    <SelectTrigger id={`type-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
-                                      <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Vintage - MISB">Vintage - MISB</SelectItem>
-                                      <SelectItem value="Vintage - opened">Vintage - opened</SelectItem>
-                                      <SelectItem value="New - MISB">New - MISB</SelectItem>
-                                      <SelectItem value="New - opened">New - opened</SelectItem>
-                                      <SelectItem value="New - KO">New - KO</SelectItem>
-                                      <SelectItem value="Cel">Cel</SelectItem>
-                                      <SelectItem value="Other">Other</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="flex justify-end space-x-2">
-                                  <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                                  <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </TableCell>
-                        <TableCell>
-                          <Popover open={editingItemId === item.id && editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
-                            <PopoverTrigger asChild>
-                              <button 
-                                className="text-sm hover:text-purple-700 transition-colors"
-                                onClick={() => handleEditStart(item, 'brand')}
-                              >
-                                {item.brand}
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
-                              <div className="space-y-4">
-                                <h4 className="font-semibold text-sm text-purple-900">Edit Item Brand</h4>
-                                <div className="space-y-2">
-                                  <Label htmlFor={`brand-${item.id}`} className="text-sm font-medium text-purple-700">Brand</Label>
-                                  <Select value={editingItem?.brand || ''} onValueChange={handleBrandChange}>
-                                    <SelectTrigger id={`brand-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
-                                      <SelectValue placeholder="Select brand" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {brandEnum.enumValues.map((brand) => (
-                                        <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="flex justify-end space-x-2">
-                                  <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                                  <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                          <div className="space-y-1">
+                            <h3 className="font-medium text-purple-700">
+                              <Popover open={editingItemId === item.id && editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
+                                <PopoverTrigger asChild>
+                                  <button 
+                                    className="text-sm font-medium hover:text-purple-700 transition-colors"
+                                    onClick={() => handleEditStart(item, 'name')}
+                                  >
+                                    {item.name}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                                  <div className="space-y-4">
+                                    <h4 className="font-semibold text-sm text-purple-900">Edit Item Name</h4>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`name-${item.id}`} className="text-sm font-medium text-purple-700">Name</Label>
+                                      <Input
+                                        id={`name-${item.id}`}
+                                        value={editingItem?.name || ''}
+                                        onChange={handleNameChange}
+                                        className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                                      />
+                                    </div>
+                                    <div className="flex justify-end space-x-2">
+                                      <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                                      <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              <Popover open={editingItemId === item.id && editingField === 'type'} onOpenChange={(open) => !open && handleEditCancel()}>
+                                <PopoverTrigger asChild>
+                                  <button 
+                                    className="text-sm hover:text-purple-700 transition-colors"
+                                    onClick={() => handleEditStart(item, 'type')}
+                                  >
+                                    {item.type}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                                  <div className="space-y-4">
+                                    <h4 className="font-semibold text-sm text-purple-900">Edit Item Type</h4>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`type-${item.id}`} className="text-sm font-medium text-purple-700">Type</Label>
+                                      <Select value={editingItem?.type || ''} onValueChange={handleTypeChange}>
+                                        <SelectTrigger id={`type-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                                          <SelectValue placeholder="Select type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Vintage - MISB">Vintage - MISB</SelectItem>
+                                          <SelectItem value="Vintage - opened">Vintage - opened</SelectItem>
+                                          <SelectItem value="New - MISB">New - MISB</SelectItem>
+                                          <SelectItem value="New - opened">New - opened</SelectItem>
+                                          <SelectItem value="New - KO">New - KO</SelectItem>
+                                          <SelectItem value="Cel">Cel</SelectItem>
+                                          <SelectItem value="Other">Other</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="flex justify-end space-x-2">
+                                      <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                                      <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              <Popover open={editingItemId === item.id && editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
+                                <PopoverTrigger asChild>
+                                  <button 
+                                    className="text-sm hover:text-purple-700 transition-colors"
+                                    onClick={() => handleEditStart(item, 'brand')}
+                                  >
+                                    {item.brand}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                                  <div className="space-y-4">
+                                    <h4 className="font-semibold text-sm text-purple-900">Edit Item Brand</h4>
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`brand-${item.id}`} className="text-sm font-medium text-purple-700">Brand</Label>
+                                      <Select value={editingItem?.brand || ''} onValueChange={handleBrandChange}>
+                                        <SelectTrigger id={`brand-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                                          <SelectValue placeholder="Select brand" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {brandEnum.enumValues.map((brand) => (
+                                            <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="flex justify-end space-x-2">
+                                      <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                                      <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </p>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Popover open={editingItemId === item.id && editingField === 'acquired'} onOpenChange={(open) => !open && handleEditCancel()}>
@@ -924,28 +926,32 @@ export default function CatalogPage() {
                           </Popover>
                         </TableCell>
                         <TableCell className="text-right">
-                          ${item.ebaySold?.toFixed(2) || 'N/A'}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEbayRefresh(item.id, item.name, 'sold')}
-                            className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
-                            disabled={loadingSoldItemId === item.id}
-                          >
-                            {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                          </Button>
+                          <div className="flex items-center justify-end space-x-2">
+                            <span className="whitespace-nowrap">${item.ebaySold?.toFixed(2) || 'N/A'}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEbayRefresh(item.id, item.name, 'sold')}
+                              className="h-8 w-8 p-0"
+                              disabled={loadingSoldItemId === item.id}
+                            >
+                              {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                            </Button>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          ${item.ebayListed?.toFixed(2) || 'N/A'}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEbayRefresh(item.id, item.name, 'listed')}
-                            className="ml-2 text-purple-500 hover:text-purple-700 hover:bg-purple-100"
-                            disabled={loadingListedItemId === item.id}
-                          >
-                            {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                          </Button>
+                          <div className="flex items-center justify-end space-x-2">
+                            <span className="whitespace-nowrap">${item.ebayListed?.toFixed(2) || 'N/A'}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEbayRefresh(item.id, item.name, 'listed')}
+                              className="h-8 w-8 p-0"
+                              disabled={loadingListedItemId === item.id}
+                            >
+                              {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                            </Button>
+                          </div>
                         </TableCell>
                         <TableCell>
                           {new Date(item.updatedAt).toLocaleDateString()}
@@ -1159,29 +1165,31 @@ export default function CatalogPage() {
                           </PopoverContent>
                         </Popover>
                       </div>
-                      <div className="flex justify-between items-center text-sm mb-1">
-                        <span>eBay Sold: ${item.ebaySold?.toFixed(2) || 'N/A'}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEbayRefresh(item.id, item.name, 'sold')}
-                          className="text-purple-500 hover:text-purple-700 hover:bg-purple-100 p-1"
-                          disabled={loadingSoldItemId === item.id}
-                        >
-                          {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span>eBay Listed: ${item.ebayListed?.toFixed(2) || 'N/A'}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEbayRefresh(item.id, item.name, 'listed')}
-                          className="text-purple-500 hover:text-purple-700 hover:bg-purple-100 p-1"
-                          disabled={loadingListedItemId === item.id}
-                        >
-                          {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                        </Button>
+                      <div className="flex flex-col space-y-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="whitespace-nowrap">eBay Sold: ${item.ebaySold?.toFixed(2) || 'N/A'}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEbayRefresh(item.id, item.name, 'sold')}
+                            className="h-8 w-8 p-0"
+                            disabled={loadingSoldItemId === item.id}
+                          >
+                            {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="whitespace-nowrap">eBay Listed: ${item.ebayListed?.toFixed(2) || 'N/A'}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEbayRefresh(item.id, item.name, 'listed')}
+                            className="h-8 w-8 p-0"
+                            disabled={loadingListedItemId === item.id}
+                          >
+                            {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                          </Button>
+                        </div>
                       </div>
                       <div className="text-sm text-gray-500 mt-2">
                         Last Updated: {new Date(item.updatedAt).toLocaleDateString()}
