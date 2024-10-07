@@ -8,7 +8,7 @@ export default function MinimalistHomepage() {
   return (
     <div className="min-h-screen bg-[#FDF7F5] text-gray-900 flex flex-col">
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col lg:flex-row items-center justify-between">
-        <div className="lg:w-1/2 lg:pr-12 mb-12 lg:mb-0">
+        <div className="w-full lg:w-1/2 lg:pr-12 mb-12 lg:mb-0">
           <h1 className="text-4xl sm:text-5xl font-bold text-purple-900 mb-6">
             Organize your collection with ease
           </h1>
@@ -22,19 +22,21 @@ export default function MinimalistHomepage() {
             </Button>
           </div>
         </div>
-        <Card className="lg:w-1/2 shadow-2xl">
-          <CardContent className="p-6">
-            <div className="relative w-full aspect-video">
-              <Image
-                src="/images/placeholder-dashboard.png" // Use a placeholder image that exists in your public folder
-                alt="Collectopedia dashboard preview"
-                fill
-                style={{ objectFit: 'cover' }}
-                className="rounded-lg"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="w-full lg:w-1/2 mt-12 lg:mt-0">
+          <Card className="shadow-2xl">
+            <CardContent className="p-6">
+              <div className="relative w-full aspect-video">
+                <Image
+                  src="/images/placeholder-dashboard.png"
+                  alt="Collectopedia dashboard preview"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  className="rounded-lg"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </main>
 
       <section className="bg-white py-20">
