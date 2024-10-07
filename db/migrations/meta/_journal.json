@@ -43,6 +43,13 @@
       "when": 1728312775758,
       "tag": "0005_lively_doorman",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1728313346423,
+      "tag": "0006_harsh_hairball",
+      "breakpoints": true
     }
   ]
 }

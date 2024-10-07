@@ -66,6 +66,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     const result = await getItemByIdAction(itemId)
     if (result.isSuccess && result.data) {
       setItem(result.data)
+      setIsSold(result.data.isSold) // Set initial isSold state
     }
     setIsLoading(false)
   }
@@ -126,8 +127,30 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     console.log(`Refresh eBay ${type} data for item with id: ${item?.id}`)
   }
 
-  const handleSoldToggle = (checked: boolean) => {
+  const handleSoldToggle = async (checked: boolean) => {
     setIsSold(checked)
+    if (item) {
+      try {
+        const updatedItem = { ...item, isSold: checked }
+        const result = await updateItemAction(item.id, updatedItem)
+        if (result.isSuccess) {
+          setItem(updatedItem)
+          toast({
+            title: checked ? "Item marked as sold" : "Item unmarked as sold",
+            description: checked ? "The item has been marked as sold." : "The item has been unmarked as sold.",
+          })
+        } else {
+          throw new Error('Failed to update item sold status')
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update item sold status. Please try again.",
+          variant: "destructive",
+        })
+        setIsSold(!checked) // Revert the toggle if update fails
+      }
+    }
     if (!checked) {
       setSoldPrice("")
       setSoldDate("")
@@ -155,10 +178,18 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
         if (result.isSuccess && result.data) {
           setSoldItem(result.data)
-          toast({
-            title: "Sold details saved",
-            description: "The item has been marked as sold and details saved.",
-          })
+          // Update the item to mark it as sold
+          const updatedItem = { ...item, isSold: true }
+          const itemUpdateResult = await updateItemAction(item.id, updatedItem)
+          if (itemUpdateResult.isSuccess) {
+            setItem(updatedItem)
+            toast({
+              title: "Sold details saved",
+              description: "The item has been marked as sold and details saved.",
+            })
+          } else {
+            throw new Error('Failed to update item sold status')
+          }
         } else {
           throw new Error(result.error || 'Action failed')
         }

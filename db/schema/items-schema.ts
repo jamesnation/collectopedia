@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, pgEnum, boolean } from "drizzle-orm/pg-core";
 
 export const itemTypeEnum = pgEnum("item_type", [
   "Vintage - MISB",
@@ -38,7 +38,8 @@ export const itemsTable = pgTable("items", {
   image: text("image"),
   notes: text("notes"), // Add this line
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull()
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  isSold: boolean("is_sold").default(false).notNull()
 });
 
 export type InsertItem = typeof itemsTable.$inferInsert;

@@ -99,7 +99,7 @@ export default function CatalogPage() {
   );
 
   const filteredAndSortedItems = useMemo(() => {
-    let result = items;
+    let result = items.filter(item => !item.isSold); // Filter out sold items
     
     // Apply search filter
     if (debouncedSearchQuery) {
@@ -163,10 +163,10 @@ export default function CatalogPage() {
     setIsLoading(false)
   }
 
-  const totalCollectionValue = items.reduce((sum, item) => sum + item.value, 0)
-  const totalCollectionCost = items.reduce((sum, item) => sum + item.cost, 0)  // New calculation for total cost
-  const totalEbayListedValue = items.reduce((sum, item) => sum + (item.ebayListed || 0), 0)
-  const totalEbaySoldValue = items.reduce((sum, item) => sum + (item.ebaySold || 0), 0)
+  const totalCollectionValue = items.reduce((sum, item) => sum + (item.isSold ? 0 : item.value), 0);
+  const totalCollectionCost = items.reduce((sum, item) => sum + (item.isSold ? 0 : item.cost), 0);
+  const totalEbayListedValue = items.reduce((sum, item) => sum + (item.isSold ? 0 : (item.ebayListed || 0)), 0);
+  const totalEbaySoldValue = items.reduce((sum, item) => sum + (item.isSold ? 0 : (item.ebaySold || 0)), 0);
 
   const handleDelete = useCallback(async (id: string) => {
     setIsLoading(true)
