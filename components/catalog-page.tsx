@@ -572,7 +572,7 @@ export default function CatalogPage() {
           </CollapsibleContent>
         </Collapsible>
 
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div className="relative w-full md:w-64">
             <Input
               placeholder="Search items..."
@@ -585,7 +585,7 @@ export default function CatalogPage() {
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
             <div className="flex items-center space-x-2 bg-white rounded-md p-1">
               <Toggle
                 pressed={view === 'list'}
@@ -605,7 +605,7 @@ export default function CatalogPage() {
               </Toggle>
             </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+              <SelectTrigger className="w-full md:w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
@@ -616,7 +616,7 @@ export default function CatalogPage() {
               </SelectContent>
             </Select>
             <Select value={brandFilter} onValueChange={setBrandFilter}>
-              <SelectTrigger className="w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+              <SelectTrigger className="w-full md:w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
                 <SelectValue placeholder="Filter by brand" />
               </SelectTrigger>
               <SelectContent>
@@ -627,7 +627,7 @@ export default function CatalogPage() {
               </SelectContent>
             </Select>
             <Select value={yearFilter} onValueChange={setYearFilter}>
-              <SelectTrigger className="w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+              <SelectTrigger className="w-full md:w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
                 <SelectValue placeholder="Filter by year" />
               </SelectTrigger>
               <SelectContent>
@@ -734,8 +734,7 @@ export default function CatalogPage() {
                                         onChange={handleNameChange}
                                         className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
                                       />
-                                    </div>
-                                    <div className="flex justify-end space-x-2">
+                                    </div>                                    <div className="flex justify-end space-x-2">
                                       <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
                                       <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
                                     </div>
