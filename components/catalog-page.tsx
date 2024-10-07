@@ -78,8 +78,9 @@ export default function CatalogPage() {
   const [newItemImage, setNewItemImage] = useState<string | null>(null)
   const [loadingListedItemId, setLoadingListedItemId] = useState<string | null>(null);
   const [loadingSoldItemId, setLoadingSoldItemId] = useState<string | null>(null);
-  const [brandFilter, setBrandFilter] = useState<string | 'all'>('all')
-  const [typeFilters, setTypeFilters] = useState<string[]>([])
+  const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [brandFilter, setBrandFilter] = useState<string>('all')
+  const [yearFilter, setYearFilter] = useState<string>('all')
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'name', direction: 'ascending' })
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -108,14 +109,19 @@ export default function CatalogPage() {
       );
     }
     
+    // Apply type filter
+    if (typeFilter !== 'all') {
+      result = result.filter(item => item.type === typeFilter);
+    }
+    
     // Apply brand filter
     if (brandFilter !== 'all') {
       result = result.filter(item => item.brand === brandFilter);
     }
     
-    // Apply type filters
-    if (typeFilters.length > 0) {
-      result = result.filter(item => typeFilters.includes(item.type));
+    // Apply year filter
+    if (yearFilter !== 'all') {
+      result = result.filter(item => new Date(item.acquired).getFullYear().toString() === yearFilter);
     }
 
     // Apply sorting
@@ -142,7 +148,7 @@ export default function CatalogPage() {
     });
 
     return result;
-  }, [items, debouncedSearchQuery, brandFilter, typeFilters, sortDescriptor]);
+  }, [items, debouncedSearchQuery, typeFilter, brandFilter, yearFilter, sortDescriptor]);
 
   const fetchItems = async () => {
     setIsLoading(true)
@@ -350,12 +356,6 @@ export default function CatalogPage() {
 
   const handleImageUpload = (url: string) => {
     setNewItemImage(url)
-  }
-
-  const handleTypeFilterChange = (type: string) => {
-    setTypeFilters(prev => 
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-    )
   }
 
   const handleSort = (column: string) => {
@@ -614,8 +614,19 @@ export default function CatalogPage() {
                 <LayoutGrid className="h-5 w-5" />
               </Toggle>
             </div>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {itemTypeEnum.enumValues.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={brandFilter} onValueChange={setBrandFilter}>
-              <SelectTrigger className="w-[180px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+              <SelectTrigger className="w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
                 <SelectValue placeholder="Filter by brand" />
               </SelectTrigger>
               <SelectContent>
@@ -625,37 +636,20 @@ export default function CatalogPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100">
-                  <Filter className="mr-2 h-4 w-4" /> More Filters
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Filter Options</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-1 gap-2">
-                    {itemTypeEnum.enumValues.map((type) => (
-                      <div key={type} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={type}
-                          checked={typeFilters.includes(type)}
-                          onCheckedChange={() => handleTypeFilterChange(type)}
-                        />
-                        <label
-                          htmlFor={type}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          {type}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Select value={yearFilter} onValueChange={setYearFilter}>
+              <SelectTrigger className="w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                <SelectValue placeholder="Filter by year" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {Array.from(new Set(items.map(item => new Date(item.acquired).getFullYear())))
+                  .sort((a, b) => b - a)
+                  .map(year => (
+                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  ))
+                }
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
