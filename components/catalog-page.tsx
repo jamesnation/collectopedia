@@ -28,6 +28,8 @@ import { updateEbayPrices } from "@/actions/ebay-actions"
 import { Checkbox } from "@/components/ui/checkbox"
 import { SortDescriptor } from '@/types/sort'
 import { useDebouncedCallback } from 'use-debounce';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Textarea } from "@/components/ui/textarea"
 
 // Dynamically import components that might cause hydration issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -409,20 +411,17 @@ export default function CatalogPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-serif text-purple-900">Your Collection Catalog</h1>
-          <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
-            <DialogTrigger asChild>
+          <Sheet open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
+            <SheetTrigger asChild>
               <Button className="bg-purple-700 text-white hover:bg-purple-600">
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
               </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] bg-[#FDF7F5] border-purple-200">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-serif text-purple-900">Add New Item</DialogTitle>
-                <DialogDescription>
-                  Fill in the details of your new collection item.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleAddItem} className="space-y-6">
+            </SheetTrigger>
+            <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>Add New Item</SheetTitle>
+              </SheetHeader>
+              <form onSubmit={handleAddItem} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium text-purple-700">Name</Label>
                   <Input
@@ -501,34 +500,25 @@ export default function CatalogPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="notes" className="text-sm font-medium text-purple-700">Notes</Label>
-                  <textarea
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
                     id="notes"
                     name="notes"
                     value={newItem.notes}
                     onChange={handleInputChange}
-                    className="w-full p-2 border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    rows={4}
+                    className="min-h-[100px]"
                   />
                 </div>
-                <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
-                <Button 
-                  type="submit" 
-                  className="w-full bg-purple-700 text-white hover:bg-purple-600"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Adding...
-                    </>
-                  ) : (
-                    'Add Item'
-                  )}
-                </Button>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="image">Image</Label>
+                  <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
+                </div>
+                
+                <Button type="submit" className="w-full">Add Item</Button>
               </form>
-            </DialogContent>
-          </Dialog>
+            </SheetContent>
+          </Sheet>
         </div>
 
         <Card className="bg-white shadow-xl mb-8">
