@@ -742,11 +742,11 @@ export default function CatalogPage() {
                                 </PopoverContent>
                               </Popover>
                             </h3>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 text-left">
                               <Popover open={editingItemId === item.id && editingField === 'type'} onOpenChange={(open) => !open && handleEditCancel()}>
                                 <PopoverTrigger asChild>
                                   <button 
-                                    className="text-sm hover:text-purple-700 transition-colors"
+                                    className="text-sm hover:text-purple-700 transition-colors text-left"
                                     onClick={() => handleEditStart(item, 'type')}
                                   >
                                     {item.type}
@@ -780,11 +780,11 @@ export default function CatalogPage() {
                                 </PopoverContent>
                               </Popover>
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-500 text-left">
                               <Popover open={editingItemId === item.id && editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
                                 <PopoverTrigger asChild>
                                   <button 
-                                    className="text-sm hover:text-purple-700 transition-colors"
+                                    className="text-sm hover:text-purple-700 transition-colors text-left"
                                     onClick={() => handleEditStart(item, 'brand')}
                                   >
                                     {item.brand}
@@ -1021,7 +1021,7 @@ export default function CatalogPage() {
                       <Popover open={editingItemId === item.id && editingField === 'type'} onOpenChange={(open) => !open && handleEditCancel()}>
                         <PopoverTrigger asChild>
                           <button 
-                            className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors"
+                            className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors text-left w-full"
                             onClick={() => handleEditStart(item, 'type')}
                           >
                             Type: {item.type}
@@ -1058,7 +1058,7 @@ export default function CatalogPage() {
                       <Popover open={editingItemId === item.id && editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
                         <PopoverTrigger asChild>
                           <button 
-                            className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors"
+                            className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors text-left w-full"
                             onClick={() => handleEditStart(item, 'brand')}
                           >
                             Brand: {item.brand}
