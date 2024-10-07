@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
+import { getRelatedItemsAction } from "@/actions/items-actions"
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
@@ -30,13 +31,6 @@ const valueData = [
   { date: '2023-04', value: 4800 },
   { date: '2023-05', value: 4900 },
   { date: '2023-06', value: 5000 },
-]
-
-// Mock data for related items (replace with real data later)
-const relatedItems = [
-  { id: 2, name: "Barbie Dreamhouse (1962)", image: placeholderImage, value: 3000 },
-  { id: 3, name: "Ken Doll - First Edition (1961)", image: placeholderImage, value: 2500 },
-  { id: 4, name: "Barbie Bubble Cut (1961)", image: placeholderImage, value: 1800 },
 ]
 
 interface ItemDetailsPageProps {
@@ -53,6 +47,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [isSold, setIsSold] = useState(false)
   const [soldPrice, setSoldPrice] = useState("")
   const [soldDate, setSoldDate] = useState("")
+  const [relatedItems, setRelatedItems] = useState<SelectItemType[]>([])
 
   useEffect(() => {
     if (id) {
@@ -60,6 +55,16 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
       fetchSoldItem(id)
     }
   }, [id])
+
+  useEffect(() => {
+    if (item) {
+      fetchRelatedItems(item.brand, item.id)
+    }
+  }, [item])
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   const fetchItem = async (itemId: string) => {
     setIsLoading(true)
@@ -78,6 +83,13 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
       setIsSold(true)
       setSoldPrice(result.data.soldPrice.toString())
       setSoldDate(new Date(result.data.soldDate).toISOString().split('T')[0])
+    }
+  }
+
+  const fetchRelatedItems = async (brand: string, itemId: string) => {
+    const result = await getRelatedItemsAction(brand, itemId)
+    if (result.isSuccess && result.data) {
+      setRelatedItems(result.data)
     }
   }
 
@@ -497,7 +509,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               <Card key={relatedItem.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                 <CardHeader className="p-0">
                   <Image
-                    src={relatedItem.image}
+                    src={relatedItem.image || placeholderImage}
                     alt={relatedItem.name}
                     width={200}
                     height={200}
@@ -510,9 +522,11 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   <p className="font-semibold text-purple-700">Value: ${relatedItem.value.toFixed(2)}</p>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="ghost" className="w-full text-purple-700 hover:bg-purple-100">
-                    View Details
-                  </Button>
+                  <Link href={`/item/${relatedItem.id}`} passHref scroll={true}>
+                    <Button variant="ghost" className="w-full text-purple-700 hover:bg-purple-100">
+                      View Details
+                    </Button>
+                  </Link>
                 </CardFooter>
               </Card>
             ))}

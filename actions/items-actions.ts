@@ -2,9 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { getItemsByUserId, getItemById, insertItem, updateItem, deleteItem } from "@/db/queries/items-queries";
-import { itemsTable } from "@/db/schema";
+import { itemsTable, SelectItem } from "@/db/schema/items-schema";
+import { eq, ne, and } from 'drizzle-orm';
+import { db } from '@/db/db'; // Updated import
 
-export const getItemsByUserIdAction = async (userId: string) => {
+// Define ActionResult type
+type ActionResult<T> = {
+  isSuccess: boolean;
+  data?: T;
+  error?: string;
+};
+
+export const getItemsByUserIdAction = async (userId: string): Promise<ActionResult<SelectItem[]>> => {
   try {
     const items = await getItemsByUserId(userId);
     return { isSuccess: true, data: items };
@@ -14,7 +23,7 @@ export const getItemsByUserIdAction = async (userId: string) => {
   }
 };
 
-export const getItemByIdAction = async (id: string) => {
+export const getItemByIdAction = async (id: string): Promise<ActionResult<SelectItem>> => {
   try {
     const item = await getItemById(id);
     return { isSuccess: true, data: item[0] };
@@ -24,7 +33,7 @@ export const getItemByIdAction = async (id: string) => {
   }
 };
 
-export const createItemAction = async (item: typeof itemsTable.$inferInsert) => {
+export const createItemAction = async (item: typeof itemsTable.$inferInsert): Promise<ActionResult<void>> => {
   try {
     await insertItem(item);
     revalidatePath("/");
@@ -35,7 +44,7 @@ export const createItemAction = async (item: typeof itemsTable.$inferInsert) => 
   }
 };
 
-export const updateItemAction = async (id: string, data: Partial<typeof itemsTable.$inferSelect>) => {
+export const updateItemAction = async (id: string, data: Partial<SelectItem>): Promise<ActionResult<SelectItem[]>> => {
   try {
     const updatedItem = await updateItem(id, data);
     revalidatePath("/catalog");
@@ -46,7 +55,7 @@ export const updateItemAction = async (id: string, data: Partial<typeof itemsTab
   }
 };
 
-export const deleteItemAction = async (id: string) => {
+export const deleteItemAction = async (id: string): Promise<ActionResult<void>> => {
   try {
     await deleteItem(id);
     revalidatePath("/");
@@ -54,5 +63,23 @@ export const deleteItemAction = async (id: string) => {
   } catch (error) {
     console.error("Failed to delete item:", error);
     return { isSuccess: false, error: "Failed to delete item" };
+  }
+};
+
+export const getRelatedItemsAction = async (brand: string, currentItemId: string): Promise<ActionResult<SelectItem[]>> => {
+  try {
+    const relatedItems = await db.select().from(itemsTable)
+      .where(
+        and(
+          eq(itemsTable.brand, brand as any), // Type assertion to avoid enum type mismatch
+          ne(itemsTable.id, currentItemId)
+        )
+      )
+      .limit(3);
+
+    return { isSuccess: true, data: relatedItems };
+  } catch (error) {
+    console.error("Failed to fetch related items:", error);
+    return { isSuccess: false, error: "Failed to fetch related items" };
   }
 };
