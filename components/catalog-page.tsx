@@ -176,7 +176,7 @@ export default function CatalogPage() {
   }
 
   const totalCollectionValue = items.reduce((sum, item) => sum + (showSold ? (item.soldPrice || 0) : (item.isSold ? 0 : item.value)), 0);
-  const totalCollectionCost = items.reduce((sum, item) => sum + (showSold ? 0 : (item.isSold ? 0 : item.cost)), 0);
+  const totalCollectionCost = items.reduce((sum, item) => sum + (showSold ? (item.isSold ? item.cost : 0) : (item.isSold ? 0 : item.cost)), 0);
   const totalEbayListedValue = items.reduce((sum, item) => sum + (showSold ? 0 : (item.isSold ? 0 : (item.ebayListed || 0))), 0);
   const totalEbaySoldValue = items.reduce((sum, item) => sum + (showSold ? 0 : (item.isSold ? 0 : (item.ebaySold || 0))), 0);
 
@@ -543,7 +543,7 @@ export default function CatalogPage() {
               </div>
               <div>
                 <div className="text-3xl font-bold mb-2">${totalCollectionCost.toFixed(2)}</div>
-                <div className="text-sm text-gray-500">Total Cost</div>
+                <div className="text-sm text-gray-500">Total {showSold ? "Sold Items" : "Collection"} Cost</div>
               </div>
               <div>
                 <div className="text-3xl font-bold mb-2">{items.length}</div>
