@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getItemsByUserId, getItemById, insertItem, updateItem, deleteItem } from "@/db/queries/items-queries";
 import { itemsTable, SelectItem } from "@/db/schema/items-schema";
-import { eq, ne, and } from 'drizzle-orm';
+import { eq, ne, and, or } from 'drizzle-orm';
 import { db } from '@/db/db'; // Updated import
 
 // Define ActionResult type
@@ -66,13 +66,14 @@ export const deleteItemAction = async (id: string): Promise<ActionResult<void>> 
   }
 };
 
-export const getRelatedItemsAction = async (brand: string, currentItemId: string): Promise<ActionResult<SelectItem[]>> => {
+export const getRelatedItemsAction = async (brand: string, currentItemId: string, isSold: boolean): Promise<ActionResult<SelectItem[]>> => {
   try {
     const relatedItems = await db.select().from(itemsTable)
       .where(
         and(
           eq(itemsTable.brand, brand as any), // Type assertion to avoid enum type mismatch
-          ne(itemsTable.id, currentItemId)
+          ne(itemsTable.id, currentItemId),
+          eq(itemsTable.isSold, isSold)
         )
       )
       .limit(3);

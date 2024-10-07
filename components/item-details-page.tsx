@@ -58,7 +58,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
   useEffect(() => {
     if (item) {
-      fetchRelatedItems(item.brand, item.id)
+      fetchRelatedItems(item.brand, item.id, item.isSold)
     }
   }, [item])
 
@@ -86,8 +86,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     }
   }
 
-  const fetchRelatedItems = async (brand: string, itemId: string) => {
-    const result = await getRelatedItemsAction(brand, itemId)
+  const fetchRelatedItems = async (brand: string, itemId: string, isSold: boolean) => {
+    const result = await getRelatedItemsAction(brand, itemId, isSold)
     if (result.isSuccess && result.data) {
       setRelatedItems(result.data)
     }
@@ -504,33 +504,41 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
         <section className="mt-12">
           <h2 className="text-2xl font-serif text-purple-900 mb-6">Related Items</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {relatedItems.map((relatedItem) => (
-              <Card key={relatedItem.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                <CardHeader className="p-0">
-                  <Image
-                    src={relatedItem.image || placeholderImage}
-                    alt={relatedItem.name}
-                    width={200}
-                    height={200}
-                    layout="responsive"
-                    className="object-cover"
-                  />
-                </CardHeader>
-                <CardContent className="p-4">
-                  <CardTitle className="text-lg mb-2">{relatedItem.name}</CardTitle>
-                  <p className="font-semibold text-purple-700">Value: ${relatedItem.value.toFixed(2)}</p>
-                </CardContent>
-                <CardFooter>
-                  <Link href={`/item/${relatedItem.id}`} passHref scroll={true}>
-                    <Button variant="ghost" className="w-full text-purple-700 hover:bg-purple-100">
-                      View Details
-                    </Button>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+          {relatedItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {relatedItems.map((relatedItem) => (
+                <Card key={relatedItem.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                  <CardHeader className="p-0">
+                    <Image
+                      src={relatedItem.image || placeholderImage}
+                      alt={relatedItem.name}
+                      width={200}
+                      height={200}
+                      layout="responsive"
+                      className="object-cover"
+                    />
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <CardTitle className="text-lg mb-2">{relatedItem.name}</CardTitle>
+                    <p className="font-semibold text-purple-700">
+                      {relatedItem.isSold 
+                        ? `Sold: $${relatedItem.soldPrice?.toFixed(2) || 'N/A'}` 
+                        : `Value: $${relatedItem.value.toFixed(2)}`}
+                    </p>
+                  </CardContent>
+                  <CardFooter>
+                    <Link href={`/item/${relatedItem.id}`} passHref scroll={true}>
+                      <Button variant="ghost" className="w-full text-purple-700 hover:bg-purple-100">
+                        View Details
+                      </Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <p>No related items found.</p>
+          )}
         </section>
       </main>
 
