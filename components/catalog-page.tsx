@@ -409,11 +409,11 @@ export default function CatalogPage() {
   return (
     <div className="min-h-screen bg-[#FDF7F5]">
       <main className="container mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
           <h1 className="text-4xl font-serif text-purple-900">Your Collection Catalog</h1>
           <Sheet open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
             <SheetTrigger asChild>
-              <Button className="bg-purple-700 text-white hover:bg-purple-600">
+              <Button className="bg-purple-700 text-white hover:bg-purple-600 w-full sm:w-auto">
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
               </Button>
             </SheetTrigger>
