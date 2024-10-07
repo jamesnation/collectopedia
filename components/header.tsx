@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
-import { Package } from "lucide-react";
+import { Package, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -33,12 +33,24 @@ export default function Header() {
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <span className="text-sm text-gray-600 mr-2">Welcome, Collector</span>
+            <span className="text-sm text-gray-600 mr-2 hidden md:inline">Welcome, Collector</span>
             <UserButton afterSignOutUrl="/" />
           </SignedIn>
+          {/* Add burger menu button for mobile */}
+          <button
+            className="md:hidden text-purple-700 hover:text-purple-500"
+            onClick={toggleMenu}
+          >
+            {isMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
         </div>
       </div>
 
+      {/* Mobile navigation menu */}
       {isMenuOpen && (
         <nav className="md:hidden bg-[#FDF7F5] p-4">
           <div className="space-y-2">
