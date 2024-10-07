@@ -9,13 +9,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ArrowLeft, RefreshCw, Edit, Loader2 } from "lucide-react"
+import { ArrowLeft, RefreshCw, Edit, Loader2, Save } from "lucide-react"
 import { getItemByIdAction, updateItemAction } from "@/actions/items-actions"
+import { createSoldItemAction, getSoldItemByItemIdAction, updateSoldItemAction } from "@/actions/sold-items-actions"
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
+import { SelectSoldItem } from "@/db/schema/sold-items-schema"
 import { useToast } from "@/components/ui/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
@@ -43,13 +46,18 @@ interface ItemDetailsPageProps {
 export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const router = useRouter()
   const [item, setItem] = useState<SelectItemType | null>(null)
+  const [soldItem, setSoldItem] = useState<SelectSoldItem | null>(null)
   const [editingField, setEditingField] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
+  const [isSold, setIsSold] = useState(false)
+  const [soldPrice, setSoldPrice] = useState("")
+  const [soldDate, setSoldDate] = useState("")
 
   useEffect(() => {
     if (id) {
       fetchItem(id)
+      fetchSoldItem(id)
     }
   }, [id])
 
@@ -60,6 +68,16 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
       setItem(result.data)
     }
     setIsLoading(false)
+  }
+
+  const fetchSoldItem = async (itemId: string) => {
+    const result = await getSoldItemByItemIdAction(itemId)
+    if (result.isSuccess && result.data) {
+      setSoldItem(result.data)
+      setIsSold(true)
+      setSoldPrice(result.data.soldPrice.toString())
+      setSoldDate(new Date(result.data.soldDate).toISOString().split('T')[0])
+    }
   }
 
   const handleEditStart = (field: string) => {
@@ -106,6 +124,52 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const handleEbayRefresh = async (type: 'sold' | 'listed') => {
     // Implement eBay API call here
     console.log(`Refresh eBay ${type} data for item with id: ${item?.id}`)
+  }
+
+  const handleSoldToggle = (checked: boolean) => {
+    setIsSold(checked)
+    if (!checked) {
+      setSoldPrice("")
+      setSoldDate("")
+      setSoldItem(null)
+    }
+  }
+
+  const handleSaveSoldDetails = async () => {
+    if (item && isSold) {
+      try {
+        const soldItemData = {
+          id: soldItem?.id || crypto.randomUUID(),
+          itemId: item.id,
+          userId: item.userId,
+          soldPrice: parseInt(soldPrice),
+          soldDate: new Date(soldDate),
+        }
+        
+        let result;
+        if (soldItem) {
+          result = await updateSoldItemAction(soldItem.id, soldItemData)
+        } else {
+          result = await createSoldItemAction(soldItemData)
+        }
+
+        if (result.isSuccess && result.data) {
+          setSoldItem(result.data)
+          toast({
+            title: "Sold details saved",
+            description: "The item has been marked as sold and details saved.",
+          })
+        } else {
+          throw new Error(result.error || 'Action failed')
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to save sold details. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
   }
 
   if (isLoading) {
@@ -273,15 +337,67 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 </CardContent>
               </Card>
             </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold">Item Details</h2>
-              <p className="text-gray-600">
-                <span className="font-semibold">Date Acquired:</span> {new Date(item.acquired).toLocaleDateString()}
-              </p>
-              <p className="text-gray-600">
-                <span className="font-semibold">Last Updated:</span> {new Date(item.updatedAt).toLocaleDateString()}
-              </p>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Item Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">Date Acquired:</span> {item && new Date(item.acquired).toLocaleDateString()}
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="item-status" className="text-sm font-semibold">Status:</Label>
+                    <Switch
+                      id="item-status"
+                      checked={isSold}
+                      onCheckedChange={handleSoldToggle}
+                    />
+                    <span className="text-sm text-gray-600">{isSold ? 'Sold' : 'In Collection'}</span>
+                  </div>
+                </div>
+                {isSold && (
+                  <div className="space-y-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-1">
+                        <Label htmlFor="sold-price" className="text-sm font-semibold">Sold Price:</Label>
+                        <Input
+                          id="sold-price"
+                          type="number"
+                          placeholder="Enter sold price"
+                          value={soldPrice}
+                          onChange={(e) => setSoldPrice(e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Label htmlFor="sold-date" className="text-sm font-semibold">Sold Date:</Label>
+                        <Input
+                          id="sold-date"
+                          type="date"
+                          value={soldDate}
+                          onChange={(e) => setSoldDate(e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <Button onClick={handleSaveSoldDetails} className="w-full bg-purple-700 text-white hover:bg-purple-600">
+                      <Save className="w-4 h-4 mr-2" /> Save Sold Details
+                    </Button>
+                  </div>
+                )}
+                {soldItem && (
+                  <div className="pt-4 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Sold Price:</span> ${soldItem.soldPrice.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Sold Date:</span> {new Date(soldItem.soldDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
 

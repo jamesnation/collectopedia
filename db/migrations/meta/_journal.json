@@ -36,6 +36,13 @@
       "when": 1728051630464,
       "tag": "0004_perpetual_skreet",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1728312775758,
+      "tag": "0005_lively_doorman",
+      "breakpoints": true
     }
   ]
 }
