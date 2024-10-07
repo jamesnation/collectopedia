@@ -161,35 +161,20 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const handleSaveSoldDetails = async () => {
     if (item && isSold) {
       try {
-        const soldItemData = {
-          id: soldItem?.id || crypto.randomUUID(),
-          itemId: item.id,
-          userId: item.userId,
+        const updatedItem = {
+          ...item,
+          isSold: true,
           soldPrice: parseInt(soldPrice),
-          soldDate: new Date(soldDate),
+          soldDate: new Date(soldDate),  // Add this line
         }
-        
-        let result;
-        if (soldItem) {
-          result = await updateSoldItemAction(soldItem.id, soldItemData)
-        } else {
-          result = await createSoldItemAction(soldItemData)
-        }
+        const result = await updateItemAction(item.id, updatedItem)
 
         if (result.isSuccess && result.data) {
-          setSoldItem(result.data)
-          // Update the item to mark it as sold
-          const updatedItem = { ...item, isSold: true }
-          const itemUpdateResult = await updateItemAction(item.id, updatedItem)
-          if (itemUpdateResult.isSuccess) {
-            setItem(updatedItem)
-            toast({
-              title: "Sold details saved",
-              description: "The item has been marked as sold and details saved.",
-            })
-          } else {
-            throw new Error('Failed to update item sold status')
-          }
+          setItem(result.data[0])
+          toast({
+            title: "Sold details saved",
+            description: "The item has been marked as sold and details saved.",
+          })
         } else {
           throw new Error(result.error || 'Action failed')
         }
@@ -417,13 +402,13 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     </Button>
                   </div>
                 )}
-                {soldItem && (
+                {item.isSold && item.soldPrice && item.soldDate && (
                   <div className="pt-4 border-t border-gray-200">
                     <p className="text-sm text-gray-600">
-                      <span className="font-semibold">Sold Price:</span> ${soldItem.soldPrice.toFixed(2)}
+                      <span className="font-semibold">Sold Price:</span> ${item.soldPrice.toFixed(2)}
                     </p>
                     <p className="text-sm text-gray-600">
-                      <span className="font-semibold">Sold Date:</span> {new Date(soldItem.soldDate).toLocaleDateString()}
+                      <span className="font-semibold">Sold Date:</span> {new Date(item.soldDate).toLocaleDateString()}
                     </p>
                   </div>
                 )}

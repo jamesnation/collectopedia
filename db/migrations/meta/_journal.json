@@ -50,6 +50,20 @@
       "when": 1728313346423,
       "tag": "0006_harsh_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1728314404869,
+      "tag": "0007_new_wallflower",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1728314927548,
+      "tag": "0008_cloudy_amazoness",
+      "breakpoints": true
     }
   ]
 }

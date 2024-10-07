@@ -39,7 +39,9 @@ export const itemsTable = pgTable("items", {
   notes: text("notes"), // Add this line
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  isSold: boolean("is_sold").default(false).notNull()
+  isSold: boolean("is_sold").default(false).notNull(),
+  soldPrice: integer("sold_price"),
+  soldDate: timestamp("sold_date")  // Add this line
 });
 
 export type InsertItem = typeof itemsTable.$inferInsert;

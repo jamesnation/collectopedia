@@ -30,6 +30,7 @@ import { SortDescriptor } from '@/types/sort'
 import { useDebouncedCallback } from 'use-debounce';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
 
 // Dynamically import components that might cause hydration issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -86,6 +87,8 @@ export default function CatalogPage() {
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'name', direction: 'ascending' })
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [showSold, setShowSold] = useState(false)
+  const [soldYearFilter, setSoldYearFilter] = useState<string>('all')
 
   useEffect(() => {
     if (userId) {
@@ -99,7 +102,7 @@ export default function CatalogPage() {
   );
 
   const filteredAndSortedItems = useMemo(() => {
-    let result = items.filter(item => !item.isSold); // Filter out sold items
+    let result = items.filter(item => showSold ? item.isSold : !item.isSold);
     
     // Apply search filter
     if (debouncedSearchQuery) {
@@ -126,6 +129,11 @@ export default function CatalogPage() {
       result = result.filter(item => new Date(item.acquired).getFullYear().toString() === yearFilter);
     }
 
+    // Apply sold year filter
+    if (showSold && soldYearFilter !== 'all') {
+      result = result.filter(item => item.soldDate && new Date(item.soldDate).getFullYear().toString() === soldYearFilter);
+    }
+
     // Apply sorting
     result.sort((a, b) => {
       const { column, direction } = sortDescriptor;
@@ -142,7 +150,11 @@ export default function CatalogPage() {
           comparison = a.cost - b.cost;
           break;
         case 'value':
-          comparison = a.value - b.value;
+        case 'soldPrice':
+          comparison = (showSold ? (a.soldPrice ?? 0) - (b.soldPrice ?? 0) : a.value - b.value);
+          break;
+        case 'soldDate':
+          comparison = new Date(a.soldDate || 0).getTime() - new Date(b.soldDate || 0).getTime();
           break;
       }
 
@@ -150,7 +162,7 @@ export default function CatalogPage() {
     });
 
     return result;
-  }, [items, debouncedSearchQuery, typeFilter, brandFilter, yearFilter, sortDescriptor]);
+  }, [items, debouncedSearchQuery, typeFilter, brandFilter, yearFilter, sortDescriptor, showSold, soldYearFilter]);
 
   const fetchItems = async () => {
     setIsLoading(true)
@@ -163,10 +175,10 @@ export default function CatalogPage() {
     setIsLoading(false)
   }
 
-  const totalCollectionValue = items.reduce((sum, item) => sum + (item.isSold ? 0 : item.value), 0);
-  const totalCollectionCost = items.reduce((sum, item) => sum + (item.isSold ? 0 : item.cost), 0);
-  const totalEbayListedValue = items.reduce((sum, item) => sum + (item.isSold ? 0 : (item.ebayListed || 0)), 0);
-  const totalEbaySoldValue = items.reduce((sum, item) => sum + (item.isSold ? 0 : (item.ebaySold || 0)), 0);
+  const totalCollectionValue = items.reduce((sum, item) => sum + (showSold ? (item.soldPrice || 0) : (item.isSold ? 0 : item.value)), 0);
+  const totalCollectionCost = items.reduce((sum, item) => sum + (showSold ? 0 : (item.isSold ? 0 : item.cost)), 0);
+  const totalEbayListedValue = items.reduce((sum, item) => sum + (showSold ? 0 : (item.isSold ? 0 : (item.ebayListed || 0))), 0);
+  const totalEbaySoldValue = items.reduce((sum, item) => sum + (showSold ? 0 : (item.isSold ? 0 : (item.ebaySold || 0))), 0);
 
   const handleDelete = useCallback(async (id: string) => {
     setIsLoading(true)
@@ -527,7 +539,7 @@ export default function CatalogPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               <div>
                 <div className="text-3xl font-bold mb-2">${totalCollectionValue.toFixed(2)}</div>
-                <div className="text-sm text-gray-500">Total Collection Value</div>
+                <div className="text-sm text-gray-500">Total {showSold ? "Sold" : "Collection"} Value</div>
               </div>
               <div>
                 <div className="text-3xl font-bold mb-2">${totalCollectionCost.toFixed(2)}</div>
@@ -645,6 +657,30 @@ export default function CatalogPage() {
                 }
               </SelectContent>
             </Select>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-sold"
+                checked={showSold}
+                onCheckedChange={setShowSold}
+              />
+              <Label htmlFor="show-sold">Show Sold Items</Label>
+            </div>
+            {showSold && (
+              <Select value={soldYearFilter} onValueChange={setSoldYearFilter}>
+                <SelectTrigger className="w-full md:w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                  <SelectValue placeholder="Filter sold by year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sold Years</SelectItem>
+                  {Array.from(new Set(items.filter(item => item.isSold && item.soldDate).map(item => new Date(item.soldDate!).getFullYear())))
+                    .sort((a, b) => b - a)
+                    .map(year => (
+                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
 
@@ -685,9 +721,9 @@ export default function CatalogPage() {
                     <Button 
                       variant="ghost" 
                       className="font-bold text-purple-700 px-0"
-                      onClick={() => handleSort('value')}
+                      onClick={() => handleSort(showSold ? 'soldPrice' : 'value')}
                     >
-                      Value <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'value' ? 'opacity-100' : 'opacity-50'}`} />
+                      {showSold ? "Sold Price" : "Value"} <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === (showSold ? 'soldPrice' : 'value') ? 'opacity-100' : 'opacity-50'}`} />
                     </Button>
                   </TableHead>
                   <TableHead className="w-32 text-right">eBay Sold</TableHead>
@@ -697,6 +733,17 @@ export default function CatalogPage() {
                       Last Updated <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
+                  {showSold && (
+                    <TableHead className="w-32">
+                      <Button 
+                        variant="ghost" 
+                        className="font-bold text-purple-700 px-0"
+                        onClick={() => handleSort('soldDate')}
+                      >
+                        Sold Date <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'soldDate' ? 'opacity-100' : 'opacity-50'}`} />
+                      </Button>
+                    </TableHead>
+                  )}
                   <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -884,34 +931,7 @@ export default function CatalogPage() {
                           </Popover>
                         </TableCell>
                         <TableCell className="text-right font-bold text-purple-700">
-                          <Popover open={editingItemId === item.id && editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
-                            <PopoverTrigger asChild>
-                              <button 
-                                className="text-sm font-bold text-purple-700 hover:text-purple-600 transition-colors"
-                                onClick={() => handleEditStart(item, 'value')}
-                              >
-                                ${item.value.toFixed(2)}
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
-                              <div className="space-y-4">
-                                <h4 className="font-semibold text-sm text-purple-900">Edit Item Value</h4>
-                                <div className="space-y-2">
-                                  <Label htmlFor={`value-${item.id}`} className="text-sm font-medium text-purple-700">Value</Label>
-                                  <Input
-                                    id={`value-${item.id}`}
-                                    type="number"                                    value={editingItem?.value || ''}
-                                    onChange={handleValueChange}
-                                    className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
-                                  />
-                                </div>
-                                <div className="flex justify-end space-x-2">
-                                  <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                                  <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                          ${(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end space-x-2">
@@ -944,6 +964,11 @@ export default function CatalogPage() {
                         <TableCell>
                           {new Date(item.updatedAt).toLocaleDateString()}
                         </TableCell>
+                        {showSold && (
+                          <TableCell>
+                            {item.soldDate ? new Date(item.soldDate).toLocaleDateString() : 'N/A'}
+                          </TableCell>
+                        )}
                         <TableCell>
                           <div className="flex space-x-2">
                             <AlertDialog>
