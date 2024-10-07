@@ -164,6 +164,7 @@ export default function CatalogPage() {
   }
 
   const totalCollectionValue = items.reduce((sum, item) => sum + item.value, 0)
+  const totalCollectionCost = items.reduce((sum, item) => sum + item.cost, 0)  // New calculation for total cost
   const totalEbayListedValue = items.reduce((sum, item) => sum + (item.ebayListed || 0), 0)
   const totalEbaySoldValue = items.reduce((sum, item) => sum + (item.ebaySold || 0), 0)
 
@@ -523,10 +524,14 @@ export default function CatalogPage() {
 
         <Card className="bg-white shadow-xl mb-8">
           <CardContent className="p-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               <div>
                 <div className="text-3xl font-bold mb-2">${totalCollectionValue.toFixed(2)}</div>
                 <div className="text-sm text-gray-500">Total Collection Value</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold mb-2">${totalCollectionCost.toFixed(2)}</div>
+                <div className="text-sm text-gray-500">Total Cost</div>
               </div>
               <div>
                 <div className="text-3xl font-bold mb-2">{items.length}</div>
