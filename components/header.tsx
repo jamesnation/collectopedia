@@ -17,6 +17,17 @@ export default function Header() {
     <header className="bg-[#FDF7F5] shadow-md">
       <div className="container mx-auto py-4 px-4 flex justify-between items-center">
         <div className="flex items-center space-x-2">
+          {/* Move burger menu button to the left */}
+          <button
+            className="md:hidden text-purple-700 hover:text-purple-500 mr-2"
+            onClick={toggleMenu}
+          >
+            {isMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
           <Package className="h-8 w-8 text-purple-700" />
           <span className="text-2xl font-bold text-purple-700">Collectopedia</span>
         </div>
@@ -36,17 +47,6 @@ export default function Header() {
             <span className="text-sm text-gray-600 mr-2 hidden md:inline">Welcome, Collector</span>
             <UserButton afterSignOutUrl="/" />
           </SignedIn>
-          {/* Add burger menu button for mobile */}
-          <button
-            className="md:hidden text-purple-700 hover:text-purple-500"
-            onClick={toggleMenu}
-          >
-            {isMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </button>
         </div>
       </div>
 
