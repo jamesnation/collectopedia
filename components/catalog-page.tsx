@@ -676,6 +676,9 @@ export default function CatalogPage() {
               <SheetContent className="w-full sm:max-w-md overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Add New Item</SheetTitle>
+                  <DialogDescription>
+                    Fill in the details below to add a new item to your collection.
+                  </DialogDescription>
                 </SheetHeader>
                 <form onSubmit={handleAddItem} className="space-y-4 mt-4">
                   <div className="space-y-2">
@@ -1013,7 +1016,8 @@ export default function CatalogPage() {
                               alt={item.name}
                               width={80}
                               height={80}
-                              className="object-cover rounded-md cursor-pointer"
+                              style={{ objectFit: 'cover' }}
+                              className="rounded-md cursor-pointer"
                             />
                           </Link>
                         </TableCell>
@@ -1223,7 +1227,8 @@ export default function CatalogPage() {
                           alt={item.name}
                           width={400}
                           height={400}
-                          className="w-full h-64 object-cover cursor-pointer"
+                          style={{ objectFit: 'cover', width: '100%', height: '16rem' }}
+                          className="cursor-pointer"
                         />
                       </CardHeader>
                     </Link>
