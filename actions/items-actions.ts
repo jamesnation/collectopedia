@@ -94,7 +94,9 @@ export const createItemAction = async (item: {
 
 export const updateItemAction = async (id: string, data: Partial<SelectItem>): Promise<ActionResult<SelectItem[]>> => {
   try {
+    console.log('Updating item:', id, 'with data:', data);
     const updatedItem = await updateItem(id, data);
+    console.log('Item updated successfully:', updatedItem);
     revalidatePath("/catalog");
     return { isSuccess: true, data: updatedItem };
   } catch (error) {

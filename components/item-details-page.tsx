@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ArrowLeft, RefreshCw, Edit, Loader2, Save } from "lucide-react"
+import { ArrowLeft, RefreshCw, Edit, Loader2, Save, Upload } from "lucide-react"
 import { getItemByIdAction, updateItemAction } from "@/actions/items-actions"
 import { createSoldItemAction, getSoldItemByItemIdAction, updateSoldItemAction } from "@/actions/sold-items-actions"
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
@@ -20,6 +20,9 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { getRelatedItemsAction } from "@/actions/items-actions"
+import dynamic from 'next/dynamic'
+
+const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
@@ -48,6 +51,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [soldPrice, setSoldPrice] = useState("")
   const [soldDate, setSoldDate] = useState("")
   const [relatedItems, setRelatedItems] = useState<SelectItemType[]>([])
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   useEffect(() => {
     if (id) {
@@ -200,6 +204,35 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     }
   }
 
+  const handleImageUpload = (url: string) => {
+    if (item) {
+      setItem({ ...item, image: url });
+    }
+  }
+
+  const handleImageSave = async () => {
+    if (item) {
+      try {
+        const result = await updateItemAction(item.id, item)
+        if (result.isSuccess) {
+          setEditingField(null)
+          toast({
+            title: "Image updated",
+            description: "Your item image has been updated successfully.",
+          })
+        } else {
+          throw new Error('Failed to update item image')
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update item image. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FDF7F5] flex items-center justify-center">
@@ -236,6 +269,30 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               objectFit="cover"
               className="rounded-lg shadow-lg"
             />
+            <Popover open={editingField === 'image'} onOpenChange={(open) => !open && handleEditCancel()}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="absolute bottom-2 right-2 bg-white bg-opacity-70 hover:bg-opacity-100"
+                  onClick={() => handleEditStart('image')}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Edit Image
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm text-purple-900">Edit Item Image</h4>
+                  <div className="space-y-2">
+                    <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
+                    <Button onClick={handleImageSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-6">
             <div>
