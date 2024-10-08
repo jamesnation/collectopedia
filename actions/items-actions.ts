@@ -5,6 +5,7 @@ import { getItemsByUserId, getItemById, insertItem, updateItem, deleteItem } fro
 import { itemsTable, SelectItem } from "@/db/schema/items-schema";
 import { eq, ne, and, or } from 'drizzle-orm';
 import { db } from '@/db/db'; // Updated import
+import { itemTypeEnum, brandEnum } from "@/db/schema/items-schema";
 
 // Define ActionResult type
 type ActionResult<T> = {
@@ -33,14 +34,59 @@ export const getItemByIdAction = async (id: string): Promise<ActionResult<Select
   }
 };
 
-export const createItemAction = async (item: typeof itemsTable.$inferInsert): Promise<ActionResult<void>> => {
+export const createItemAction = async (item: {
+  id: string;
+  userId: string;
+  name: string;
+  type: string;
+  brand: string;
+  acquired: Date;
+  cost: number;
+  value: number;
+  notes: string;
+  isSold: boolean;
+  soldDate?: Date;
+  soldPrice?: number;
+  ebayListed?: number;
+  ebaySold?: number;
+}) => {
   try {
-    await insertItem(item);
-    revalidatePath("/");
-    return { isSuccess: true };
-  } catch (error) {
-    console.error("Failed to create item:", error);
-    return { isSuccess: false, error: "Failed to create item" };
+    console.log('Attempting to create item:', JSON.stringify(item, null, 2));
+
+    // Check if the brand exists in the enum, if not, set it to 'Other'
+    const brandExists = brandEnum.enumValues.includes(item.brand as any);
+    const brand = brandExists ? item.brand : 'Other';
+
+    // Check if the type exists in the enum, if not, set it to 'Other'
+    const typeExists = itemTypeEnum.enumValues.includes(item.type as any);
+    const type = typeExists ? item.type : 'Other';
+
+    console.log('Adjusted brand and type:', { brand, type });
+
+    const insertData = {
+      ...item,
+      type: type as typeof itemTypeEnum.enumValues[number],
+      brand: brand as typeof brandEnum.enumValues[number],
+      cost: Math.round(item.cost), // Round to nearest integer
+      value: Math.round(item.value), // Round to nearest integer
+      soldPrice: item.soldPrice ? Math.round(item.soldPrice) : undefined,
+      ebayListed: item.ebayListed ? Math.round(item.ebayListed) : undefined,
+      ebaySold: item.ebaySold ? Math.round(item.ebaySold) : undefined,
+    };
+
+    console.log('Data to be inserted:', JSON.stringify(insertData, null, 2));
+
+    const result = await db.insert(itemsTable).values(insertData).returning();
+
+    console.log('Item created successfully:', JSON.stringify(result[0], null, 2));
+    return { isSuccess: true, data: result[0] };
+  } catch (error: unknown) {
+    console.error('Detailed error creating item:', error);
+    if (error instanceof Error) {
+      return { isSuccess: false, error: `Failed to create item: ${error.message}` };
+    } else {
+      return { isSuccess: false, error: 'Failed to create item: Unknown error' };
+    }
   }
 };
 
