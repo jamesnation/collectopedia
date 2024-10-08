@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ArrowLeft, RefreshCw, Edit, Loader2, Save, Upload } from "lucide-react"
+import { ArrowLeft, RefreshCw, Edit, Loader2, Save, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { getItemByIdAction, updateItemAction } from "@/actions/items-actions"
 import { createSoldItemAction, getSoldItemByItemIdAction, updateSoldItemAction } from "@/actions/sold-items-actions"
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
@@ -20,9 +20,10 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { getRelatedItemsAction } from "@/actions/items-actions"
-import dynamic from 'next/dynamic'
-
-const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
+import { getImagesByItemIdAction, createImageAction, deleteImageAction } from "@/actions/images-actions"
+import { SelectImage } from "@/db/schema/images-schema"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import DynamicImageUpload from "@/components/image-upload"
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
@@ -52,11 +53,14 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [soldDate, setSoldDate] = useState("")
   const [relatedItems, setRelatedItems] = useState<SelectItemType[]>([])
   const [imageFile, setImageFile] = useState<File | null>(null)
+  const [images, setImages] = useState<SelectImage[]>([])
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   useEffect(() => {
     if (id) {
       fetchItem(id)
       fetchSoldItem(id)
+      fetchImages(id)
     }
   }, [id])
 
@@ -94,6 +98,13 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     const result = await getRelatedItemsAction(brand, itemId, isSold)
     if (result.isSuccess && result.data) {
       setRelatedItems(result.data)
+    }
+  }
+
+  const fetchImages = async (itemId: string) => {
+    const result = await getImagesByItemIdAction(itemId)
+    if (result.isSuccess && result.data) {
+      setImages(result.data)
     }
   }
 
@@ -204,34 +215,64 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     }
   }
 
-  const handleImageUpload = (url: string) => {
-    if (item) {
-      setItem({ ...item, image: url });
-    }
-  }
-
-  const handleImageSave = async () => {
+  const handleImageUpload = async (url: string) => {
     if (item) {
       try {
-        const result = await updateItemAction(item.id, item)
-        if (result.isSuccess) {
-          setEditingField(null)
+        // Create a new image entry
+        const imageResult = await createImageAction({
+          itemId: item.id,
+          userId: item.userId,
+          url: url,
+        });
+
+        if (imageResult.isSuccess && imageResult.data) {
+          // Add the new image to the images array
+          setImages(prevImages => {
+            if (imageResult.data) {
+              return [...prevImages, imageResult.data];
+            }
+            return prevImages;
+          });
           toast({
-            title: "Image updated",
-            description: "Your item image has been updated successfully.",
-          })
+            title: "Image uploaded",
+            description: "Your new image has been added to the item.",
+          });
         } else {
-          throw new Error('Failed to update item image')
+          throw new Error('Failed to create image entry');
         }
       } catch (error) {
+        console.error('Error uploading image:', error);
         toast({
           title: "Error",
-          description: "Failed to update item image. Please try again.",
+          description: "Failed to upload image. Please try again.",
           variant: "destructive",
-        })
+        });
       }
     }
-  }
+  };
+
+  const handleImageDelete = async (imageId: string) => {
+    try {
+      const result = await deleteImageAction(imageId);
+      if (result.isSuccess) {
+        setImages(prevImages => prevImages.filter(img => img.id !== imageId));
+        setCurrentImageIndex(prevIndex => Math.min(prevIndex, images.length - 2));
+        toast({
+          title: "Image deleted",
+          description: "The image has been removed from the item.",
+        });
+      } else {
+        throw new Error('Failed to delete image');
+      }
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete image. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -261,38 +302,92 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
         </Link>
 
         <div className="grid md:grid-cols-2 gap-8">
-          <div className="relative aspect-square">
-            <Image
-              src={item.image || placeholderImage}
-              alt={item.name}
-              layout="fill"
-              objectFit="cover"
-              className="rounded-lg shadow-lg"
-            />
-            <Popover open={editingField === 'image'} onOpenChange={(open) => !open && handleEditCancel()}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="absolute bottom-2 right-2 bg-white bg-opacity-70 hover:bg-opacity-100"
-                  onClick={() => handleEditStart('image')}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Edit Image
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80">
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-sm text-purple-900">Edit Item Image</h4>
-                  <div className="space-y-2">
+          <div className="space-y-4">
+            <div className="relative aspect-square">
+              <Image
+                src={images[currentImageIndex]?.url || item?.image || placeholderImage}
+                alt={`${item?.name} - Image ${currentImageIndex + 1}`}
+                layout="fill"
+                objectFit="cover"
+                className="rounded-lg shadow-lg"
+              />
+              {images.length > 1 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                    onClick={() => setCurrentImageIndex(prevIndex => (prevIndex > 0 ? prevIndex - 1 : images.length - 1))}
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                    onClick={() => setCurrentImageIndex(prevIndex => (prevIndex < images.length - 1 ? prevIndex + 1 : 0))}
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </Button>
+                </>
+              )}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="absolute bottom-2 right-2 bg-white bg-opacity-70 hover:bg-opacity-100"
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Images
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-sm text-purple-900">Edit Item Images</h4>
                     <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {images.map((image, index) => (
+                        <div key={index} className="relative">
+                          <Image src={image.url} alt={`Image ${index + 1}`} width={100} height={100} className="rounded-md" />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-0 right-0 h-6 w-6"
+                            onClick={() => handleImageDelete(image.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                    <Button onClick={handleImageSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
-                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            {images.length > 1 && (
+              <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+                <div className="flex w-max space-x-4 p-4">
+                  {images.map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`relative w-20 h-20 rounded-md overflow-hidden ${
+                        index === currentImageIndex ? 'ring-2 ring-purple-700' : ''
+                      }`}
+                    >
+                      <Image
+                        src={image.url}
+                        alt={`${item?.name} - Thumbnail ${index + 1}`}
+                        layout="fill"
+                        objectFit="cover"
+                      />
+                    </button>
+                  ))}
                 </div>
-              </PopoverContent>
-            </Popover>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            )}
           </div>
           <div className="space-y-6">
             <div>

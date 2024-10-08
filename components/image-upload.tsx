@@ -36,47 +36,50 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
         throw new Error('You must select an image to upload.')
       }
 
-      const file = event.target.files[0]
-      const fileSize = file.size / 1024 / 1024 // size in MB
+      for (let i = 0; i < event.target.files.length; i++) {
+        const file = event.target.files[i]
+        const fileSize = file.size / 1024 / 1024 // size in MB
 
-      if (fileSize > 6) {
-        throw new Error('File size exceeds 6MB limit. Please choose a smaller file.')
+        if (fileSize > 6) {
+          throw new Error(`File "${file.name}" exceeds 6MB limit. Please choose a smaller file.`)
+        }
+
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${userId}_${Date.now()}_${i}.${fileExt}`
+
+        console.log('Uploading file:', fileName, 'Size:', fileSize.toFixed(2), 'MB')
+
+        if (!token) {
+          throw new Error('Authentication token not available')
+        }
+
+        const { error: uploadError, data } = await supabase.storage
+          .from(bucketName)
+          .upload(fileName, file, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError)
+          throw uploadError
+        }
+
+        console.log('Upload successful:', data)
+
+        const { data: { publicUrl } } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(fileName)
+
+        console.log('Public URL:', publicUrl)
+
+        onUpload(publicUrl)
       }
 
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${userId}_${Date.now()}.${fileExt}`
-
-      console.log('Uploading file:', fileName, 'Size:', fileSize.toFixed(2), 'MB')
-
-      if (!token) {
-        throw new Error('Authentication token not available')
-      }
-
-      const { error: uploadError, data } = await supabase.storage
-        .from(bucketName)
-        .upload(fileName, file, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError)
-        throw uploadError
-      }
-
-      console.log('Upload successful:', data)
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(fileName)
-
-      console.log('Public URL:', publicUrl)
-
-      onUpload(publicUrl)
       toast({
-        title: "Image uploaded successfully",
-        description: "Your image has been uploaded and attached to the item.",
+        title: "Images uploaded successfully",
+        description: "Your images have been uploaded and attached to the item.",
       })
     } catch (error) {
       console.error('Error uploading image:', error)
@@ -96,7 +99,7 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
 
   return (
     <div>
-      <Label htmlFor="image" className="text-sm font-medium text-purple-700">Item Image (Max 6MB)</Label>
+      <Label htmlFor="image" className="text-sm font-medium text-purple-700">Item Images (Max 6MB each)</Label>
       <div className="mt-1 flex items-center space-x-2">
         <Button
           type="button"
@@ -110,7 +113,7 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
               Uploading...
             </>
           ) : (
-            'Choose File'
+            'Choose Files'
           )}
         </Button>
         <input
@@ -120,6 +123,7 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
           accept="image/*"
           onChange={uploadImage}
           className="hidden"
+          multiple // Add this to allow multiple file selection
         />
       </div>
     </div>

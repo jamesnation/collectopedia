@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Package, Search, PlusCircle, Filter, Edit, Trash2, RefreshCw, ChevronDown, ArrowUpDown, LayoutGrid, LayoutList, Loader2 } from "lucide-react"
+import { Package, Search, PlusCircle, Filter, Edit, Trash2, RefreshCw, ChevronDown, ArrowUpDown, LayoutGrid, LayoutList, Loader2, X } from "lucide-react"
 import { Toggle } from "@/components/ui/toggle"
 import Link from 'next/link'
 import Image from 'next/image'
@@ -214,6 +214,7 @@ export default function CatalogPage() {
   const [soldYearFilter, setSoldYearFilter] = useState<string>('all')
   const csvInputRef = useRef<HTMLInputElement>(null)
   const [isImporting, setIsImporting] = useState(false);
+  const [newItemImages, setNewItemImages] = useState<string[]>([])
 
   useEffect(() => {
     if (userId) {
@@ -488,6 +489,14 @@ export default function CatalogPage() {
     }
   };
 
+  const handleImageUpload = (url: string) => {
+    setNewItemImages(prev => [...prev, url]);
+  }
+
+  const handleRemoveImage = (index: number) => {
+    setNewItemImages(prev => prev.filter((_, i) => i !== index));
+  }
+
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault()
     if (userId) {
@@ -504,12 +513,13 @@ export default function CatalogPage() {
           value: parseFloat(newItem.value),
           notes: newItem.notes,
           isSold: false,
-          image: newItem.image, // This should now be accepted without error
+          image: newItemImages[0], // Use the first image as the main image
+          images: newItemImages, // Add all images
         })
         if (result.isSuccess) {
           setIsAddItemOpen(false)
           setNewItem({ name: '', type: '', brand: '', acquired: '', cost: '', value: '', notes: '', image: '' })
-          setNewItemImage(null)
+          setNewItemImages([])
           await fetchItems()
           toast({
             title: "Item Added",
@@ -529,11 +539,6 @@ export default function CatalogPage() {
         setIsLoading(false)
       }
     }
-  }
-
-  const handleImageUpload = (url: string) => {
-    setNewItemImage(url);
-    setNewItem(prev => ({ ...prev, image: url }));
   }
 
   const handleSort = (column: string) => {
@@ -770,8 +775,24 @@ export default function CatalogPage() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="image">Image</Label>
+                    <Label htmlFor="image">Images</Label>
                     <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {newItemImages.map((image, index) => (
+                        <div key={index} className="relative">
+                          <Image src={image} alt={`Uploaded image ${index + 1}`} width={100} height={100} className="rounded-md" />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-0 right-0 h-6 w-6"
+                            onClick={() => handleRemoveImage(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   
                   <Button type="submit" className="w-full">Add Item</Button>

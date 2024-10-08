@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { getItemsByUserId, getItemById, insertItem, updateItem, deleteItem } from "@/db/queries/items-queries";
 import { itemsTable, SelectItem } from "@/db/schema/items-schema";
+import { imagesTable } from "@/db/schema/images-schema"; // Add this line
 import { eq, ne, and, or } from 'drizzle-orm';
 import { db } from '@/db/db'; // Updated import
 import { itemTypeEnum, brandEnum } from "@/db/schema/items-schema";
+import crypto from 'crypto'; // Added import for crypto
 
 // Define ActionResult type
 type ActionResult<T> = {
@@ -49,7 +51,8 @@ export const createItemAction = async (item: {
   soldPrice?: number;
   ebayListed?: number;
   ebaySold?: number;
-  image?: string; // Add this line
+  image?: string;
+  images?: string[];
 }) => {
   try {
     console.log('Attempting to create item:', JSON.stringify(item, null, 2));
@@ -73,12 +76,23 @@ export const createItemAction = async (item: {
       soldPrice: item.soldPrice ? Math.round(item.soldPrice) : undefined,
       ebayListed: item.ebayListed ? Math.round(item.ebayListed) : undefined,
       ebaySold: item.ebaySold ? Math.round(item.ebaySold) : undefined,
-      image: item.image, // Make sure to include this line
+      image: item.image || item.images?.[0], // Use the first image as the main image
     };
 
     console.log('Data to be inserted:', JSON.stringify(insertData, null, 2));
 
     const result = await db.insert(itemsTable).values(insertData).returning();
+
+    // Insert additional images
+    if (item.images && item.images.length > 0) {
+      const imageInserts = item.images.map(url => ({
+        id: crypto.randomUUID(),
+        itemId: result[0].id,
+        userId: item.userId,
+        url,
+      }));
+      await db.insert(imagesTable).values(imageInserts);
+    }
 
     console.log('Item created successfully:', JSON.stringify(result[0], null, 2));
     return { isSuccess: true, data: result[0] };

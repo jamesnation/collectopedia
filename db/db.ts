@@ -1,15 +1,22 @@
-import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from './schema';
+import { profilesTable } from "./schema/profiles-schema";
+import { itemsTable } from "./schema/items-schema";
+import { soldItemsTable } from "./schema/sold-items-schema";
+import { imagesTable } from "./schema/images-schema";
 
-config({ path: ".env.local" });
+const connectionString = process.env.DATABASE_URL;
 
-// Ensure DATABASE_URL is defined
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not defined in the environment variables");
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
 }
 
-const client = postgres(process.env.DATABASE_URL!);
-
-export const db = drizzle(client, { schema });
+const client = postgres(connectionString);
+export const db = drizzle(client, {
+  schema: {
+    profiles: profilesTable,
+    items: itemsTable,
+    soldItems: soldItemsTable,
+    images: imagesTable,
+  },
+});
