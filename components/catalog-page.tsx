@@ -188,7 +188,7 @@ export default function CatalogPage() {
     cost: '',
     value: '',
     notes: '',
-    image: null as File | null
+    image: '' // Change this from File | null to string
   })
   const [view, setView] = useState('list')
   const [items, setItems] = useState<SelectItemType[]>([])
@@ -362,7 +362,10 @@ export default function CatalogPage() {
       setIsLoading(true);
       setLoadingItemId(editingItem.id);
       try {
-        const result = await updateItemAction(editingItem.id, editingItem);
+        const result = await updateItemAction(editingItem.id, {
+          ...editingItem,
+          image: editingItem.image, // Make sure to include the image URL here
+        });
         if (result.isSuccess) {
           setItems(items.map(item => item.id === editingItem.id ? editingItem : item));
           toast({
@@ -475,9 +478,15 @@ export default function CatalogPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setNewItem(prev => ({ ...prev, image: e.target.files![0] }))
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const imageUrl = reader.result as string;
+        setNewItem(prev => ({ ...prev, image: imageUrl }));
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -495,11 +504,11 @@ export default function CatalogPage() {
           value: parseFloat(newItem.value),
           notes: newItem.notes,
           isSold: false,
-          // Remove the image property from here
+          image: newItem.image, // This should now be accepted without error
         })
         if (result.isSuccess) {
           setIsAddItemOpen(false)
-          setNewItem({ name: '', type: '', brand: '', acquired: '', cost: '', value: '', notes: '', image: null })
+          setNewItem({ name: '', type: '', brand: '', acquired: '', cost: '', value: '', notes: '', image: '' })
           setNewItemImage(null)
           await fetchItems()
           toast({
@@ -523,7 +532,8 @@ export default function CatalogPage() {
   }
 
   const handleImageUpload = (url: string) => {
-    setNewItemImage(url)
+    setNewItemImage(url);
+    setNewItem(prev => ({ ...prev, image: url }));
   }
 
   const handleSort = (column: string) => {

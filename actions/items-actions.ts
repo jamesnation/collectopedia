@@ -49,6 +49,7 @@ export const createItemAction = async (item: {
   soldPrice?: number;
   ebayListed?: number;
   ebaySold?: number;
+  image?: string; // Add this line
 }) => {
   try {
     console.log('Attempting to create item:', JSON.stringify(item, null, 2));
@@ -72,6 +73,7 @@ export const createItemAction = async (item: {
       soldPrice: item.soldPrice ? Math.round(item.soldPrice) : undefined,
       ebayListed: item.ebayListed ? Math.round(item.ebayListed) : undefined,
       ebaySold: item.ebaySold ? Math.round(item.ebaySold) : undefined,
+      image: item.image, // Make sure to include this line
     };
 
     console.log('Data to be inserted:', JSON.stringify(insertData, null, 2));
