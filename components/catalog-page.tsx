@@ -32,6 +32,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import Papa from 'papaparse'
+import { DollarSign, ShoppingCart, TrendingUp, BarChart4, Percent } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
 
 // Dynamically import components that might cause hydration issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -67,6 +69,111 @@ type CSVItem = {
   soldPrice: string
   ebayListed: string
   ebaySold: string
+}
+
+// Add the SummaryPanel component
+function SummaryPanel({
+  totalValue = 0,
+  totalCost = 0,
+  totalItems = 0,
+  ebayListedValue = 0,
+  ebaySoldValue = 0,
+  showSold
+}: {
+  totalValue?: number
+  totalCost?: number
+  totalItems?: number
+  ebayListedValue?: number
+  ebaySoldValue?: number
+  showSold: boolean
+}) {
+  const profit = totalValue - totalCost
+  const profitMargin = totalCost > 0 ? (profit / totalCost) * 100 : 0
+
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('en-GB', { 
+      style: 'currency', 
+      currency: 'GBP',
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    })
+  }
+
+  const formatNumber = (value: number) => {
+    return value.toLocaleString('en-US')
+  }
+
+  return (
+    <Card className="mb-8 bg-white shadow-lg">
+      <CardContent className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <DollarSign className="h-5 w-5 text-purple-600" />
+              <h3 className="text-sm font-medium text-gray-500">Total {showSold ? "Sold" : "Collection"} Value</h3>
+            </div>
+            <p className="text-2xl font-bold text-purple-900">{formatCurrency(totalValue)}</p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <ShoppingCart className="h-5 w-5 text-purple-600" />
+              <h3 className="text-sm font-medium text-gray-500">Total Cost</h3>
+            </div>
+            <p className="text-2xl font-bold text-purple-900">{formatCurrency(totalCost)}</p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Package className="h-5 w-5 text-purple-600" />
+              <h3 className="text-sm font-medium text-gray-500">Total Items</h3>
+            </div>
+            <p className="text-2xl font-bold text-purple-900">{formatNumber(totalItems)}</p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-5 w-5 text-purple-600" />
+              <h3 className="text-sm font-medium text-gray-500">eBay Listed Value</h3>
+            </div>
+            <p className="text-2xl font-bold text-purple-900">{formatCurrency(ebayListedValue)}</p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <DollarSign className="h-5 w-5 text-purple-600" />
+              <h3 className="text-sm font-medium text-gray-500">eBay Sold Value</h3>
+            </div>
+            <p className="text-2xl font-bold text-purple-900">{formatCurrency(ebaySoldValue)}</p>
+          </div>
+        </div>
+
+        <Separator className="my-6" />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <BarChart4 className="h-5 w-5 text-purple-600" />
+              <h3 className="text-sm font-medium text-gray-500">Total Profit</h3>
+            </div>
+            <p className={`text-xl font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(profit)}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Percent className="h-5 w-5 text-purple-600" />
+              <h3 className="text-sm font-medium text-gray-500">Profit Margin</h3>
+            </div>
+            <p className={`text-xl font-semibold ${profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {profitMargin.toFixed(2)}%
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 export default function CatalogPage() {
@@ -182,6 +289,22 @@ export default function CatalogPage() {
     return result;
   }, [items, debouncedSearchQuery, typeFilter, brandFilter, yearFilter, sortDescriptor, showSold, soldYearFilter]);
 
+  // Calculate summary values based on filteredAndSortedItems
+  const summaryValues = useMemo(() => {
+    return filteredAndSortedItems.reduce((acc, item) => {
+      acc.totalValue += showSold ? (item.soldPrice ?? 0) : item.value;
+      acc.totalCost += item.cost;
+      acc.ebayListedValue += showSold ? 0 : (item.ebayListed ?? 0);
+      acc.ebaySoldValue += showSold ? 0 : (item.ebaySold ?? 0);
+      return acc;
+    }, {
+      totalValue: 0,
+      totalCost: 0,
+      ebayListedValue: 0,
+      ebaySoldValue: 0
+    });
+  }, [filteredAndSortedItems, showSold]);
+
   const fetchItems = async () => {
     setIsLoading(true)
     if (userId) {
@@ -195,11 +318,6 @@ export default function CatalogPage() {
     }
     setIsLoading(false)
   }
-
-  const totalCollectionValue = items.reduce((sum, item) => sum + (showSold ? (item.soldPrice || 0) : (item.isSold ? 0 : item.value)), 0);
-  const totalCollectionCost = items.reduce((sum, item) => sum + (showSold ? (item.isSold ? item.cost : 0) : (item.isSold ? 0 : item.cost)), 0);
-  const totalEbayListedValue = items.reduce((sum, item) => sum + (showSold ? 0 : (item.isSold ? 0 : (item.ebayListed || 0))), 0);
-  const totalEbaySoldValue = items.reduce((sum, item) => sum + (showSold ? 0 : (item.isSold ? 0 : (item.ebaySold || 0))), 0);
 
   const handleDelete = useCallback(async (id: string) => {
     setIsLoading(true)
@@ -674,32 +792,14 @@ export default function CatalogPage() {
           </div>
         </div>
 
-        <Card className="bg-white shadow-xl mb-8">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              <div>
-                <div className="text-3xl font-bold mb-2">${totalCollectionValue.toFixed(2)}</div>
-                <div className="text-sm text-gray-500">Total {showSold ? "Sold" : "Collection"} Value</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold mb-2">${totalCollectionCost.toFixed(2)}</div>
-                <div className="text-sm text-gray-500">Total {showSold ? "Sold Items" : "Collection"} Cost</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold mb-2">{items.length}</div>
-                <div className="text-sm text-gray-500">Total Items</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold mb-2">${totalEbayListedValue.toFixed(2)}</div>
-                <div className="text-sm text-gray-500">eBay Listed Value</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold mb-2">${totalEbaySoldValue.toFixed(2)}</div>
-                <div className="text-sm text-gray-500">eBay Sold Value</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <SummaryPanel
+          totalValue={summaryValues.totalValue}
+          totalCost={summaryValues.totalCost}
+          totalItems={filteredAndSortedItems.length}
+          ebayListedValue={summaryValues.ebayListedValue}
+          ebaySoldValue={summaryValues.ebaySoldValue}
+          showSold={showSold}
+        />
 
         <Collapsible
           open={isChartOpen}
@@ -1034,13 +1134,13 @@ export default function CatalogPage() {
                             </PopoverContent>
                           </Popover>
                         </TableCell>
-                        <TableCell className="text-right">${item.cost.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">£{item.cost.toFixed(2)}</TableCell>
                         <TableCell className="text-right font-bold text-purple-700">
-                          ${(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
+                          £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end space-x-2">
-                            <span className="whitespace-nowrap">${item.ebaySold?.toFixed(2) || 'N/A'}</span>
+                            <span className="whitespace-nowrap">£{item.ebaySold?.toFixed(2) || 'N/A'}</span>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1054,7 +1154,7 @@ export default function CatalogPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end space-x-2">
-                            <span className="whitespace-nowrap">${item.ebayListed?.toFixed(2) || 'N/A'}</span>
+                            <span className="whitespace-nowrap">£{item.ebayListed?.toFixed(2) || 'N/A'}</span>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1224,7 +1324,7 @@ export default function CatalogPage() {
                               className="text-sm hover:text-purple-700 transition-colors"
                               onClick={() => handleEditStart(item, 'cost')}
                             >
-                              Cost: ${item.cost.toFixed(2)}
+                              Cost: £{item.cost.toFixed(2)}
                             </button>
                           </PopoverTrigger>
                           <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
@@ -1253,7 +1353,7 @@ export default function CatalogPage() {
                               className="text-lg font-bold text-purple-700 hover:text-purple-600 transition-colors"
                               onClick={() => handleEditStart(item, 'value')}
                             >
-                              Value: ${item.value.toFixed(2)}
+                              Value: £{item.value.toFixed(2)}
                             </button>
                           </PopoverTrigger>
                           <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
@@ -1279,7 +1379,7 @@ export default function CatalogPage() {
                       </div>
                       <div className="flex flex-col space-y-2 text-sm">
                         <div className="flex items-center justify-between">
-                          <span className="whitespace-nowrap">eBay Sold: ${item.ebaySold?.toFixed(2) || 'N/A'}</span>
+                          <span className="whitespace-nowrap">eBay Sold: £{item.ebaySold?.toFixed(2) || 'N/A'}</span>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1291,7 +1391,7 @@ export default function CatalogPage() {
                           </Button>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="whitespace-nowrap">eBay Listed: ${item.ebayListed?.toFixed(2) || 'N/A'}</span>
+                          <span className="whitespace-nowrap">eBay Listed: £{item.ebayListed?.toFixed(2) || 'N/A'}</span>
                           <Button
                             variant="ghost"
                             size="icon"
