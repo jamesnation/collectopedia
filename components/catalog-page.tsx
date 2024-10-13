@@ -1289,7 +1289,7 @@ export default function CatalogPage() {
                             className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors text-left w-full"
                             onClick={() => handleEditStart(item, 'type')}
                           >
-                            Type: {item.type}
+                            {item.type}
                           </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
@@ -1326,7 +1326,7 @@ export default function CatalogPage() {
                             className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors text-left w-full"
                             onClick={() => handleEditStart(item, 'brand')}
                           >
-                            Brand: {item.brand}
+                            {item.brand}
                           </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
@@ -1352,98 +1352,8 @@ export default function CatalogPage() {
                           </div>
                         </PopoverContent>
                       </Popover>
-                      
-                      <div className="flex justify-between items-center mb-2">
-                        <Popover open={editingItemId === item.id && editingField === 'cost'} onOpenChange={(open) => !open && handleEditCancel()}>
-                          <PopoverTrigger asChild>
-                            <button 
-                              className="text-sm hover:text-purple-700 transition-colors"
-                              onClick={() => handleEditStart(item, 'cost')}
-                            >
-                              Cost: £{item.cost.toFixed(2)}
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
-                            <div className="space-y-4">
-                              <h4 className="font-semibold text-sm text-purple-900">Edit Item Cost</h4>
-                              <div className="space-y-2">
-                                <Label htmlFor={`cost-${item.id}`} className="text-sm font-medium text-purple-700">Cost</Label>
-                                <Input
-                                  id={`cost-${item.id}`}
-                                  type="number"
-                                  value={editingItem?.cost || ''}
-                                  onChange={handleCostChange}
-                                  className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
-                                />
-                              </div>
-                              <div className="flex justify-end space-x-2">
-                                <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                                <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                        <Popover open={editingItemId === item.id && editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
-                          <PopoverTrigger asChild>
-                            <button 
-                              className="text-lg font-bold text-purple-700 hover:text-purple-600 transition-colors"
-                              onClick={() => handleEditStart(item, 'value')}
-                            >
-                              Value: £{item.value.toFixed(2)}
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
-                            <div className="space-y-4">
-                              <h4 className="font-semibold text-sm text-purple-900">Edit Item Value</h4>
-                              <div className="space-y-2">
-                                <Label htmlFor={`value-${item.id}`} className="text-sm font-medium text-purple-700">Value</Label>
-                                <Input
-                                  id={`value-${item.id}`}
-                                  type="number"
-                                  value={editingItem?.value || ''}
-                                  onChange={handleValueChange}
-                                  className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
-                                />
-                              </div>
-                              <div className="flex justify-end space-x-2">
-                                <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                                <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="flex flex-col space-y-2 text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="whitespace-nowrap">eBay Sold: £{item.ebaySold?.toFixed(2) || 'N/A'}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEbayRefresh(item.id, item.name, 'sold')}
-                            className="h-8 w-8 p-0"
-                            disabled={loadingSoldItemId === item.id}
-                          >
-                            {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="whitespace-nowrap">eBay Listed: £{item.ebayListed?.toFixed(2) || 'N/A'}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEbayRefresh(item.id, item.name, 'listed')}
-                            className="h-8 w-8 p-0"
-                            disabled={loadingListedItemId === item.id}
-                          >
-                            {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="text-sm text-gray-500 mt-2">
-                        Last Updated: {new Date(item.updatedAt).toLocaleDateString()}
-                      </div>
                     </CardContent>
-                    <CardFooter className="bg-gray-50 p-4 flex justify-end space-x-2">
+                    <CardFooter className="bg-gray-50 p-4 flex justify-end">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
