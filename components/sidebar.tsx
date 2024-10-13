@@ -7,36 +7,45 @@ import { Separator } from "@/components/ui/separator"
 import { UserButton, SignInButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { useMediaQuery } from '@/hooks/use-media-query'
+import { useRouter } from 'next/navigation'
 
 export default function Sidebar() {
   const { user } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const router = useRouter();
 
   const toggleSidebar = () => setIsOpen(!isOpen);
+
+  const handleNavClick = (href: string) => {
+    router.push(href);
+    if (isMobile) {
+      setIsOpen(false);
+    }
+  };
 
   const SidebarContent = () => (
     <>
       <nav className="space-y-1 flex-grow">
-        <Link href="/catalog" className="flex items-center space-x-2 p-2 rounded hover:bg-purple-800">
+        <button onClick={() => handleNavClick('/catalog')} className="flex items-center space-x-2 p-2 rounded hover:bg-purple-800 w-full text-left">
           <Package className="h-4 w-4" />
           <span>Catalog</span>
-        </Link>
-        <Link href="/stats" className="flex items-center space-x-2 p-2 rounded hover:bg-purple-800">
+        </button>
+        <button onClick={() => handleNavClick('/stats')} className="flex items-center space-x-2 p-2 rounded hover:bg-purple-800 w-full text-left">
           <BarChart4 className="h-4 w-4" />
           <span>Stats</span>
-        </Link>
-        <Link href="/about" className="flex items-center space-x-2 p-2 rounded hover:bg-purple-800">
+        </button>
+        <button onClick={() => handleNavClick('/about')} className="flex items-center space-x-2 p-2 rounded hover:bg-purple-800 w-full text-left">
           <Info className="h-4 w-4" />
           <span>About</span>
-        </Link>
+        </button>
       </nav>
       
       <div className="mt-auto space-y-2">
-        <Link href="/settings" className="flex items-center space-x-2 p-2 rounded hover:bg-purple-800">
+        <button onClick={() => handleNavClick('/settings')} className="flex items-center space-x-2 p-2 rounded hover:bg-purple-800 w-full text-left">
           <Settings className="h-4 w-4" />
           <span>Settings</span>
-        </Link>
+        </button>
         <Separator className="my-2 bg-purple-700 opacity-50" />
         <SignedIn>
           <div className="flex items-center space-x-2 p-2">
@@ -76,7 +85,7 @@ export default function Sidebar() {
 
           {/* Centered Logo (always visible on mobile) */}
           <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-center h-16 bg-white shadow-sm">
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
               <Package className="h-6 w-6 text-purple-900" />
               <span className="text-lg font-bold text-purple-900 ml-2">Collectopedia</span>
             </Link>
