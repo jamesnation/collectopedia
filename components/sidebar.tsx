@@ -1,22 +1,22 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
-import { Package, BarChart4, Info, Settings } from 'lucide-react'
+import { Package, BarChart4, Info, Settings, Menu, X } from 'lucide-react'
 import { Separator } from "@/components/ui/separator"
 import { UserButton, SignInButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
+import { useMediaQuery } from '@/hooks/use-media-query'
 
 export default function Sidebar() {
   const { user } = useUser();
+  const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
-  return (
-    <aside className="w-52 bg-purple-900 text-white p-4 flex flex-col h-screen text-sm">
-      <Link href="/" className="flex items-center mb-6">
-        <Package className="h-6 w-6 mr-2" />
-        <span className="text-lg font-bold">Collectopedia</span>
-      </Link>
-      
+  const toggleSidebar = () => setIsOpen(!isOpen);
+
+  const SidebarContent = () => (
+    <>
       <nav className="space-y-1 flex-grow">
         <Link href="/catalog" className="flex items-center space-x-2 p-2 rounded hover:bg-purple-800">
           <Package className="h-4 w-4" />
@@ -59,6 +59,53 @@ export default function Sidebar() {
           </SignInButton>
         </SignedOut>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {isMobile ? (
+        <>
+          {/* Mobile Toggle Button */}
+          <button
+            onClick={toggleSidebar}
+            className="fixed top-4 left-4 z-50 p-2 bg-purple-900 text-white rounded-md"
+          >
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
+          {/* Centered Logo (always visible on mobile) */}
+          <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-center h-16 bg-white shadow-sm">
+            <Link href="/" className="flex items-center">
+              <Package className="h-6 w-6 text-purple-900" />
+              <span className="text-lg font-bold text-purple-900 ml-2">Collectopedia</span>
+            </Link>
+          </div>
+
+          {/* Mobile Sidebar (slides in from left) */}
+          <aside 
+            className={`
+              fixed inset-y-0 left-0 z-30 transition-transform duration-300 ease-in-out transform
+              ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+              w-52 bg-purple-900 text-white p-4 flex flex-col h-screen text-sm
+            `}
+          >
+            <div className="mt-16">
+              <SidebarContent />
+            </div>
+          </aside>
+        </>
+      ) : (
+        // Desktop Sidebar
+        <aside className="relative w-52 bg-purple-900 text-white p-4 flex flex-col h-screen text-sm">
+          <Link href="/" className="flex items-center mb-6">
+            <Package className="h-6 w-6 mr-2" />
+            <span className="text-lg font-bold">Collectopedia</span>
+          </Link>
+          
+          <SidebarContent />
+        </aside>
+      )}
+    </>
   )
 }
