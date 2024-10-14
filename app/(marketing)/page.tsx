@@ -1,74 +1,76 @@
+import React from 'react'
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight, CheckCircle } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import Image from 'next/image'
 
-export default function MinimalistHomepage() {
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#FDF7F5] text-gray-900 flex flex-col">
-      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col lg:flex-row items-center justify-between">
-        <div className="w-full lg:w-1/2 lg:pr-12 mb-12 lg:mb-0">
-          <h1 className="text-4xl sm:text-5xl font-bold text-purple-900 mb-6">
-            Organize your collection with ease
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Collectopedia brings your passion to life with a sleek, intuitive dashboard. Track, manage, and showcase your collectibles like never before.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Input type="email" placeholder="Enter your email" className="flex-grow" />
-            <Button className="bg-purple-600 text-white hover:bg-purple-700">
-              Get started <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+    <div className="min-h-screen bg-gray-900 text-gray-100">
+      {/* Main content */}
+      <main className="flex-grow">
+        <div className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+          <div className="absolute inset-0 z-0">
+            <svg className="w-full h-full" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g filter="url(#filter0_f)">
+                <circle cx="500" cy="500" r="300" fill="url(#paint0_radial)" />
+              </g>
+              <defs>
+                <filter id="filter0_f" x="0" y="0" width="1000" height="1000" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                  <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                  <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+                  <feGaussianBlur stdDeviation="100" result="effect1_foregroundBlur"/>
+                </filter>
+                <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(500 500) rotate(90) scale(300)">
+                  <stop stopColor="#8B5CF6" stopOpacity="0.6"/>
+                  <stop offset="1" stopColor="#8B5CF6" stopOpacity="0"/>
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+          <div className="relative z-10">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl sm:text-5xl font-bold mb-6 leading-tight">
+                Simplify Your Collection Management
+              </h1>
+              <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+                No nonsense. Just an easy way to track your collectibles and their value.
+              </p>
+              <div className="flex justify-center mb-12">
+                <Button className="bg-purple-600 text-white hover:bg-purple-700 px-8 py-3 text-lg">
+                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+            <div className="relative w-full max-w-4xl mx-auto aspect-video rounded-lg overflow-hidden shadow-2xl">
+              <Image
+                src="/images/placeholder-dashboard.png"
+                alt="Collectopedia Dashboard"
+                layout="fill"
+                objectFit="cover"
+                className="rounded-lg"
+              />
+            </div>
           </div>
         </div>
-        <div className="w-full lg:w-1/2 mt-12 lg:mt-0">
-          <Card className="shadow-2xl">
-            <CardContent className="p-6">
-              <div className="relative w-full aspect-video">
-                <Image
-                  src="/images/placeholder-dashboard.png"
-                  alt="Collectopedia dashboard preview"
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  className="rounded-lg"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+
+        <section id="about" className="py-20 px-4 sm:px-6 lg:px-8">
+          <div className="container mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-6">
+              About Collectopedia
+            </h2>
+            <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+              We believe in keeping things simple. Collectopedia is built for collectors who want a straightforward, 
+              no-frills way to manage their collections and track their value.
+            </p>
+          </div>
+        </section>
+
+        <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t border-gray-800">
+          <div className="container mx-auto text-center">
+            <p className="text-sm text-gray-500">&copy; 2024 Collectopedia. All rights reserved.</p>
+          </div>
+        </footer>
       </main>
-
-      <section className="bg-white py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-purple-900 mb-12">
-            Why collectors love our dashboard
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              "Intuitive item cataloging",
-              "Real-time value tracking",
-              "Custom collection insights",
-              "Sleek, minimalist design",
-              "Powerful search and filter",
-              "Mobile-friendly interface"
-            ].map((feature, index) => (
-              <div key={index} className="flex items-center">
-                <CheckCircle className="h-6 w-6 text-purple-600 mr-2" />
-                <span className="text-gray-700">{feature}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <footer className="bg-[#FDF7F5] py-8">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-base text-gray-500">&copy; 2024 Collectopedia. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
