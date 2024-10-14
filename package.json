@@ -55,7 +55,7 @@
     "framer-motion": "^11.11.0",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.436.0",
-    "next": "14.2.7",
+    "next": "14.2.15",
     "next-themes": "^0.3.0",
     "papaparse": "^5.4.1",
     "postgres": "^3.4.4",
