@@ -104,7 +104,7 @@ function SummaryPanel({
   }
 
   return (
-    <Card className="mb-8 bg-secondary">
+    <Card className="mb-8 bg-card">
       <CardContent className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <div className="space-y-2">
@@ -667,7 +667,7 @@ export default function CatalogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-slate-50 text-foreground">
       <main className="container mx-auto px-4 py-12">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
           <h1 className="text-4xl font-serif text-primary">Your Collection Catalog</h1>

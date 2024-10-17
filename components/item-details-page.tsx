@@ -276,7 +276,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
           <p className="mt-4 text-lg text-foreground">Loading item details...</p>
@@ -287,14 +287,14 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
   if (!item) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <p className="text-lg text-destructive">Error: Item not found</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50">
       <main className="container mx-auto px-4 py-12">
         <Link href="/catalog" className="inline-flex items-center text-primary hover:text-primary/80 mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
