@@ -71,7 +71,7 @@ type CSVItem = {
   ebaySold: string
 }
 
-// Add the SummaryPanel component
+// Update the SummaryPanel component
 function SummaryPanel({
   totalValue = 0,
   totalCost = 0,
@@ -104,47 +104,47 @@ function SummaryPanel({
   }
 
   return (
-    <Card className="mb-8 bg-white shadow-lg">
+    <Card className="mb-8 bg-secondary">
       <CardContent className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5 text-purple-600" />
-              <h3 className="text-sm font-medium text-gray-500">Total {showSold ? "Sold" : "Collection"} Value</h3>
+              <DollarSign className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-medium text-primary">Total {showSold ? "Sold" : "Collection"} Value</h3>
             </div>
-            <p className="text-2xl font-bold text-purple-900">{formatCurrency(totalValue)}</p>
+            <p className="text-2xl font-bold text-primary">{formatCurrency(totalValue)}</p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <ShoppingCart className="h-5 w-5 text-purple-600" />
-              <h3 className="text-sm font-medium text-gray-500">Total Cost</h3>
+              <ShoppingCart className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-medium text-primary">Total Cost</h3>
             </div>
-            <p className="text-2xl font-bold text-purple-900">{formatCurrency(totalCost)}</p>
+            <p className="text-2xl font-bold text-primary">{formatCurrency(totalCost)}</p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <Package className="h-5 w-5 text-purple-600" />
-              <h3 className="text-sm font-medium text-gray-500">Total Items</h3>
+              <Package className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-medium text-primary">Total Items</h3>
             </div>
-            <p className="text-2xl font-bold text-purple-900">{formatNumber(totalItems)}</p>
+            <p className="text-2xl font-bold text-primary">{formatNumber(totalItems)}</p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-purple-600" />
-              <h3 className="text-sm font-medium text-gray-500">eBay Listed Value</h3>
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-medium text-primary">eBay Listed Value</h3>
             </div>
-            <p className="text-2xl font-bold text-purple-900">{formatCurrency(ebayListedValue)}</p>
+            <p className="text-2xl font-bold text-primary">{formatCurrency(ebayListedValue)}</p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5 text-purple-600" />
-              <h3 className="text-sm font-medium text-gray-500">eBay Sold Value</h3>
+              <DollarSign className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-medium text-primary">eBay Sold Value</h3>
             </div>
-            <p className="text-2xl font-bold text-purple-900">{formatCurrency(ebaySoldValue)}</p>
+            <p className="text-2xl font-bold text-primary">{formatCurrency(ebaySoldValue)}</p>
           </div>
         </div>
 
@@ -153,8 +153,8 @@ function SummaryPanel({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <BarChart4 className="h-5 w-5 text-purple-600" />
-              <h3 className="text-sm font-medium text-gray-500">Total Profit</h3>
+              <BarChart4 className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-medium text-primary">Total Profit</h3>
             </div>
             <p className={`text-xl font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {formatCurrency(profit)}
@@ -163,8 +163,8 @@ function SummaryPanel({
 
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <Percent className="h-5 w-5 text-purple-600" />
-              <h3 className="text-sm font-medium text-gray-500">Profit Margin</h3>
+              <Percent className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-medium text-primary">Profit Margin</h3>
             </div>
             <p className={`text-xl font-semibold ${profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {profitMargin.toFixed(2)}%
@@ -667,14 +667,14 @@ export default function CatalogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDF7F5]">
+    <div className="min-h-screen bg-background text-foreground">
       <main className="container mx-auto px-4 py-12">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
-          <h1 className="text-4xl font-serif text-purple-900">Your Collection Catalog</h1>
+          <h1 className="text-4xl font-serif text-primary">Your Collection Catalog</h1>
           <div className="flex space-x-2">
             <Sheet open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
               <SheetTrigger asChild>
-                <Button className="bg-purple-700 text-white hover:bg-purple-600 w-full sm:w-auto">
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto">
                   <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
                 </Button>
               </SheetTrigger>
@@ -687,20 +687,20 @@ export default function CatalogPage() {
                 </SheetHeader>
                 <form onSubmit={handleAddItem} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium text-purple-700">Name</Label>
+                    <Label htmlFor="name" className="text-sm font-medium text-primary">Name</Label>
                     <Input
                       id="name"
                       name="name"
                       value={newItem.name}
                       onChange={handleInputChange}
                       required
-                      className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="type" className="text-sm font-medium text-purple-700">Type</Label>
+                    <Label htmlFor="type" className="text-sm font-medium text-primary">Type</Label>
                     <Select name="type" value={newItem.type} onValueChange={(value) => handleInputChange({ target: { name: 'type', value } } as any)}>
-                      <SelectTrigger className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                      <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -715,9 +715,9 @@ export default function CatalogPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="brand" className="text-sm font-medium text-purple-700">Brand</Label>
+                    <Label htmlFor="brand" className="text-sm font-medium text-primary">Brand</Label>
                     <Select name="brand" value={newItem.brand} onValueChange={(value) => handleInputChange({ target: { name: 'brand', value } } as any)}>
-                      <SelectTrigger className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                      <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
                         <SelectValue placeholder="Select brand" />
                       </SelectTrigger>
                       <SelectContent>
@@ -728,7 +728,7 @@ export default function CatalogPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="acquired" className="text-sm font-medium text-purple-700">Date Acquired</Label>
+                    <Label htmlFor="acquired" className="text-sm font-medium text-primary">Date Acquired</Label>
                     <Input
                       id="acquired"
                       name="acquired"
@@ -736,11 +736,11 @@ export default function CatalogPage() {
                       value={newItem.acquired}
                       onChange={handleInputChange}
                       required
-                      className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="cost" className="text-sm font-medium text-purple-700">Cost</Label>
+                    <Label htmlFor="cost" className="text-sm font-medium text-primary">Cost</Label>
                     <Input
                       id="cost"
                       name="cost"
@@ -748,11 +748,11 @@ export default function CatalogPage() {
                       value={newItem.cost}
                       onChange={handleInputChange}
                       required
-                      className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="value" className="text-sm font-medium text-purple-700">Estimated Value</Label>
+                    <Label htmlFor="value" className="text-sm font-medium text-primary">Estimated Value</Label>
                     <Input
                       id="value"
                       name="value"
@@ -760,7 +760,7 @@ export default function CatalogPage() {
                       value={newItem.value}
                       onChange={handleInputChange}
                       required
-                      className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
                     />
                   </div>
                   <div className="space-y-2">
@@ -770,7 +770,7 @@ export default function CatalogPage() {
                       name="notes"
                       value={newItem.notes}
                       onChange={handleInputChange}
-                      className="min-h-[100px]"
+                      className="min-h-[100px] border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
                     />
                   </div>
                   
@@ -795,13 +795,13 @@ export default function CatalogPage() {
                     </div>
                   </div>
                   
-                  <Button type="submit" className="w-full">Add Item</Button>
+                  <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">Add Item</Button>
                 </form>
               </SheetContent>
             </Sheet>
             <Button
               onClick={() => csvInputRef.current?.click()}
-              className="bg-green-600 text-white hover:bg-green-500 w-full sm:w-auto"
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90 w-full sm:w-auto"
               disabled={isImporting}
             >
               {isImporting ? (
@@ -841,7 +841,7 @@ export default function CatalogPage() {
           className="mb-8"
         >
           <CollapsibleTrigger asChild>
-            <Button variant="outline" className="flex items-center justify-between w-full">
+            <Button variant="outline" className="flex items-center justify-between w-full border-input text-primary hover:bg-accent hover:text-accent-foreground">
               Collection Value Over Time
               <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isChartOpen ? 'transform rotate-180' : ''}`} />
             </Button>
@@ -867,22 +867,22 @@ export default function CatalogPage() {
           <div className="relative w-full md:w-64">
             <Input
               placeholder="Search items..."
-              className="pl-10 border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+              className="pl-10 border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 debouncedSetSearch(e.target.value);
               }}
             />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
           </div>
           <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-            <div className="flex items-center space-x-2 bg-white rounded-md p-1">
+            <div className="flex items-center space-x-2 bg-background rounded-md p-1">
               <Toggle
                 pressed={view === 'list'}
                 onPressedChange={() => setView('list')}
                 aria-label="List view"
-                className={`${view === 'list' ? 'bg-purple-100 text-purple-700' : ''} p-2 rounded-md`}
+                className={`${view === 'list' ? 'bg-muted text-primary' : ''} p-2 rounded-md`}
               >
                 <LayoutList className="h-5 w-5" />
               </Toggle>
@@ -890,13 +890,13 @@ export default function CatalogPage() {
                 pressed={view === 'grid'}
                 onPressedChange={() => setView('grid')}
                 aria-label="Grid view"
-                className={`${view === 'grid' ? 'bg-purple-100 text-purple-700' : ''} p-2 rounded-md`}
+                className={`${view === 'grid' ? 'bg-muted text-primary' : ''} p-2 rounded-md`}
               >
                 <LayoutGrid className="h-5 w-5" />
               </Toggle>
             </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full md:w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+              <SelectTrigger className="w-full md:w-[140px] border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
@@ -907,7 +907,7 @@ export default function CatalogPage() {
               </SelectContent>
             </Select>
             <Select value={brandFilter} onValueChange={setBrandFilter}>
-              <SelectTrigger className="w-full md:w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+              <SelectTrigger className="w-full md:w-[140px] border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
                 <SelectValue placeholder="Filter by brand" />
               </SelectTrigger>
               <SelectContent>
@@ -918,7 +918,7 @@ export default function CatalogPage() {
               </SelectContent>
             </Select>
             <Select value={yearFilter} onValueChange={setYearFilter}>
-              <SelectTrigger className="w-full md:w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+              <SelectTrigger className="w-full md:w-[140px] border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
                 <SelectValue placeholder="Filter by year" />
               </SelectTrigger>
               <SelectContent>
@@ -941,7 +941,7 @@ export default function CatalogPage() {
             </div>
             {showSold && (
               <Select value={soldYearFilter} onValueChange={setSoldYearFilter}>
-                <SelectTrigger className="w-full md:w-[140px] border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                <SelectTrigger className="w-full md:w-[140px] border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
                   <SelectValue placeholder="Filter sold by year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -959,15 +959,15 @@ export default function CatalogPage() {
         </div>
 
         {view === 'list' ? (
-          <div className="bg-[#FDF7F5] rounded-lg overflow-hidden">
+          <div className="bg-card rounded-lg overflow-hidden border border-border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-purple-50">
+                <TableRow className="bg-muted/50">
                   <TableHead className="w-24">Image</TableHead>
                   <TableHead className="w-1/4">
                     <Button 
                       variant="ghost" 
-                      className="font-bold text-purple-700 px-0"
+                      className="font-bold text-primary hover:bg-accent hover:text-accent-foreground"
                       onClick={() => handleSort('name')}
                     >
                       Item Details <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'name' ? 'opacity-100' : 'opacity-50'}`} />
@@ -976,7 +976,7 @@ export default function CatalogPage() {
                   <TableHead className="w-32">
                     <Button 
                       variant="ghost" 
-                      className="font-bold text-purple-700 px-0"
+                      className="font-bold text-primary hover:bg-accent hover:text-accent-foreground"
                       onClick={() => handleSort('acquired')}
                     >
                       Acquired <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'acquired' ? 'opacity-100' : 'opacity-50'}`} />
@@ -985,7 +985,7 @@ export default function CatalogPage() {
                   <TableHead className="w-24 text-right">
                     <Button 
                       variant="ghost" 
-                      className="font-bold text-purple-700 px-0"
+                      className="font-bold text-primary hover:bg-accent hover:text-accent-foreground"
                       onClick={() => handleSort('cost')}
                     >
                       Cost <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'cost' ? 'opacity-100' : 'opacity-50'}`} />
@@ -994,7 +994,7 @@ export default function CatalogPage() {
                   <TableHead className="w-24 text-right">
                     <Button 
                       variant="ghost" 
-                      className="font-bold text-purple-700 px-0"
+                      className="font-bold text-primary hover:bg-accent hover:text-accent-foreground"
                       onClick={() => handleSort(showSold ? 'soldPrice' : 'value')}
                     >
                       {showSold ? "Sold Price" : "Value"} <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === (showSold ? 'soldPrice' : 'value') ? 'opacity-100' : 'opacity-50'}`} />
@@ -1005,7 +1005,7 @@ export default function CatalogPage() {
                   <TableHead className="w-40">
                     <Button 
                       variant="ghost" 
-                      className="font-bold text-purple-700 px-0"
+                      className="font-bold text-primary hover:bg-accent hover:text-accent-foreground"
                       onClick={() => handleSort('updatedAt')}
                     >
                       Last Updated <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'updatedAt' ? 'opacity-100' : 'opacity-50'}`} />
@@ -1015,7 +1015,7 @@ export default function CatalogPage() {
                     <TableHead className="w-32">
                       <Button 
                         variant="ghost" 
-                        className="font-bold text-purple-700 px-0"
+                        className="font-bold text-primary hover:bg-accent hover:text-accent-foreground"
                         onClick={() => handleSort('soldDate')}
                       >
                         Sold Date <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'soldDate' ? 'opacity-100' : 'opacity-50'}`} />
@@ -1029,7 +1029,7 @@ export default function CatalogPage() {
                 {isLoading
                   ? Array(5).fill(0).map((_, index) => <TableRowSkeleton key={index} />)
                   : filteredAndSortedItems.map((item) => (
-                      <TableRow key={item.id} className="bg-white hover:bg-purple-50 transition-colors">
+                      <TableRow key={item.id} className="bg-card hover:bg-muted/50 transition-colors">
                         <TableCell className="p-2">
                           <Link href={`/item/${item.id}`}>
                             <Image
@@ -1047,27 +1047,27 @@ export default function CatalogPage() {
                             <Popover open={editingItemId === item.id && editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
                               <PopoverTrigger asChild>
                                 <button 
-                                  className="text-sm font-medium hover:text-purple-700 transition-colors"
+                                  className="text-sm font-medium hover:text-primary transition-colors"
                                   onClick={() => handleEditStart(item, 'name')}
                                 >
                                   {item.name}
                                 </button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                              <PopoverContent className="w-80 bg-card border-border">
                                 <div className="space-y-4">
-                                  <h4 className="font-semibold text-sm text-purple-900">Edit Item Name</h4>
+                                  <h4 className="font-semibold text-sm text-primary">Edit Item Name</h4>
                                   <div className="space-y-2">
-                                    <Label htmlFor={`name-${item.id}`} className="text-sm font-medium text-purple-700">Name</Label>
+                                    <Label htmlFor={`name-${item.id}`} className="text-sm font-medium text-primary">Name</Label>
                                     <Input
                                       id={`name-${item.id}`}
                                       value={editingItem?.name || ''}
                                       onChange={handleNameChange}
-                                      className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                                      className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
                                     />
                                   </div>
                                   <div className="flex justify-end space-x-2">
-                                    <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                                    <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                                    <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                                    <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                                   </div>
                                 </div>
                               </PopoverContent>
@@ -1075,19 +1075,19 @@ export default function CatalogPage() {
                             <Popover open={editingItemId === item.id && editingField === 'type'} onOpenChange={(open) => !open && handleEditCancel()}>
                               <PopoverTrigger asChild>
                                 <button 
-                                  className="text-sm text-gray-600 hover:text-purple-700 transition-colors block"
+                                  className="text-sm text-muted-foreground hover:text-primary transition-colors block"
                                   onClick={() => handleEditStart(item, 'type')}
                                 >
                                   {item.type}
                                 </button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                              <PopoverContent className="w-80 bg-card border-border">
                                 <div className="space-y-4">
-                                  <h4 className="font-semibold text-sm text-purple-900">Edit Item Type</h4>
+                                  <h4 className="font-semibold text-sm text-primary">Edit Item Type</h4>
                                   <div className="space-y-2">
-                                    <Label htmlFor={`type-${item.id}`} className="text-sm font-medium text-purple-700">Type</Label>
+                                    <Label htmlFor={`type-${item.id}`} className="text-sm font-medium text-primary">Type</Label>
                                     <Select value={editingItem?.type || ''} onValueChange={handleTypeChange}>
-                                      <SelectTrigger id={`type-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                                      <SelectTrigger id={`type-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
                                         <SelectValue placeholder="Select type" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -1098,8 +1098,8 @@ export default function CatalogPage() {
                                     </Select>
                                   </div>
                                   <div className="flex justify-end space-x-2">
-                                    <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                                    <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                                    <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                                    <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                                   </div>
                                 </div>
                               </PopoverContent>
@@ -1107,19 +1107,19 @@ export default function CatalogPage() {
                             <Popover open={editingItemId === item.id && editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
                               <PopoverTrigger asChild>
                                 <button 
-                                  className="text-sm text-gray-500 hover:text-purple-700 transition-colors block"
+                                  className="text-sm text-muted-foreground hover:text-primary transition-colors block"
                                   onClick={() => handleEditStart(item, 'brand')}
                                 >
                                   {item.brand}
                                 </button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                              <PopoverContent className="w-80 bg-card border-border">
                                 <div className="space-y-4">
-                                  <h4 className="font-semibold text-sm text-purple-900">Edit Item Brand</h4>
+                                  <h4 className="font-semibold text-sm text-primary">Edit Item Brand</h4>
                                   <div className="space-y-2">
-                                    <Label htmlFor={`brand-${item.id}`} className="text-sm font-medium text-purple-700">Brand</Label>
+                                    <Label htmlFor={`brand-${item.id}`} className="text-sm font-medium text-primary">Brand</Label>
                                     <Select value={editingItem?.brand || ''} onValueChange={handleBrandChange}>
-                                      <SelectTrigger id={`brand-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                                      <SelectTrigger id={`brand-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
                                         <SelectValue placeholder="Select brand" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -1130,8 +1130,8 @@ export default function CatalogPage() {
                                     </Select>
                                   </div>
                                   <div className="flex justify-end space-x-2">
-                                    <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                                    <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                                    <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                                    <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                                   </div>
                                 </div>
                               </PopoverContent>
@@ -1142,35 +1142,35 @@ export default function CatalogPage() {
                           <Popover open={editingItemId === item.id && editingField === 'acquired'} onOpenChange={(open) => !open && handleEditCancel()}>
                             <PopoverTrigger asChild>
                               <button 
-                                className="text-sm hover:text-purple-700 transition-colors"
+                                className="text-sm hover:text-primary transition-colors"
                                 onClick={() => handleEditStart(item, 'acquired')}
                               >
                                 {new Date(item.acquired).toLocaleDateString()}
                               </button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                            <PopoverContent className="w-80 bg-card border-border">
                               <div className="space-y-4">
-                                <h4 className="font-semibold text-sm text-purple-900">Edit Acquired Date</h4>
+                                <h4 className="font-semibold text-sm text-primary">Edit Acquired Date</h4>
                                 <div className="space-y-2">
-                                  <Label htmlFor={`acquired-${item.id}`} className="text-sm font-medium text-purple-700">Acquired Date</Label>
+                                  <Label htmlFor={`acquired-${item.id}`} className="text-sm font-medium text-primary">Acquired Date</Label>
                                   <Input
                                     id={`acquired-${item.id}`}
                                     type="date"
                                     value={editingItem?.acquired ? new Date(editingItem.acquired).toISOString().split('T')[0] : ''}
                                     onChange={handleAcquiredChange}
-                                    className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                                    className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
                                   />
                                 </div>
                                 <div className="flex justify-end space-x-2">
-                                  <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                                  <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                                  <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                                  <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                                 </div>
                               </div>
                             </PopoverContent>
                           </Popover>
                         </TableCell>
                         <TableCell className="text-right">£{item.cost.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-bold text-purple-700">
+                        <TableCell className="text-right font-bold text-primary">
                           £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
                         </TableCell>
                         <TableCell className="text-right">
@@ -1211,7 +1211,7 @@ export default function CatalogPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                                className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -1257,27 +1257,27 @@ export default function CatalogPage() {
                       <Popover open={editingItemId === item.id && editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
                         <PopoverTrigger asChild>
                           <button 
-                            className="text-xl font-semibold mb-2 hover:text-purple-700 transition-colors"
+                            className="text-xl font-semibold mb-2 hover:text-primary transition-colors"
                             onClick={() => handleEditStart(item, 'name')}
                           >
                             {item.name}
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                        <PopoverContent className="w-80 bg-card border-border">
                           <div className="space-y-4">
-                            <h4 className="font-semibold text-sm text-purple-900">Edit Item Name</h4>
+                            <h4 className="font-semibold text-sm text-primary">Edit Item Name</h4>
                             <div className="space-y-2">
-                              <Label htmlFor={`name-${item.id}`} className="text-sm font-medium text-purple-700">Name</Label>
+                              <Label htmlFor={`name-${item.id}`} className="text-sm font-medium text-primary">Name</Label>
                               <Input
                                 id={`name-${item.id}`}
                                 value={editingItem?.name || ''}
                                 onChange={handleNameChange}
-                                className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                                className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
                               />
                             </div>
                             <div className="flex justify-end space-x-2">
-                              <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                              <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                              <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                             </div>
                           </div>
                         </PopoverContent>
@@ -1286,35 +1286,31 @@ export default function CatalogPage() {
                       <Popover open={editingItemId === item.id && editingField === 'type'} onOpenChange={(open) => !open && handleEditCancel()}>
                         <PopoverTrigger asChild>
                           <button 
-                            className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors text-left w-full"
+                            className="text-sm text-muted-foreground mb-2 block hover:text-primary transition-colors text-left w-full"
                             onClick={() => handleEditStart(item, 'type')}
                           >
                             {item.type}
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                        <PopoverContent className="w-80 bg-card border-border">
                           <div className="space-y-4">
-                            <h4 className="font-semibold text-sm text-purple-900">Edit Item Type</h4>
+                            <h4 className="font-semibold text-sm text-primary">Edit Item Type</h4>
                             <div className="space-y-2">
-                              <Label htmlFor={`type-${item.id}`} className="text-sm font-medium text-purple-700">Type</Label>
+                              <Label htmlFor={`type-${item.id}`} className="text-sm font-medium text-primary">Type</Label>
                               <Select value={editingItem?.type || ''} onValueChange={handleTypeChange}>
-                                <SelectTrigger id={`type-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                                <SelectTrigger id={`type-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
                                   <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="Vintage - MISB">Vintage - MISB</SelectItem>
-                                  <SelectItem value="Vintage - opened">Vintage - opened</SelectItem>
-                                  <SelectItem value="New - MISB">New - MISB</SelectItem>
-                                  <SelectItem value="New - opened">New - opened</SelectItem>
-                                  <SelectItem value="New - KO">New - KO</SelectItem>
-                                  <SelectItem value="Cel">Cel</SelectItem>
-                                  <SelectItem value="Other">Other</SelectItem>
+                                  {itemTypeEnum.enumValues.map((type) => (
+                                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
                             <div className="flex justify-end space-x-2">
-                              <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                              <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                              <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                             </div>
                           </div>
                         </PopoverContent>
@@ -1323,19 +1319,19 @@ export default function CatalogPage() {
                       <Popover open={editingItemId === item.id && editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
                         <PopoverTrigger asChild>
                           <button 
-                            className="text-sm text-gray-500 mb-2 block hover:text-purple-700 transition-colors text-left w-full"
+                            className="text-sm text-muted-foreground mb-2 block hover:text-primary transition-colors text-left w-full"
                             onClick={() => handleEditStart(item, 'brand')}
                           >
                             {item.brand}
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80 bg-[#FDF7F5] border-purple-200">
+                        <PopoverContent className="w-80 bg-card border-border">
                           <div className="space-y-4">
-                            <h4 className="font-semibold text-sm text-purple-900">Edit Item Brand</h4>
+                            <h4 className="font-semibold text-sm text-primary">Edit Item Brand</h4>
                             <div className="space-y-2">
-                              <Label htmlFor={`brand-${item.id}`} className="text-sm font-medium text-purple-700">Brand</Label>
+                              <Label htmlFor={`brand-${item.id}`} className="text-sm font-medium text-primary">Brand</Label>
                               <Select value={editingItem?.brand || ''} onValueChange={handleBrandChange}>
-                                <SelectTrigger id={`brand-${item.id}`} className="border-purple-300 focus:border-purple-500 focus:ring-purple-500">
+                                <SelectTrigger id={`brand-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
                                   <SelectValue placeholder="Select brand" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1346,8 +1342,8 @@ export default function CatalogPage() {
                               </Select>
                             </div>
                             <div className="flex justify-end space-x-2">
-                              <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                              <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                              <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                             </div>
                           </div>
                         </PopoverContent>
@@ -1359,7 +1355,7 @@ export default function CatalogPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                            className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1384,16 +1380,16 @@ export default function CatalogPage() {
         )}
 
         <div className="mt-6 flex justify-between items-center">
-          <div className="text-sm text-gray-500">Showing {filteredAndSortedItems.length} of {items.length} items</div>
+          <div className="text-sm text-muted-foreground">Showing {filteredAndSortedItems.length} of {items.length} items</div>
           <div className="flex space-x-2">
-            <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100" disabled>Previous</Button>
-            <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100" disabled>Next</Button>
+            <Button variant="outline" className="border-input text-primary hover:bg-accent hover:text-accent-foreground" disabled>Previous</Button>
+            <Button variant="outline" className="border-input text-primary hover:bg-accent hover:text-accent-foreground" disabled>Next</Button>
           </div>
         </div>
       </main>
 
-      <footer className="container mx-auto px-4 py-8 mt-12 border-t border-gray-200">
-        <div className="text-center text-sm text-gray-500">
+      <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border">
+        <div className="text-center text-sm text-muted-foreground">
           © 2024 Collectopedia. All rights reserved.
         </div>
       </footer>

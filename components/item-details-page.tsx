@@ -276,10 +276,10 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDF7F5] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto" />
-          <p className="mt-4 text-lg text-purple-800">Loading item details...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="mt-4 text-lg text-foreground">Loading item details...</p>
         </div>
       </div>
     )
@@ -287,16 +287,16 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
   if (!item) {
     return (
-      <div className="min-h-screen bg-[#FDF7F5] flex items-center justify-center">
-        <p className="text-lg text-red-600">Error: Item not found</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-lg text-destructive">Error: Item not found</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#FDF7F5]">
+    <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-12">
-        <Link href="/catalog" className="inline-flex items-center text-purple-700 hover:text-purple-500 mb-6">
+        <Link href="/catalog" className="inline-flex items-center text-primary hover:text-primary/80 mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Catalog
         </Link>
@@ -316,7 +316,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
                     onClick={() => setCurrentImageIndex(prevIndex => (prevIndex > 0 ? prevIndex - 1 : images.length - 1))}
                   >
                     <ChevronLeft className="h-6 w-6" />
@@ -324,7 +324,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
                     onClick={() => setCurrentImageIndex(prevIndex => (prevIndex < images.length - 1 ? prevIndex + 1 : 0))}
                   >
                     <ChevronRight className="h-6 w-6" />
@@ -335,7 +335,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="absolute bottom-2 right-2 bg-white bg-opacity-70 hover:bg-opacity-100"
+                    className="absolute bottom-2 right-2 bg-background bg-opacity-70 hover:bg-opacity-100"
                   >
                     <Edit className="mr-2 h-4 w-4" />
                     Edit Images
@@ -343,7 +343,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 </PopoverTrigger>
                 <PopoverContent className="w-80">
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-sm text-purple-900">Edit Item Images</h4>
+                    <h4 className="font-semibold text-sm text-foreground">Edit Item Images</h4>
                     <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
                     <div className="grid grid-cols-3 gap-2 mt-2">
                       {images.map((image, index) => (
@@ -373,7 +373,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
                       className={`relative w-20 h-20 rounded-md overflow-hidden ${
-                        index === currentImageIndex ? 'ring-2 ring-purple-700' : ''
+                        index === currentImageIndex ? 'ring-2 ring-primary' : ''
                       }`}
                     >
                       <Image
@@ -391,10 +391,10 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
           </div>
           <div className="space-y-6">
             <div>
-              <h1 className="text-4xl font-serif text-purple-900 mb-2">{item.name}</h1>
+              <h1 className="text-4xl font-serif text-foreground mb-2">{item.name}</h1>
               <div className="flex flex-wrap gap-2 mb-2">
-                <Badge variant="secondary" className="bg-purple-100 text-purple-700">{item.type}</Badge>
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700">{item.brand}</Badge>
+                <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.type}</Badge>
+                <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.brand}</Badge>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -410,7 +410,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         className="p-0 h-auto font-normal"
                         onClick={() => handleEditStart('value')}
                       >
-                        <span className="text-3xl font-bold text-purple-700">
+                        <span className="text-3xl font-bold text-primary">
                           ${typeof item.value === 'number' ? item.value.toFixed(2) : parseFloat(item.value).toFixed(2)}
                         </span>
                         <Edit className="ml-2 h-4 w-4" />
@@ -418,21 +418,21 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     </PopoverTrigger>
                     <PopoverContent className="w-80">
                       <div className="space-y-4">
-                        <h4 className="font-semibold text-sm text-purple-900">Edit Item Value</h4>
+                        <h4 className="font-semibold text-sm text-foreground">Edit Item Value</h4>
                         <div className="space-y-2">
-                          <Label htmlFor="value" className="text-sm font-medium text-purple-700">Value</Label>
+                          <Label htmlFor="value" className="text-sm font-medium text-foreground">Value</Label>
                           <Input
                             id="value"
                             name="value"
                             type="number"
                             value={item.value}
                             onChange={handleInputChange}
-                            className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                            className="border-input"
                           />
                         </div>
                         <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                          <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                          <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                          <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                         </div>
                       </div>
                     </PopoverContent>
@@ -459,21 +459,21 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     </PopoverTrigger>
                     <PopoverContent className="w-80">
                       <div className="space-y-4">
-                        <h4 className="font-semibold text-sm text-purple-900">Edit Item Cost</h4>
+                        <h4 className="font-semibold text-sm text-foreground">Edit Item Cost</h4>
                         <div className="space-y-2">
-                          <Label htmlFor="cost" className="text-sm font-medium text-purple-700">Cost</Label>
+                          <Label htmlFor="cost" className="text-sm font-medium text-foreground">Cost</Label>
                           <Input
                             id="cost"
                             name="cost"
                             type="number"
                             value={item.cost}
                             onChange={handleInputChange}
-                            className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                            className="border-input"
                           />
                         </div>
                         <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                          <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                          <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                          <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                         </div>
                       </div>
                     </PopoverContent>
@@ -491,7 +491,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEbayRefresh('sold')}
-                      className="text-purple-500 hover:text-purple-700 hover:bg-purple-100"
+                      className="text-primary hover:text-primary/80 hover:bg-accent"
                     >
                       <RefreshCw className="h-4 w-4" />
                     </Button>
@@ -509,7 +509,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEbayRefresh('listed')}
-                      className="text-purple-500 hover:text-purple-700 hover:bg-purple-100"
+                      className="text-primary hover:text-primary/80 hover:bg-accent"
                     >
                       <RefreshCw className="h-4 w-4" />
                     </Button>
@@ -523,7 +523,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     <span className="font-semibold">Date Acquired:</span> {item && new Date(item.acquired).toLocaleDateString()}
                   </p>
                   <div className="flex items-center space-x-2">
@@ -533,11 +533,11 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                       checked={isSold}
                       onCheckedChange={handleSoldToggle}
                     />
-                    <span className="text-sm text-gray-600">{isSold ? 'Sold' : 'In Collection'}</span>
+                    <span className="text-sm text-muted-foreground">{isSold ? 'Sold' : 'In Collection'}</span>
                   </div>
                 </div>
                 {isSold && (
-                  <div className="space-y-4 pt-4 border-t border-gray-200">
+                  <div className="space-y-4 pt-4 border-t border-border">
                     <div className="flex items-center space-x-4">
                       <div className="flex-1">
                         <Label htmlFor="sold-price" className="text-sm font-semibold">Sold Price:</Label>
@@ -561,17 +561,17 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         />
                       </div>
                     </div>
-                    <Button onClick={handleSaveSoldDetails} className="w-full bg-purple-700 text-white hover:bg-purple-600">
+                    <Button onClick={handleSaveSoldDetails} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                       <Save className="w-4 h-4 mr-2" /> Save Sold Details
                     </Button>
                   </div>
                 )}
                 {item.isSold && item.soldPrice && item.soldDate && (
-                  <div className="pt-4 border-t border-gray-200">
-                    <p className="text-sm text-gray-600">
+                  <div className="pt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground">
                       <span className="font-semibold">Sold Price:</span> ${item.soldPrice.toFixed(2)}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       <span className="font-semibold">Sold Date:</span> {new Date(item.soldDate).toLocaleDateString()}
                     </p>
                   </div>
@@ -601,7 +601,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     >
                       <div className="flex items-start">
                         <div className="max-h-40 overflow-y-auto pr-2 flex-grow">
-                          <p className="text-gray-600 whitespace-pre-wrap">
+                          <p className="text-muted-foreground whitespace-pre-wrap">
                             {item.notes || 'No notes available.'}
                           </p>
                         </div>
@@ -611,21 +611,21 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </PopoverTrigger>
                   <PopoverContent className="w-80">
                     <div className="space-y-4">
-                      <h4 className="font-semibold text-sm text-purple-900">Edit Notes</h4>
+                      <h4 className="font-semibold text-sm text-foreground">Edit Notes</h4>
                       <div className="space-y-2">
-                        <Label htmlFor="notes" className="text-sm font-medium text-purple-700">Notes</Label>
+                        <Label htmlFor="notes" className="text-sm font-medium text-foreground">Notes</Label>
                         <textarea
                           id="notes"
                           name="notes"
                           value={item.notes || ''}
                           onChange={handleInputChange}
-                          className="w-full p-2 border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                           rows={4}
                         />
                       </div>
                       <div className="flex justify-end space-x-2">
-                        <Button variant="outline" onClick={handleEditCancel} className="border-purple-300 text-purple-700 hover:bg-purple-100">Cancel</Button>
-                        <Button onClick={handleEditSave} className="bg-purple-700 text-white hover:bg-purple-600">Save</Button>
+                        <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                        <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                       </div>
                     </div>
                   </PopoverContent>
@@ -642,11 +642,11 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={valueData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="value" stroke="#8884d8" activeDot={{ r: 8 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" stroke="hsl(var(--foreground))" />
+                    <YAxis stroke="hsl(var(--foreground))" />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }} />
+                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" activeDot={{ r: 8 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -655,7 +655,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
         </Tabs>
 
         <section className="mt-12">
-          <h2 className="text-2xl font-serif text-purple-900 mb-6">Related Items</h2>
+          <h2 className="text-2xl font-serif text-foreground mb-6">Related Items</h2>
           {relatedItems.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {relatedItems.map((relatedItem) => (
@@ -672,7 +672,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </CardHeader>
                   <CardContent className="p-4">
                     <CardTitle className="text-lg mb-2">{relatedItem.name}</CardTitle>
-                    <p className="font-semibold text-purple-700">
+                    <p className="font-semibold text-primary">
                       {relatedItem.isSold 
                         ? `Sold: $${relatedItem.soldPrice?.toFixed(2) || 'N/A'}` 
                         : `Value: $${relatedItem.value.toFixed(2)}`}
@@ -680,7 +680,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </CardContent>
                   <CardFooter>
                     <Link href={`/item/${relatedItem.id}`} passHref scroll={true}>
-                      <Button variant="ghost" className="w-full text-purple-700 hover:bg-purple-100">
+                      <Button variant="ghost" className="w-full text-primary hover:bg-accent hover:text-accent-foreground">
                         View Details
                       </Button>
                     </Link>
@@ -694,8 +694,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
         </section>
       </main>
 
-      <footer className="container mx-auto px-4 py-8 mt-12 border-t border-gray-200">
-        <div className="text-center text-sm text-gray-500">
+      <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border">
+        <div className="text-center text-sm text-muted-foreground">
           © 2024 Collectopedia. All rights reserved.
         </div>
       </footer>
