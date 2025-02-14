@@ -59,7 +59,7 @@ export default function HomePage() {
               About Collectopedia
             </h2>
             <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
-              We believe in keeping things simple. Collectopedia is built for collectors who want a straightforward, 
+              We believe in keeping things simple... Collectopedia is built for collectors who want a straightforward, 
               no-frills way to manage their collections and track their value.
             </p>
           </div>
