@@ -2,6 +2,7 @@ import React from 'react'
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import Image from 'next/image'
+import Link from 'next/link'
 
 export default function HomePage() {
   return (
@@ -36,9 +37,11 @@ export default function HomePage() {
                 No nonsense. Just an easy way to track your collectibles and their value.
               </p>
               <div className="flex justify-center mb-12">
-                <Button className="bg-purple-600 text-white hover:bg-purple-700 px-8 py-3 text-lg">
-                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+                <Link href="/signup">
+                  <Button className="bg-purple-600 text-white hover:bg-purple-700 px-8 py-3 text-lg">
+                    Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
               </div>
             </div>
             <div className="relative w-full max-w-4xl mx-auto aspect-video rounded-lg overflow-hidden shadow-2xl">
