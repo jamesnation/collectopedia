@@ -16,6 +16,7 @@ import {
 } from "recharts"
 import { motion } from "framer-motion"
 import Link from 'next/link'
+import { SignedIn, SignedOut } from "@clerk/nextjs"
 
 const sampleData = [
   { month: "Jan", value: 1000 },
@@ -33,11 +34,20 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-end h-16">
             <nav className="flex space-x-4">
-              <Link href="/signup">
-                <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
-                  Sign Up
-                </Button>
-              </Link>
+              <SignedIn>
+                <Link href="/catalog">
+                  <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
+                    Catalog
+                  </Button>
+                </Link>
+              </SignedIn>
+              <SignedOut>
+                <Link href="/signup">
+                  <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
+                    Sign Up
+                  </Button>
+                </Link>
+              </SignedOut>
             </nav>
           </div>
         </div>
