@@ -47,15 +47,6 @@ const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { 
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
-const collectionValueData = [
-  { date: '2023-01', value: 2000 },
-  { date: '2023-02', value: 2200 },
-  { date: '2023-03', value: 2400 },
-  { date: '2023-04', value: 2600 },
-  { date: '2023-05', value: 2800 },
-  { date: '2023-06', value: 3105 },
-]
-
 type CSVItem = {
   name: string
   type: string
@@ -178,7 +169,6 @@ function SummaryPanel({
 
 export default function CatalogPage() {
   const [ebayValueType, setEbayValueType] = useState("active")
-  const [isChartOpen, setIsChartOpen] = useState(false)
   const [isAddItemOpen, setIsAddItemOpen] = useState(false)
   const [newItem, setNewItem] = useState({
     name: '',
@@ -834,34 +824,6 @@ export default function CatalogPage() {
           ebaySoldValue={summaryValues.ebaySoldValue}
           showSold={showSold}
         />
-
-        <Collapsible
-          open={isChartOpen}
-          onOpenChange={setIsChartOpen}
-          className="mb-8"
-        >
-          <CollapsibleTrigger asChild>
-            <Button variant="outline" className="flex items-center justify-between w-full border-input text-primary hover:bg-accent hover:text-accent-foreground">
-              Collection Value Over Time
-              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isChartOpen ? 'transform rotate-180' : ''}`} />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-4">
-            <Card>
-              <CardContent className="p-6">
-                {/* <DynamicResponsiveContainer width="100%" height={300}>
-                  <DynamicLineChart data={collectionValueData}>
-                    <DynamicCartesianGrid strokeDasharray="3 3" />
-                    <DynamicXAxis dataKey="date" />
-                    <DynamicYAxis />
-                    <DynamicTooltip />
-                    <DynamicLine type="monotone" dataKey="value" stroke="#8884d8" activeDot={{ r: 8 }} />
-                  </DynamicLineChart>
-                </DynamicResponsiveContainer> */}
-              </CardContent>
-            </Card>
-          </CollapsibleContent>
-        </Collapsible>
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div className="relative w-full md:w-64">
