@@ -3,7 +3,7 @@ import { itemsTable } from "./items-schema";
 
 export const imagesTable = pgTable("images", {
   id: text("id").primaryKey().notNull(),
-  itemId: text("item_id").references(() => itemsTable.id).notNull(),
+  itemId: text("item_id").references(() => itemsTable.id, { onDelete: 'cascade' }).notNull(),
   userId: text("user_id").notNull(),
   url: text("url").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
