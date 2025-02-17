@@ -37,7 +37,7 @@ export default function HomePage() {
               <SignedIn>
                 <Link href="/my-collection">
                   <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
-                    Catalog
+                    My Collection
                   </Button>
                 </Link>
               </SignedIn>
@@ -76,12 +76,14 @@ export default function HomePage() {
                     Start your free trial today. No credit card required.
                   </p>
                   <div className="mt-3">
-                    <Button
-                      type="button"
-                      className="w-full px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                    >
-                      Get Started
-                    </Button>
+                    <Link href="/signup">
+                      <Button
+                        type="button"
+                        className="w-full px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                      >
+                        Get Started
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </motion.div>
