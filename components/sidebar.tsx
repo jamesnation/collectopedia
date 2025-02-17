@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { Package, BarChart4, Info, Settings, Menu, X, LogIn } from 'lucide-react'
+import { Package, Menu, X, LogIn } from 'lucide-react'
 import { Separator } from "@/components/ui/separator"
 import { UserButton, SignInButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
@@ -31,21 +31,9 @@ export default function Sidebar() {
           <Package className="h-4 w-4" />
           <span>Catalog</span>
         </button>
-        <button onClick={() => handleNavClick('/stats')} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-900 w-full text-left text-gray-100 hover:text-purple-400 transition-colors">
-          <BarChart4 className="h-4 w-4" />
-          <span>Stats</span>
-        </button>
-        <button onClick={() => handleNavClick('/about')} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-900 w-full text-left text-gray-100 hover:text-purple-400 transition-colors">
-          <Info className="h-4 w-4" />
-          <span>About</span>
-        </button>
       </nav>
       
       <div className="mt-auto space-y-2">
-        <button onClick={() => handleNavClick('/settings')} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-900 w-full text-left text-gray-100 hover:text-purple-400 transition-colors">
-          <Settings className="h-4 w-4" />
-          <span>Settings</span>
-        </button>
         <Separator className="my-2 bg-gray-800" />
         <SignedIn>
           <div className="flex items-center space-x-2 p-2">
@@ -69,7 +57,7 @@ export default function Sidebar() {
             </SignInButton>
             {isMobile && (
               <Link href="/signup" className="block md:hidden">
-                <Button 
+                <Button
                   variant="default"
                   className="w-full bg-purple-600 text-white hover:bg-purple-700"
                   onClick={() => setIsOpen(false)}
@@ -117,12 +105,11 @@ export default function Sidebar() {
         </>
       ) : (
         // Desktop Sidebar
-        <aside className="relative w-64 bg-gray-950 text-gray-100 p-6 flex flex-col h-screen text-sm border-r border-gray-800">
-          <Link href="/" className="flex items-center mb-10">
+        <aside className="hidden md:flex flex-col w-64 bg-gray-950 text-gray-100 p-4 h-screen text-sm border-r border-gray-800">
+          <Link href="/" className="flex items-center mb-8">
             <Package className="h-6 w-6 text-purple-500" />
-            <span className="text-xl font-semibold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
+            <span className="text-lg font-bold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
           </Link>
-          
           <SidebarContent />
         </aside>
       )}
