@@ -64,23 +64,18 @@ export default function HomePage() {
                   Collectopedia: The intelligent companion for passionate collectors. Track, analyze, and grow your
                   collection with real-time insights.
                 </p>
-                <div className="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left">
+                <div className="mt-8">
                   <p className="text-base font-medium text-white">
                     Start your free trial today. No credit card required.
                   </p>
-                  <form action="#" className="mt-3 sm:flex">
-                    <Input
-                      type="email"
-                      placeholder="Enter your email"
-                      className="block w-full py-3 text-base rounded-md placeholder-gray-500 shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:flex-1"
-                    />
+                  <div className="mt-3">
                     <Button
-                      type="submit"
-                      className="mt-3 w-full px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:mt-0 sm:ml-3 sm:flex-shrink-0"
+                      type="button"
+                      className="w-full px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                     >
                       Get Started
                     </Button>
-                  </form>
+                  </div>
                 </div>
               </motion.div>
               <motion.div
