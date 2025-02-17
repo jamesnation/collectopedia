@@ -206,11 +206,25 @@ export default function CatalogPage() {
   const [isImporting, setIsImporting] = useState(false);
   const [newItemImages, setNewItemImages] = useState<string[]>([])
 
+  const fetchItems = useCallback(async () => {
+    setIsLoading(true)
+    if (userId) {
+      const result = await getItemsByUserIdAction(userId)
+      if (result.isSuccess && result.data) {
+        console.log('Fetched items:', result.data);
+        setItems(result.data)
+      } else {
+        console.error('Failed to fetch items:', result.error);
+      }
+    }
+    setIsLoading(false)
+  }, [userId, setIsLoading, setItems])
+
   useEffect(() => {
     if (userId) {
       fetchItems()
     }
-  }, [userId])
+  }, [userId, fetchItems])
 
   const debouncedSetSearch = useDebouncedCallback(
     (value) => setDebouncedSearchQuery(value),
@@ -295,20 +309,6 @@ export default function CatalogPage() {
       ebaySoldValue: 0
     });
   }, [filteredAndSortedItems, showSold]);
-
-  const fetchItems = async () => {
-    setIsLoading(true)
-    if (userId) {
-      const result = await getItemsByUserIdAction(userId)
-      if (result.isSuccess && result.data) {
-        console.log('Fetched items:', result.data);
-        setItems(result.data)
-      } else {
-        console.error('Failed to fetch items:', result.error);
-      }
-    }
-    setIsLoading(false)
-  }
 
   const handleDelete = useCallback(async (id: string) => {
     setIsLoading(true)

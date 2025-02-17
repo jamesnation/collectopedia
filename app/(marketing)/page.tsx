@@ -155,7 +155,7 @@ export default function HomePage() {
                   {
                     name: "Advanced Analytics",
                     description:
-                      "Gain deep insights into your collection's performance with comprehensive statistics and reports.",
+                      "Gain deep insights into your collection&apos;s performance with comprehensive statistics and reports.",
                     icon: BarChart,
                   },
                   {
@@ -197,7 +197,7 @@ export default function HomePage() {
 
             <Card className="bg-gray-700 border-gray-600">
               <CardHeader>
-                <CardTitle className="text-white">Estimate Your Item's Value</CardTitle>
+                <CardTitle className="text-white">Estimate Your Item&apos;s Value</CardTitle>
               </CardHeader>
               <CardContent>
                 <form className="space-y-4">
@@ -246,8 +246,8 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <div className="flex justify-center items-center">
               <div className="flex items-center">
-                <Package className="h-8 w-8 text-purple-500 mr-2" />
-                <span className="text-xl font-bold text-white">Collectopedia</span>
+                <Package className="h-8 w-8 text-purple-500" />
+                <span className="text-xl font-bold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
               </div>
             </div>
             <div className="mt-8 border-t border-gray-800 pt-8 text-center">

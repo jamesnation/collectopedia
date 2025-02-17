@@ -86,8 +86,8 @@ export default function Sidebar() {
           {/* Centered Logo (always visible on mobile) */}
           <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-center h-16 bg-gray-950 shadow-sm border-b border-gray-800">
             <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
-              <Package className="h-6 w-6 text-purple-400" />
-              <span className="text-lg font-bold text-gray-100 ml-2">Collectopedia</span>
+              <Package className="h-6 w-6 text-purple-500" />
+              <span className="text-lg font-bold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
             </Link>
           </div>
 
@@ -108,8 +108,8 @@ export default function Sidebar() {
         // Desktop Sidebar
         <aside className="relative w-64 bg-gray-950 text-gray-100 p-6 flex flex-col h-screen text-sm border-r border-gray-800">
           <Link href="/" className="flex items-center mb-10">
-            <Package className="h-6 w-6 text-purple-400 mr-2" />
-            <span className="text-xl font-semibold text-gray-100">Collectopedia</span>
+            <Package className="h-6 w-6 text-purple-500" />
+            <span className="text-xl font-semibold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
           </Link>
           
           <SidebarContent />
