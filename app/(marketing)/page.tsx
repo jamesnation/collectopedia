@@ -4,7 +4,7 @@ import React from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { BarChart, LineChart, Package, Search, TrendingUp, Menu } from "lucide-react"
+import { BarChart, LineChart, Package, Search, TrendingUp } from "lucide-react"
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -29,19 +29,16 @@ const sampleData = [
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-purple-950/90 to-black text-gray-100">
-      <header className="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-sm">
+      <header className="hidden md:block sticky top-0 z-50 bg-gray-900/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-end h-16">
-            <nav className="hidden md:flex space-x-4">
+            <nav className="flex space-x-4">
               <Link href="/signup">
                 <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
                   Sign Up
                 </Button>
               </Link>
             </nav>
-            <Button variant="ghost" className="md:hidden text-gray-300">
-              <Menu className="h-6 w-6" />
-            </Button>
           </div>
         </div>
       </header>
