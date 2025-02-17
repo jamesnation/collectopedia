@@ -207,15 +207,15 @@ export default function HomePage() {
                 <form className="space-y-4">
                   <Input
                     placeholder="Item Name"
-                    className="bg-gray-600 border-gray-500 text-white placeholder-gray-400"
+                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                   />
                   <Input
                     placeholder="Brand"
-                    className="bg-gray-600 border-gray-500 text-white placeholder-gray-400"
+                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                   />
                   <Input
                     placeholder="Year"
-                    className="bg-gray-600 border-gray-500 text-white placeholder-gray-400"
+                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                   />
                   <Button className="w-full bg-purple-600 hover:bg-purple-700">Get Estimate</Button>
                 </form>
