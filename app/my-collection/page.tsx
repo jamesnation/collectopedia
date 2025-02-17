@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { CatalogPageWrapper } from "@/components/catalog-page-wrapper";
 
-export default async function CatalogPage() {
+export default async function MyCollectionPage() {
   const { userId } = auth();
 
   if (!userId) {
@@ -21,4 +21,4 @@ export default async function CatalogPage() {
   }
 
   return <CatalogPageWrapper />;
-}
+} 

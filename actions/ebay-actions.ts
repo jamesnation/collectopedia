@@ -59,7 +59,7 @@ export async function updateEbayPrices(id: string, name: string, type: 'listed' 
       throw new Error(updateResult.error || 'Failed to update item in database');
     }
 
-    revalidatePath('/catalog');
+    revalidatePath('/my-collection');
     return { 
       success: true, 
       prices: {

@@ -27,9 +27,9 @@ export default function Sidebar() {
   const SidebarContent = () => (
     <>
       <nav className="space-y-1 flex-grow">
-        <button onClick={() => handleNavClick('/catalog')} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-900 w-full text-left text-gray-100 hover:text-purple-400 transition-colors">
+        <button onClick={() => handleNavClick('/my-collection')} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-900 w-full text-left text-gray-100 hover:text-purple-400 transition-colors">
           <Package className="h-4 w-4" />
-          <span>Catalog</span>
+          <span>My Collection</span>
         </button>
       </nav>
       

@@ -111,7 +111,7 @@ export const updateItemAction = async (id: string, data: Partial<SelectItem>): P
     console.log('Updating item:', id, 'with data:', data);
     const updatedItem = await updateItem(id, data);
     console.log('Item updated successfully:', updatedItem);
-    revalidatePath("/catalog");
+    revalidatePath("/my-collection");
     return { isSuccess: true, data: updatedItem };
   } catch (error) {
     console.error('Error updating item:', error);

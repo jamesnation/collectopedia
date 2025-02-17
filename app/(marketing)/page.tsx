@@ -35,7 +35,7 @@ export default function HomePage() {
           <div className="flex items-center justify-end h-16">
             <nav className="flex space-x-4">
               <SignedIn>
-                <Link href="/catalog">
+                <Link href="/my-collection">
                   <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
                     Catalog
                   </Button>

@@ -296,9 +296,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       <main className="container mx-auto px-4 py-12">
-        <Link href="/catalog" className="inline-flex items-center text-primary hover:text-primary/80 mb-6">
+        <Link href="/my-collection" className="inline-flex items-center text-primary hover:text-primary/80 mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Catalog
+          Back to Collection
         </Link>
 
         <div className="grid md:grid-cols-2 gap-8">
