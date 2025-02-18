@@ -1,0 +1,1 @@
+ALTER TABLE "items" ALTER COLUMN "type" SET DATA TYPE text;

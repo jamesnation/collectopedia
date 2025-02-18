@@ -28,20 +28,20 @@ export const itemsTable = pgTable("items", {
   id: text("id").primaryKey().notNull(),
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
-  type: itemTypeEnum("type").notNull(),
-  brand: brandEnum("brand").notNull(),
+  type: text("type").notNull(),
+  brand: text("brand").notNull(),
   acquired: timestamp("acquired").notNull(),
   cost: integer("cost").notNull(),
   value: integer("value").notNull(),
   ebaySold: integer("ebay_sold"),
   ebayListed: integer("ebay_listed"),
   image: text("image"),
-  notes: text("notes"), // Add this line
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   isSold: boolean("is_sold").default(false).notNull(),
   soldPrice: integer("sold_price"),
-  soldDate: timestamp("sold_date")  // Add this line
+  soldDate: timestamp("sold_date")
 });
 
 export type InsertItem = typeof itemsTable.$inferInsert;

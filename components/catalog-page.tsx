@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Select, SelectValue, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select"
+import { Select, SelectValue, SelectTrigger, SelectContent, SelectItem, SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -34,6 +34,11 @@ import { Switch } from "@/components/ui/switch"
 import Papa from 'papaparse'
 import { DollarSign, ShoppingCart, TrendingUp, BarChart4, Percent } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import { CustomTypeModal } from "@/components/custom-type-modal";
+import { getCustomTypesAction } from "@/actions/custom-types-actions";
+import { SelectCustomType } from "@/db/schema";
+import { CustomBrandModal } from "@/components/custom-brand-modal";
+import { getCustomBrandsAction } from "@/actions/custom-brands-actions";
 
 // Dynamically import components that might cause hydration issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -205,6 +210,8 @@ export default function CatalogPage() {
   const csvInputRef = useRef<HTMLInputElement>(null)
   const [isImporting, setIsImporting] = useState(false);
   const [newItemImages, setNewItemImages] = useState<string[]>([])
+  const [customTypes, setCustomTypes] = useState<{ id: string; name: string }[]>([]);
+  const [customBrands, setCustomBrands] = useState<{ id: string; name: string }[]>([]);
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true)
@@ -225,6 +232,41 @@ export default function CatalogPage() {
       fetchItems()
     }
   }, [userId, fetchItems])
+
+  useEffect(() => {
+    if (userId) {
+      loadCustomTypes();
+      loadCustomBrands();
+    }
+  }, [userId]);
+
+  const loadCustomTypes = async () => {
+    if (!userId) return;
+    console.log('Loading custom types...');
+    const result = await getCustomTypesAction();
+    console.log('Custom types result:', result);
+    if (result.isSuccess && result.data) {
+      setCustomTypes(result.data);
+      if (isAddItemOpen && result.data.length > 0) {
+        const mostRecentType = result.data[result.data.length - 1];
+        handleNewItemTypeChange(mostRecentType.name);
+      }
+    }
+  };
+
+  const loadCustomBrands = async () => {
+    if (!userId) return;
+    console.log('Loading custom brands...');
+    const result = await getCustomBrandsAction();
+    console.log('Custom brands result:', result);
+    if (result.isSuccess && result.data) {
+      setCustomBrands(result.data);
+      if (isAddItemOpen && result.data.length > 0) {
+        const mostRecentBrand = result.data[result.data.length - 1];
+        handleNewItemBrandChange(mostRecentBrand.name);
+      }
+    }
+  };
 
   const debouncedSetSearch = useDebouncedCallback(
     (value) => setDebouncedSearchQuery(value),
@@ -388,13 +430,27 @@ export default function CatalogPage() {
 
   const handleTypeChange = (value: string) => {
     if (editingItem) {
-      setEditingItem({ ...editingItem, type: value as typeof itemTypeEnum.enumValues[number] });
+      // If the value matches a custom type ID, use its name
+      const customType = customTypes.find(type => type.id === value);
+      const typeName = customType ? customType.name : value;
+      
+      setEditingItem({
+        ...editingItem,
+        type: typeName
+      });
     }
   };
 
   const handleBrandChange = (value: string) => {
     if (editingItem) {
-      setEditingItem({ ...editingItem, brand: value as typeof brandEnum.enumValues[number] });
+      // If the value matches a custom brand ID, use its name
+      const customBrand = customBrands.find(brand => brand.id === value);
+      const brandName = customBrand ? customBrand.name : value;
+      
+      setEditingItem({
+        ...editingItem,
+        brand: brandName
+      });
     }
   };
 
@@ -463,8 +519,9 @@ export default function CatalogPage() {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setNewItem(prev => ({ ...prev, [name]: value }))
+    const { name, value } = e.target;
+    console.log('handleInputChange:', { name, value });
+    setNewItem(prev => ({ ...prev, [name]: value }));
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -492,28 +549,51 @@ export default function CatalogPage() {
     if (userId) {
       setIsLoading(true)
       try {
+        // Add debug logging
+        console.log('Current newItem state:', newItem);
+        console.log('Available custom types:', customTypes);
+        console.log('Available custom brands:', customBrands);
+        
+        // Parse and validate cost and value
+        const cost = parseFloat(newItem.cost) || 0;
+        const value = parseFloat(newItem.value) || 0;
+        
+        if (isNaN(cost) || isNaN(value)) {
+          throw new Error('Cost and value must be valid numbers');
+        }
+
+        // Get the actual type and brand values
+        const type = newItem.type || 'Other';
+        const brand = newItem.brand || 'Other';
+        
+        console.log('Creating item with type:', type, 'and brand:', brand);
+        
         const result = await createItemAction({
           id: crypto.randomUUID(),
           userId,
           name: newItem.name,
-          type: newItem.type as typeof itemTypeEnum.enumValues[number],
-          brand: newItem.brand as typeof brandEnum.enumValues[number],
-          acquired: new Date(newItem.acquired),
-          cost: parseFloat(newItem.cost),
-          value: parseFloat(newItem.value),
-          notes: newItem.notes,
+          type: type,
+          brand: brand,
+          acquired: new Date(newItem.acquired || new Date()),
+          cost: cost,
+          value: value,
+          notes: newItem.notes || '',
           isSold: false,
-          image: newItemImages[0], // Use the first image as the main image
-          images: newItemImages, // Add all images
-        })
+          image: newItemImages[0] || '',
+          images: newItemImages,
+        });
+
+        console.log('Create item result:', result);
+
         if (result.isSuccess) {
-          setIsAddItemOpen(false)
+          await fetchItems()
           setNewItem({ name: '', type: '', brand: '', acquired: '', cost: '', value: '', notes: '', image: '' })
           setNewItemImages([])
-          await fetchItems()
+          setIsAddItemOpen(false)
           toast({
-            title: "Item Added",
-            description: "Your new item has been added to the collection.",
+            title: "Success",
+            description: "Item added successfully to your collection.",
+            variant: "default",
           })
         } else {
           throw new Error(result.error)
@@ -522,7 +602,7 @@ export default function CatalogPage() {
         console.error('Error adding item:', error)
         toast({
           title: "Error",
-          description: "Failed to add item. Please try again.",
+          description: error instanceof Error ? error.message : "Failed to add item. Please try again.",
           variant: "destructive",
         })
       } finally {
@@ -656,6 +736,30 @@ export default function CatalogPage() {
     }
   }
 
+  const handleNewItemTypeChange = (value: string) => {
+    console.log('Type selected:', value);
+    // Use the selected value directly as it's already the name
+    setNewItem(prev => {
+      console.log('Setting type to:', value);
+      return {
+        ...prev,
+        type: value
+      };
+    });
+  };
+
+  const handleNewItemBrandChange = (value: string) => {
+    console.log('Brand selected:', value);
+    // Use the selected value directly as it's already the name
+    setNewItem(prev => {
+      console.log('Setting brand to:', value);
+      return {
+        ...prev,
+        brand: value
+      };
+    });
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-foreground">
       <main className="container mx-auto px-4 py-12">
@@ -689,33 +793,67 @@ export default function CatalogPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="type" className="text-sm font-medium text-primary">Type</Label>
-                    <Select name="type" value={newItem.type} onValueChange={(value) => handleInputChange({ target: { name: 'type', value } } as any)}>
-                      <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Vintage - MISB">Vintage - MISB</SelectItem>
-                        <SelectItem value="Vintage - opened">Vintage - opened</SelectItem>
-                        <SelectItem value="New - MISB">New - MISB</SelectItem>
-                        <SelectItem value="New - opened">New - opened</SelectItem>
-                        <SelectItem value="New - KO">New - KO</SelectItem>
-                        <SelectItem value="Cel">Cel</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <Select 
+                          name="type" 
+                          value={newItem.type} 
+                          onValueChange={handleNewItemTypeChange}
+                        >
+                          <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Default Types</SelectLabel>
+                              {itemTypeEnum.enumValues.map((type) => (
+                                <SelectItem key={`new-type-${type}`} value={type}>{type}</SelectItem>
+                              ))}
+                            </SelectGroup>
+                            <SelectSeparator />
+                            <SelectGroup>
+                              <SelectLabel>Custom Types</SelectLabel>
+                              {customTypes.map((type) => (
+                                <SelectItem key={`new-type-custom-${type.id}`} value={type.name}>{type.name}</SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <CustomTypeModal onSuccess={loadCustomTypes} />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="brand" className="text-sm font-medium text-primary">Brand</Label>
-                    <Select name="brand" value={newItem.brand} onValueChange={(value) => handleInputChange({ target: { name: 'brand', value } } as any)}>
-                      <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-                        <SelectValue placeholder="Select brand" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {brandEnum.enumValues.map((brand) => (
-                          <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <Select 
+                          name="brand" 
+                          value={newItem.brand} 
+                          onValueChange={handleNewItemBrandChange}
+                        >
+                          <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                            <SelectValue placeholder="Select brand" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Default Brands</SelectLabel>
+                              {brandEnum.enumValues.map((brand) => (
+                                <SelectItem key={`new-brand-${brand}`} value={brand}>{brand}</SelectItem>
+                              ))}
+                            </SelectGroup>
+                            <SelectSeparator />
+                            <SelectGroup>
+                              <SelectLabel>Custom Brands</SelectLabel>
+                              {customBrands.map((brand) => (
+                                <SelectItem key={`new-brand-custom-${brand.id}`} value={brand.name}>{brand.name}</SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <CustomBrandModal onSuccess={loadCustomBrands} />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="acquired" className="text-sm font-medium text-primary">Date Acquired</Label>
@@ -863,9 +1001,19 @@ export default function CatalogPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                {itemTypeEnum.enumValues.map((type) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectLabel>Default Types</SelectLabel>
+                  {itemTypeEnum.enumValues.map((type) => (
+                    <SelectItem key={`filter-type-${type}`} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel>Custom Types</SelectLabel>
+                  {customTypes.map((type) => (
+                    <SelectItem key={`filter-type-custom-${type.id}`} value={type.name}>{type.name}</SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
             <Select value={brandFilter} onValueChange={setBrandFilter}>
@@ -874,9 +1022,19 @@ export default function CatalogPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Brands</SelectItem>
-                {brandEnum.enumValues.map((brand) => (
-                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectLabel>Default Brands</SelectLabel>
+                  {brandEnum.enumValues.map((brand) => (
+                    <SelectItem key={`filter-brand-${brand}`} value={brand}>{brand}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel>Custom Brands</SelectLabel>
+                  {customBrands.map((brand) => (
+                    <SelectItem key={`filter-brand-custom-${brand.id}`} value={brand.name}>{brand.name}</SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
             <Select value={yearFilter} onValueChange={setYearFilter}>
@@ -1048,16 +1206,31 @@ export default function CatalogPage() {
                                   <h4 className="font-semibold text-sm text-primary">Edit Item Type</h4>
                                   <div className="space-y-2">
                                     <Label htmlFor={`type-${item.id}`} className="text-sm font-medium text-primary">Type</Label>
-                                    <Select value={editingItem?.type || ''} onValueChange={handleTypeChange}>
-                                      <SelectTrigger id={`type-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-                                        <SelectValue placeholder="Select type" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {itemTypeEnum.enumValues.map((type) => (
-                                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1">
+                                        <Select value={editingItem?.type || ''} onValueChange={handleTypeChange}>
+                                          <SelectTrigger id={`type-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                                            <SelectValue placeholder="Select type" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Default Types</SelectLabel>
+                                              {itemTypeEnum.enumValues.map((type) => (
+                                                <SelectItem key={`edit-type-${type}`} value={type}>{type}</SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                            <SelectSeparator />
+                                            <SelectGroup>
+                                              <SelectLabel>Custom Types</SelectLabel>
+                                              {customTypes.map((type) => (
+                                                <SelectItem key={`edit-type-custom-${type.id}`} value={type.name}>{type.name}</SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <CustomTypeModal onSuccess={loadCustomTypes} />
+                                    </div>
                                   </div>
                                   <div className="flex justify-end space-x-2">
                                     <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
@@ -1080,16 +1253,31 @@ export default function CatalogPage() {
                                   <h4 className="font-semibold text-sm text-primary">Edit Item Brand</h4>
                                   <div className="space-y-2">
                                     <Label htmlFor={`brand-${item.id}`} className="text-sm font-medium text-primary">Brand</Label>
-                                    <Select value={editingItem?.brand || ''} onValueChange={handleBrandChange}>
-                                      <SelectTrigger id={`brand-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-                                        <SelectValue placeholder="Select brand" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {brandEnum.enumValues.map((brand) => (
-                                          <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1">
+                                        <Select value={editingItem?.brand || ''} onValueChange={handleBrandChange}>
+                                          <SelectTrigger id={`brand-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                                            <SelectValue placeholder="Select brand" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Default Brands</SelectLabel>
+                                              {brandEnum.enumValues.map((brand) => (
+                                                <SelectItem key={`edit-brand-${brand}`} value={brand}>{brand}</SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                            <SelectSeparator />
+                                            <SelectGroup>
+                                              <SelectLabel>Custom Brands</SelectLabel>
+                                              {customBrands.map((brand) => (
+                                                <SelectItem key={`edit-brand-custom-${brand.id}`} value={brand.name}>{brand.name}</SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <CustomBrandModal onSuccess={loadCustomBrands} />
+                                    </div>
                                   </div>
                                   <div className="flex justify-end space-x-2">
                                     <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
@@ -1113,87 +1301,87 @@ export default function CatalogPage() {
                             <PopoverContent className="w-80 bg-card border-border">
                               <div className="space-y-4">
                                 <h4 className="font-semibold text-sm text-primary">Edit Acquired Date</h4>
-                                <div className="space-y-2">
-                                  <Label htmlFor={`acquired-${item.id}`} className="text-sm font-medium text-primary">Acquired Date</Label>
-                                  <Input
-                                    id={`acquired-${item.id}`}
-                                    type="date"
-                                    value={editingItem?.acquired ? new Date(editingItem.acquired).toISOString().split('T')[0] : ''}
-                                    onChange={handleAcquiredChange}
-                                    className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
-                                  />
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`acquired-${item.id}`} className="text-sm font-medium text-primary">Acquired Date</Label>
+                                    <Input
+                                      id={`acquired-${item.id}`}
+                                      type="date"
+                                      value={editingItem?.acquired ? new Date(editingItem.acquired).toISOString().split('T')[0] : ''}
+                                      onChange={handleAcquiredChange}
+                                      className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+                                    />
+                                  </div>
+                                  <div className="flex justify-end space-x-2">
+                                    <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                                    <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
+                                  </div>
                                 </div>
-                                <div className="flex justify-end space-x-2">
-                                  <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
-                                  <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </TableCell>
-                        <TableCell className="text-right">£{item.cost.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-bold text-primary">
-                          £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <span className="whitespace-nowrap">£{item.ebaySold?.toFixed(2) || 'N/A'}</span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEbayRefresh(item.id, item.name, 'sold')}
-                              className="h-8 w-8 p-0"
-                              disabled={loadingSoldItemId === item.id}
-                            >
-                              {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <span className="whitespace-nowrap">£{item.ebayListed?.toFixed(2) || 'N/A'}</span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEbayRefresh(item.id, item.name, 'listed')}
-                              className="h-8 w-8 p-0"
-                              disabled={loadingListedItemId === item.id}
-                            >
-                              {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>{new Date(item.updatedAt).toLocaleDateString()}</TableCell>
-                        {showSold && (
-                          <TableCell>{item.soldDate ? new Date(item.soldDate).toLocaleDateString() : 'N/A'}</TableCell>
-                        )}
-                        <TableCell>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
+                              </PopoverContent>
+                            </Popover>
+                          </TableCell>
+                          <TableCell className="text-right">£{item.cost.toFixed(2)}</TableCell>
+                          <TableCell className="text-right font-bold text-primary">
+                            £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <span className="whitespace-nowrap">£{item.ebaySold?.toFixed(2) || 'N/A'}</span>
                               <Button
                                 variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20"
+                                size="icon"
+                                onClick={() => handleEbayRefresh(item.id, item.name, 'sold')}
+                                className="h-8 w-8 p-0"
+                                disabled={loadingSoldItemId === item.id}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the item from your collection.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <span className="whitespace-nowrap">£{item.ebayListed?.toFixed(2) || 'N/A'}</span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEbayRefresh(item.id, item.name, 'listed')}
+                                className="h-8 w-8 p-0"
+                                disabled={loadingListedItemId === item.id}
+                              >
+                                {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>{new Date(item.updatedAt).toLocaleDateString()}</TableCell>
+                          {showSold && (
+                            <TableCell>{item.soldDate ? new Date(item.soldDate).toLocaleDateString() : 'N/A'}</TableCell>
+                          )}
+                          <TableCell>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the item from your collection.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
+                        </TableRow>
+                      ))}
               </TableBody>
             </Table>
           </div>
@@ -1259,16 +1447,31 @@ export default function CatalogPage() {
                             <h4 className="font-semibold text-sm text-primary">Edit Item Type</h4>
                             <div className="space-y-2">
                               <Label htmlFor={`type-${item.id}`} className="text-sm font-medium text-primary">Type</Label>
-                              <Select value={editingItem?.type || ''} onValueChange={handleTypeChange}>
-                                <SelectTrigger id={`type-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-                                  <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {itemTypeEnum.enumValues.map((type) => (
-                                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1">
+                                  <Select value={editingItem?.type || ''} onValueChange={handleTypeChange}>
+                                    <SelectTrigger id={`type-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                                      <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectGroup>
+                                        <SelectLabel>Default Types</SelectLabel>
+                                        {itemTypeEnum.enumValues.map((type) => (
+                                          <SelectItem key={`edit-type-${type}`} value={type}>{type}</SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                      <SelectSeparator />
+                                      <SelectGroup>
+                                        <SelectLabel>Custom Types</SelectLabel>
+                                        {customTypes.map((type) => (
+                                          <SelectItem key={`edit-type-custom-${type.id}`} value={type.name}>{type.name}</SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <CustomTypeModal onSuccess={loadCustomTypes} />
+                              </div>
                             </div>
                             <div className="flex justify-end space-x-2">
                               <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
@@ -1292,16 +1495,31 @@ export default function CatalogPage() {
                             <h4 className="font-semibold text-sm text-primary">Edit Item Brand</h4>
                             <div className="space-y-2">
                               <Label htmlFor={`brand-${item.id}`} className="text-sm font-medium text-primary">Brand</Label>
-                              <Select value={editingItem?.brand || ''} onValueChange={handleBrandChange}>
-                                <SelectTrigger id={`brand-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-                                  <SelectValue placeholder="Select brand" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {brandEnum.enumValues.map((brand) => (
-                                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1">
+                                  <Select value={editingItem?.brand || ''} onValueChange={handleBrandChange}>
+                                    <SelectTrigger id={`brand-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                                      <SelectValue placeholder="Select brand" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectGroup>
+                                        <SelectLabel>Default Brands</SelectLabel>
+                                        {brandEnum.enumValues.map((brand) => (
+                                          <SelectItem key={`edit-brand-${brand}`} value={brand}>{brand}</SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                      <SelectSeparator />
+                                      <SelectGroup>
+                                        <SelectLabel>Custom Brands</SelectLabel>
+                                        {customBrands.map((brand) => (
+                                          <SelectItem key={`edit-brand-custom-${brand.id}`} value={brand.name}>{brand.name}</SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <CustomBrandModal onSuccess={loadCustomBrands} />
+                              </div>
                             </div>
                             <div className="flex justify-end space-x-2">
                               <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>

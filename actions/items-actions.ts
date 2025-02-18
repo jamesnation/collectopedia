@@ -57,20 +57,9 @@ export const createItemAction = async (item: {
   try {
     console.log('Attempting to create item:', JSON.stringify(item, null, 2));
 
-    // Check if the brand exists in the enum, if not, set it to 'Other'
-    const brandExists = brandEnum.enumValues.includes(item.brand as any);
-    const brand = brandExists ? item.brand : 'Other';
-
-    // Check if the type exists in the enum, if not, set it to 'Other'
-    const typeExists = itemTypeEnum.enumValues.includes(item.type as any);
-    const type = typeExists ? item.type : 'Other';
-
-    console.log('Adjusted brand and type:', { brand, type });
-
+    // Remove the enum validation since we now support custom types and brands
     const insertData = {
       ...item,
-      type: type as typeof itemTypeEnum.enumValues[number],
-      brand: brand as typeof brandEnum.enumValues[number],
       cost: Math.round(item.cost), // Round to nearest integer
       value: Math.round(item.value), // Round to nearest integer
       soldPrice: item.soldPrice ? Math.round(item.soldPrice) : undefined,
