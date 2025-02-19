@@ -1,174 +1,169 @@
 import { useEffect, useState } from "react";
-import { SelectCustomType } from "@/db/schema";
+import { SelectCustomBrand } from "@/db/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { updateCustomTypeAction, deleteCustomTypeAction, getCustomTypesAction, createCustomTypeAction } from "@/actions/custom-types-actions";
+import { createCustomBrandAction, updateCustomBrandAction, deleteCustomBrandAction, getCustomBrandsAction } from "@/actions/custom-brands-actions";
 import { useAuth } from "@clerk/nextjs";
 import { PlusCircle, Pencil, Trash2, Save, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
-console.log('CustomTypesList Component Imports:', {
-  hasServerActions: typeof getCustomTypesAction !== 'undefined',
+console.log('CustomBrandsList Component Imports:', {
+  hasServerActions: typeof getCustomBrandsAction !== 'undefined',
   environment: typeof window !== 'undefined' ? 'client' : 'server'
 });
 
-interface CustomTypesListProps {
-  onTypesChange?: () => void;
+interface CustomBrandsListProps {
+  onBrandsChange?: () => void;
 }
 
-export function CustomTypesList({ onTypesChange }: CustomTypesListProps) {
-  console.log('CustomTypesList Render:', {
+export function CustomBrandsList({ onBrandsChange }: CustomBrandsListProps) {
+  console.log('CustomBrandsList Render:', {
     environment: typeof window !== 'undefined' ? 'client' : 'server',
-    hasServerActions: typeof getCustomTypesAction !== 'undefined'
+    hasServerActions: typeof getCustomBrandsAction !== 'undefined'
   });
 
-  const [types, setTypes] = useState<SelectCustomType[]>([]);
-  const [newType, setNewType] = useState("");
-  const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
+  const [brands, setBrands] = useState<SelectCustomBrand[]>([]);
+  const [newBrand, setNewBrand] = useState("");
+  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const { userId } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (userId) {
-      loadTypes();
+      loadBrands();
     }
   }, [userId]);
 
-  async function loadTypes() {
+  async function loadBrands() {
     if (!userId) return;
-    const result = await getCustomTypesAction();
+    const result = await getCustomBrandsAction();
     if (result.isSuccess && result.data) {
-      console.log('Loaded types:', result.data.length);
-      setTypes(result.data);
-      onTypesChange?.();
+      console.log('Loaded brands:', result.data.length);
+      setBrands(result.data);
+      onBrandsChange?.();
     } else {
-      console.error('Failed to load types:', result.error);
+      console.error('Failed to load brands:', result.error);
       toast({
         title: "Error",
-        description: "Failed to load custom types",
+        description: "Failed to load custom brands",
         variant: "destructive",
       });
     }
   }
 
-  async function handleAddType() {
-    if (!newType.trim()) return;
+  async function handleAddBrand() {
+    if (!newBrand.trim()) return;
 
     try {
-      const formData = new FormData();
-      formData.append("name", newType);
-      
-      const result = await createCustomTypeAction(formData);
+      const result = await createCustomBrandAction({
+        name: newBrand,
+      });
       
       if (result.isSuccess) {
         toast({
           title: "Success",
-          description: "Custom type created successfully",
+          description: "Custom brand created successfully",
         });
-        setNewType("");
-        loadTypes();
+        setNewBrand("");
+        loadBrands();
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create custom type",
+        description: "Failed to create custom brand",
         variant: "destructive",
       });
     }
   }
 
-  async function handleDelete(typeId: string) {
+  async function handleDelete(brandId: string) {
     try {
-      const formData = new FormData();
-      formData.append("id", typeId);
-      
-      const result = await deleteCustomTypeAction(formData);
+      const result = await deleteCustomBrandAction(brandId);
       
       if (result.isSuccess) {
         toast({
           title: "Success",
-          description: "Custom type deleted successfully",
+          description: "Custom brand deleted successfully",
         });
-        loadTypes();
+        loadBrands();
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete custom type",
+        description: "Failed to delete custom brand",
         variant: "destructive",
       });
     }
   }
 
   async function handleSaveEdit() {
-    if (!editingTypeId || !editValue.trim()) return;
+    if (!editingBrandId || !editValue.trim()) return;
 
     try {
-      const formData = new FormData();
-      formData.append("id", editingTypeId);
-      formData.append("name", editValue);
-
-      const result = await updateCustomTypeAction(formData);
+      const result = await updateCustomBrandAction({
+        id: editingBrandId,
+        name: editValue,
+      });
       
       if (result.isSuccess) {
         toast({
           title: "Success",
-          description: "Custom type updated successfully",
+          description: "Custom brand updated successfully",
         });
-        setEditingTypeId(null);
+        setEditingBrandId(null);
         setEditValue("");
-        loadTypes();
+        loadBrands();
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update custom type",
+        description: "Failed to update custom brand",
         variant: "destructive",
       });
     }
   }
 
-  function startEditing(type: SelectCustomType) {
-    setEditingTypeId(type.id);
-    setEditValue(type.name);
+  function startEditing(brand: SelectCustomBrand) {
+    setEditingBrandId(brand.id);
+    setEditValue(brand.name);
   }
 
   function cancelEdit() {
-    setEditingTypeId(null);
+    setEditingBrandId(null);
     setEditValue("");
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
-        <Label htmlFor="new-type" className="sr-only">
-          New Type
+        <Label htmlFor="new-brand" className="sr-only">
+          New Brand
         </Label>
         <Input
-          id="new-type"
-          placeholder="Enter new type"
-          value={newType}
-          onChange={(e) => setNewType(e.target.value)}
+          id="new-brand"
+          placeholder="Enter new brand"
+          value={newBrand}
+          onChange={(e) => setNewBrand(e.target.value)}
           className="max-w-sm"
         />
-        <Button onClick={handleAddType} disabled={!newType.trim()}>
+        <Button onClick={handleAddBrand} disabled={!newBrand.trim()}>
           <PlusCircle className="h-4 w-4 mr-2" />
-          Add Type
+          Add Brand
         </Button>
       </div>
 
-      {types.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">No types added yet.</p>
+      {brands.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-4">No brands added yet.</p>
       ) : (
         <Table>
           <TableHeader>
@@ -178,21 +173,21 @@ export function CustomTypesList({ onTypesChange }: CustomTypesListProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {types.map((type) => (
-              <TableRow key={type.id}>
+            {brands.map((brand) => (
+              <TableRow key={brand.id}>
                 <TableCell>
-                  {editingTypeId === type.id ? (
+                  {editingBrandId === brand.id ? (
                     <Input
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
                       className="max-w-sm"
                     />
                   ) : (
-                    type.name
+                    brand.name
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  {editingTypeId === type.id ? (
+                  {editingBrandId === brand.id ? (
                     <>
                       <Button variant="ghost" size="sm" onClick={handleSaveEdit}>
                         <Save className="h-4 w-4" />
@@ -203,7 +198,7 @@ export function CustomTypesList({ onTypesChange }: CustomTypesListProps) {
                     </>
                   ) : (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => startEditing(type)}>
+                      <Button variant="ghost" size="sm" onClick={() => startEditing(brand)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
@@ -214,15 +209,15 @@ export function CustomTypesList({ onTypesChange }: CustomTypesListProps) {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Custom Type</AlertDialogTitle>
+                            <AlertDialogTitle>Delete Custom Brand</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete "{type.name}"? This action cannot be undone.
+                              Are you sure you want to delete "{brand.name}"? This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDelete(type.id)}
+                              onClick={() => handleDelete(brand.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               Delete

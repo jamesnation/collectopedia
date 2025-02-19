@@ -9,6 +9,7 @@ import {
   updateCustomType,
   getCustomTypesByUserId
 } from "@/db/queries/custom-types-queries";
+import { SelectCustomType } from "@/db/schema";
 
 type ActionResult<T> = {
   isSuccess: boolean;
@@ -16,7 +17,7 @@ type ActionResult<T> = {
   error?: string;
 };
 
-export async function getCustomTypesAction(): Promise<ActionResult<{ id: string; name: string }[]>> {
+export async function getCustomTypesAction(): Promise<ActionResult<SelectCustomType[]>> {
   try {
     const { userId } = auth();
     if (!userId) {
@@ -24,6 +25,10 @@ export async function getCustomTypesAction(): Promise<ActionResult<{ id: string;
     }
 
     const types = await getCustomTypesByUserId(userId);
+    console.log('Server Action - getCustomTypesAction:', {
+      userId,
+      typesCount: types.length
+    });
     return { isSuccess: true, data: types };
   } catch (error) {
     console.error("Failed to get custom types:", error);

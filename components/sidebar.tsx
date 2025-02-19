@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { Package, Menu, X, LogIn } from 'lucide-react'
+import { Package, Menu, X, LogIn, Settings } from 'lucide-react'
 import { Separator } from "@/components/ui/separator"
 import { UserButton, SignInButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
@@ -30,6 +30,10 @@ export default function Sidebar() {
         <button onClick={() => handleNavClick('/my-collection')} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-900 w-full text-left text-gray-100 hover:text-purple-400 transition-colors">
           <Package className="h-4 w-4" />
           <span>My Collection</span>
+        </button>
+        <button onClick={() => handleNavClick('/settings')} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-900 w-full text-left text-gray-100 hover:text-purple-400 transition-colors">
+          <Settings className="h-4 w-4" />
+          <span>Settings</span>
         </button>
       </nav>
       

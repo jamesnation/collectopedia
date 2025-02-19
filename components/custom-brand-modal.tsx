@@ -47,8 +47,10 @@ export function CustomBrandModal({ onSuccess }: CustomBrandModalProps) {
           description: "Custom brand created successfully",
         });
         setFormData({ name: "", description: "" });
+        if (onSuccess) {
+          await onSuccess();
+        }
         setIsOpen(false);
-        await onSuccess?.();
       } else {
         throw new Error(result.error);
       }
@@ -64,26 +66,14 @@ export function CustomBrandModal({ onSuccess }: CustomBrandModalProps) {
     }
   };
 
-  const handleTriggerClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsOpen(true);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-10 w-10"
-          onClick={handleTriggerClick}
-          type="button"
-        >
+        <Button variant="ghost" size="icon" className="h-10 w-10">
           <PlusCircle className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent onClick={(e) => e.stopPropagation()}>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Custom Brand</DialogTitle>
           <DialogDescription>
