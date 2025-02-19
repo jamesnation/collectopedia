@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { SelectCustomBrand } from "@/db/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +20,7 @@ interface CustomBrandsListProps {
 }
 
 export function CustomBrandsList({ onBrandsChange }: CustomBrandsListProps) {
-  console.log('CustomBrandsList Render:', {
-    environment: typeof window !== 'undefined' ? 'client' : 'server',
-    hasServerActions: typeof getCustomBrandsAction !== 'undefined'
-  });
+  console.log('CustomBrandsList Render - Checking for quote escaping issues');
 
   const [brands, setBrands] = useState<SelectCustomBrand[]>([]);
   const [newBrand, setNewBrand] = useState("");
@@ -32,13 +29,7 @@ export function CustomBrandsList({ onBrandsChange }: CustomBrandsListProps) {
   const { userId } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (userId) {
-      loadBrands();
-    }
-  }, [userId]);
-
-  async function loadBrands() {
+  const loadBrands = useCallback(async () => {
     if (!userId) return;
     const result = await getCustomBrandsAction();
     if (result.isSuccess && result.data) {
@@ -53,7 +44,13 @@ export function CustomBrandsList({ onBrandsChange }: CustomBrandsListProps) {
         variant: "destructive",
       });
     }
-  }
+  }, [userId, onBrandsChange, toast]);
+
+  useEffect(() => {
+    if (userId) {
+      loadBrands();
+    }
+  }, [userId, loadBrands]);
 
   async function handleAddBrand() {
     if (!newBrand.trim()) return;
@@ -211,7 +208,7 @@ export function CustomBrandsList({ onBrandsChange }: CustomBrandsListProps) {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Custom Brand</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete "{brand.name}"? This action cannot be undone.
+                              Are you sure you want to delete &ldquo;{brand.name}&rdquo;? This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

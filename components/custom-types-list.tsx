@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { SelectCustomType } from "@/db/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,13 +32,7 @@ export function CustomTypesList({ onTypesChange }: CustomTypesListProps) {
   const { userId } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (userId) {
-      loadTypes();
-    }
-  }, [userId]);
-
-  async function loadTypes() {
+  const loadTypes = useCallback(async () => {
     if (!userId) return;
     const result = await getCustomTypesAction();
     if (result.isSuccess && result.data) {
@@ -53,7 +47,13 @@ export function CustomTypesList({ onTypesChange }: CustomTypesListProps) {
         variant: "destructive",
       });
     }
-  }
+  }, [userId, onTypesChange, toast]);
+
+  useEffect(() => {
+    if (userId) {
+      loadTypes();
+    }
+  }, [userId, loadTypes]);
 
   async function handleAddType() {
     if (!newType.trim()) return;
@@ -216,7 +216,7 @@ export function CustomTypesList({ onTypesChange }: CustomTypesListProps) {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Custom Type</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete "{type.name}"? This action cannot be undone.
+                              Are you sure you want to delete &ldquo;{type.name}&rdquo;? This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
