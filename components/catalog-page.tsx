@@ -216,7 +216,7 @@ function CatalogPage({
     type: '',
     brand: '',
     manufacturer: '',
-    year: '',
+    year: null as number | null,
     acquired: '',
     cost: '',
     value: '',
@@ -637,7 +637,7 @@ function CatalogPage({
           type: type,
           brand: brand,
           manufacturer: newItem.manufacturer || null,
-          year: newItem.year ? parseInt(newItem.year) : null,
+          year: newItem.year,  // Remove the parseInt since it's already a number
           acquired: new Date(newItem.acquired || new Date()),
           cost: cost,
           value: value,
@@ -656,7 +656,7 @@ function CatalogPage({
             type: '', 
             brand: '', 
             manufacturer: '',
-            year: '',
+            year: null as number | null,
             acquired: '', 
             cost: '', 
             value: '', 
@@ -1050,7 +1050,7 @@ function CatalogPage({
                     <Label htmlFor="year">Year</Label>
                     <Select
                       value={newItem.year?.toString() || ""}
-                      onValueChange={(value) => setNewItem({ ...newItem, year: value ? parseInt(value) : undefined })}
+                      onValueChange={(value) => setNewItem({ ...newItem, year: value ? parseInt(value) : null })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select year" />
