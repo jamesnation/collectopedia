@@ -26,6 +26,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import DynamicImageUpload from "@/components/image-upload"
 import { generateYearOptions } from "@/lib/utils"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getCustomManufacturersAction } from "@/actions/custom-manufacturers-actions"
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
@@ -57,13 +58,34 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [images, setImages] = useState<SelectImage[]>([])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [customManufacturers, setCustomManufacturers] = useState<{ id: string; name: string }[]>([])
   const yearOptions = generateYearOptions()
+
+  const defaultManufacturers = [
+    'DC',
+    'Filmation',
+    'Funko',
+    'Games Workshop',
+    'Hasbro',
+    'Kenner',
+    'Marvel',
+    'Matchbox',
+    'Mattel',
+    'Medium',
+    'Playmates',
+    'Senate',
+    'Sunbow',
+    'Super7',
+    'Takara',
+    'Tomy'
+  ];
 
   useEffect(() => {
     if (id) {
       fetchItem(id)
       fetchSoldItem(id)
       fetchImages(id)
+      loadCustomManufacturers()
     }
   }, [id])
 
@@ -110,6 +132,13 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
       setImages(result.data)
     }
   }
+
+  const loadCustomManufacturers = async () => {
+    const result = await getCustomManufacturersAction();
+    if (result.isSuccess && result.data) {
+      setCustomManufacturers(result.data);
+    }
+  };
 
   const handleEditStart = (field: string) => {
     setEditingField(field)
@@ -564,13 +593,42 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                             <h4 className="font-semibold text-sm text-primary">Edit Manufacturer</h4>
                             <div className="space-y-2">
                               <Label htmlFor="manufacturer" className="text-sm font-medium text-primary">Manufacturer</Label>
-                              <Input
-                                id="manufacturer"
-                                name="manufacturer"
-                                value={item.manufacturer || ''}
-                                onChange={handleInputChange}
-                                className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
-                              />
+                              <Select
+                                value={item.manufacturer || ""}
+                                onValueChange={(value) => {
+                                  if (item) {
+                                    const updatedItem = {
+                                      ...item,
+                                      manufacturer: value
+                                    };
+                                    setItem(updatedItem);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                                  <SelectValue placeholder="Select manufacturer" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectGroup>
+                                    <SelectLabel>Default Manufacturers</SelectLabel>
+                                    {defaultManufacturers.map((manufacturer) => (
+                                      <SelectItem key={manufacturer} value={manufacturer}>
+                                        {manufacturer}
+                                      </SelectItem>
+                                    ))}
+                                    {customManufacturers.length > 0 && (
+                                      <>
+                                        <SelectLabel>Custom Manufacturers</SelectLabel>
+                                        {customManufacturers.map((manufacturer) => (
+                                          <SelectItem key={manufacturer.id} value={manufacturer.name}>
+                                            {manufacturer.name}
+                                          </SelectItem>
+                                        ))}
+                                      </>
+                                    )}
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div className="flex justify-end space-x-2">
                               <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>

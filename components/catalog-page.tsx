@@ -255,6 +255,31 @@ function CatalogPage({
 
   const yearOptions = generateYearOptions();
 
+  const defaultManufacturers = [
+    'DC',
+    'Filmation',
+    'Funko',
+    'Games Workshop',
+    'Hasbro',
+    'Kenner',
+    'Marvel',
+    'Matchbox',
+    'Mattel',
+    'Medium',
+    'Playmates',
+    'Senate',
+    'Sunbow',
+    'Super7',
+    'Takara',
+    'Tomy'
+  ];
+
+  // Update the manufacturer options to include both default and custom manufacturers
+  const manufacturerOptions = useMemo(() => {
+    const customManufacturerNames = customManufacturers.map(m => m.name);
+    return [...new Set([...defaultManufacturers, ...customManufacturerNames])].sort();
+  }, [customManufacturers]);
+
   const fetchItems = useCallback(async () => {
     setIsLoading(true)
     if (userId) {
@@ -1024,27 +1049,36 @@ function CatalogPage({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="manufacturer" className="text-sm font-medium text-primary">Manufacturer</Label>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <Select 
-                          name="manufacturer" 
-                          value={newItem.manufacturer} 
-                          onValueChange={handleNewItemManufacturerChange}
-                        >
-                          <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-                            <SelectValue placeholder="Select manufacturer" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectLabel>Custom Manufacturers</SelectLabel>
-                              {customManufacturers.map((manufacturer) => (
-                                <SelectItem key={`new-manufacturer-custom-${manufacturer.id}`} value={manufacturer.name}>{manufacturer.name}</SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <Label htmlFor="manufacturer">Manufacturer</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={newItem.manufacturer || ""}
+                        onValueChange={handleNewItemManufacturerChange}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select manufacturer" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Default Manufacturers</SelectLabel>
+                            {defaultManufacturers.map((manufacturer) => (
+                              <SelectItem key={manufacturer} value={manufacturer}>
+                                {manufacturer}
+                              </SelectItem>
+                            ))}
+                            {customManufacturers.length > 0 && (
+                              <>
+                                <SelectLabel>Custom Manufacturers</SelectLabel>
+                                {customManufacturers.map((manufacturer) => (
+                                  <SelectItem key={manufacturer.id} value={manufacturer.name}>
+                                    {manufacturer.name}
+                                  </SelectItem>
+                                ))}
+                              </>
+                            )}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
                       <CustomManufacturerModal onSuccess={loadCustomManufacturers} />
                     </div>
                   </div>
