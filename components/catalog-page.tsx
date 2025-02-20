@@ -234,6 +234,7 @@ function CatalogPage({
     value: string;
     notes: string;
     image: string;
+    condition: ItemCondition;
   }>({
     name: "",
     type: "",
@@ -244,7 +245,8 @@ function CatalogPage({
     cost: "",
     value: "",
     notes: "",
-    image: ""
+    image: "",
+    condition: "Used - complete"
   });
   const [view, setView] = useState('list')
   const [items, setItems] = useState<SelectItemType[]>(initialItems)
@@ -261,7 +263,7 @@ function CatalogPage({
     manufacturer: string | null;
     year: number | null;
     condition: ItemCondition;
-    acquired: string;
+    acquired: string | Date;
     cost: number;
     value: number;
     notes: string | null;
@@ -506,7 +508,9 @@ function CatalogPage({
     setEditingItemId(item.id);
     setEditingItem({
       ...item,
-      acquired: new Date(item.acquired).toISOString().split('T')[0],
+      acquired: item.acquired instanceof Date ? 
+        item.acquired.toISOString().split('T')[0] : 
+        new Date(item.acquired).toISOString().split('T')[0],
       condition: item.condition || "Used - complete"
     });
   };
@@ -520,16 +524,25 @@ function CatalogPage({
   const handleEditSave = async () => {
     if (editingItem && editingItemId) {
       try {
-        const result = await updateItemAction(editingItemId, {
+        // Convert string dates to Date objects for the server
+        const updatedItem = {
           ...editingItem,
-          acquired: new Date(editingItem.acquired),
-        });
+          acquired: typeof editingItem.acquired === 'string' ? 
+            new Date(editingItem.acquired) : 
+            editingItem.acquired
+        };
+
+        const result = await updateItemAction(editingItemId, updatedItem);
 
         if (result.isSuccess) {
           setItems(prevItems =>
             prevItems.map(item =>
               item.id === editingItemId
-                ? { ...item, ...editingItem }
+                ? { 
+                    ...item, 
+                    ...updatedItem,
+                    acquired: updatedItem.acquired // Ensure the acquired field is a Date
+                  }
                 : item
             )
           );
@@ -588,7 +601,10 @@ function CatalogPage({
 
   const handleAcquiredChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (editingItem) {
-      setEditingItem({ ...editingItem, acquired: new Date(e.target.value) });
+      setEditingItem({ 
+        ...editingItem, 
+        acquired: e.target.value // Keep as string during editing
+      });
     }
   };
 
@@ -733,7 +749,8 @@ function CatalogPage({
             cost: '', 
             value: '', 
             notes: '', 
-            image: '' 
+            image: '',
+            condition: "Used - complete"
           })
           setNewItemImages([])
           setIsAddItemOpen(false)
@@ -1193,7 +1210,12 @@ function CatalogPage({
                     <Label htmlFor="condition">Condition</Label>
                     <Select
                       value={newItem.condition}
-                      onValueChange={(value) => setNewItem({ ...newItem, condition: value })}
+                      onValueChange={(value: string) => {
+                        setNewItem(prev => ({
+                          ...prev,
+                          condition: value as ItemCondition
+                        }));
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select condition" />
