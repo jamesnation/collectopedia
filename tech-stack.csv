@@ -1,0 +1,13 @@
+Category,Technology,Purpose,Description
+Frontend Framework,Next.js,Core Framework,React-based framework for building full-stack web applications with server-side rendering and static site generation
+Frontend Styling,Tailwind CSS,Styling Framework,Utility-first CSS framework for rapid UI development
+UI Components,Shadcn,Component Library,High-quality, accessible, and customizable React components built on top of Radix UI
+Animation,Framer Motion,Animation Library,Production-ready motion library for React to create smooth animations and gestures
+Backend Services,Supabase,Backend Platform,Open-source Firebase alternative providing database, authentication, and real-time subscriptions
+Database ORM,Drizzle,Database Toolkit,TypeScript ORM for SQL databases with type safety and migrations
+Server Architecture,Server Actions,API Architecture,Next.js feature for handling server-side operations directly from components
+Authentication,Clerk,Auth Provider,Complete user management and authentication solution
+Payments,Stripe,Payment Processing,Platform for online payments and financial services
+Version Control,Git,Source Control,Distributed version control system for tracking code changes
+Package Manager,npm/yarn,Dependency Management,Tool for managing project dependencies and packages
+Language,TypeScript,Programming Language,Typed superset of JavaScript for enhanced development experience 

@@ -395,6 +395,12 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               <div className="flex flex-wrap gap-2 mb-2">
                 <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.type}</Badge>
                 <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.brand}</Badge>
+                {item.manufacturer && (
+                  <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.manufacturer}</Badge>
+                )}
+                {item.year && (
+                  <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.year}</Badge>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -536,6 +542,82 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     <span className="text-sm text-muted-foreground">{isSold ? 'Sold' : 'In Collection'}</span>
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-semibold">Manufacturer:</span>
+                      <Popover open={editingField === 'manufacturer'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <button 
+                            className="ml-2 text-sm hover:text-primary transition-colors"
+                            onClick={() => handleEditStart('manufacturer')}
+                          >
+                            {item.manufacturer || 'Add manufacturer'}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-card border-border">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-primary">Edit Manufacturer</h4>
+                            <div className="space-y-2">
+                              <Label htmlFor="manufacturer" className="text-sm font-medium text-primary">Manufacturer</Label>
+                              <Input
+                                id="manufacturer"
+                                name="manufacturer"
+                                value={item.manufacturer || ''}
+                                onChange={handleInputChange}
+                                className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-semibold">Year:</span>
+                      <Popover open={editingField === 'year'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <button 
+                            className="ml-2 text-sm hover:text-primary transition-colors"
+                            onClick={() => handleEditStart('year')}
+                          >
+                            {item.year || 'Add year'}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-card border-border">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-primary">Edit Year</h4>
+                            <div className="space-y-2">
+                              <Label htmlFor="year" className="text-sm font-medium text-primary">Year</Label>
+                              <Input
+                                id="year"
+                                name="year"
+                                type="number"
+                                min="1900"
+                                max={new Date().getFullYear()}
+                                value={item.year || ''}
+                                onChange={handleInputChange}
+                                className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </p>
+                  </div>
+                </div>
+
                 {isSold && (
                   <div className="space-y-4 pt-4 border-t border-border">
                     <div className="flex items-center space-x-4">

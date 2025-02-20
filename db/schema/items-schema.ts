@@ -1,12 +1,15 @@
 import { pgTable, text, integer, timestamp, pgEnum, boolean } from "drizzle-orm/pg-core";
 
 export const itemTypeEnum = pgEnum("item_type", [
-  "Vintage - MISB",
-  "Vintage - opened",
-  "New - MISB",
-  "New - opened",
-  "New - KO",
-  "Cel",
+  "Action Figures",
+  "Books",
+  "Comics",
+  "Funko Pops",
+  "Movie, TV Show Memorabilia",
+  "Music Memorabilia",
+  "Toys",
+  "Video Games and Consoles",
+  "Wargaming",
   "Other"
 ]);
 
@@ -30,6 +33,8 @@ export const itemsTable = pgTable("items", {
   name: text("name").notNull(),
   type: text("type").notNull(),
   brand: text("brand").notNull(),
+  manufacturer: text("manufacturer"),
+  year: integer("year"),
   acquired: timestamp("acquired").notNull(),
   cost: integer("cost").notNull(),
   value: integer("value").notNull(),

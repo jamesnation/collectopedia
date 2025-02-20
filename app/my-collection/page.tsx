@@ -1,30 +1,33 @@
-import { getProfileByUserId } from "@/db/queries/profiles-queries";
+import { getCustomManufacturersAction } from "@/actions/custom-manufacturers-actions";
+import { getCustomTypesAction } from "@/actions/custom-types-actions";
+import { getCustomBrandsAction } from "@/actions/custom-brands-actions";
+import { getItemsByUserIdAction } from "@/actions/items-actions";
+import CatalogPage from "@/components/catalog-page";
 import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
-import { CatalogPageWrapper } from "@/components/catalog-page-wrapper";
 
-export default async function MyCollectionPage() {
+export default async function CollectionPage() {
   const { userId } = auth();
-  console.log("Collection Page - User ID:", userId);
+  
+  // Fetch initial data on the server
+  const [
+    manufacturersResult,
+    typesResult,
+    brandsResult,
+    itemsResult
+  ] = await Promise.all([
+    getCustomManufacturersAction(),
+    getCustomTypesAction(),
+    getCustomBrandsAction(),
+    userId ? getItemsByUserIdAction(userId) : { isSuccess: false, data: [] }
+  ]);
 
-  if (!userId) {
-    console.log("No user ID found, redirecting to login");
-    return redirect("/login");
-  }
-
-  const profile = await getProfileByUserId(userId);
-  console.log("User profile:", profile);
-
-  if (!profile) {
-    console.log("No profile found, redirecting to signup");
-    return redirect("/signup");
-  }
-
-  if (profile.membership === "free") {
-    console.log("Free membership detected, redirecting to pricing");
-    return redirect("/pricing");
-  }
-
-  console.log("Access granted to collection page");
-  return <CatalogPageWrapper />;
+  // Pass the data as props to the client component
+  return (
+    <CatalogPage
+      initialManufacturers={manufacturersResult.data || []}
+      initialTypes={typesResult.data || []}
+      initialBrands={brandsResult.data || []}
+      initialItems={itemsResult.data || []}
+    />
+  );
 } 

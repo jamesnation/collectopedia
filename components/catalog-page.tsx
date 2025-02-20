@@ -39,6 +39,11 @@ import { getCustomTypesAction } from "@/actions/custom-types-actions";
 import { SelectCustomType } from "@/db/schema";
 import { CustomBrandModal } from "@/components/custom-brand-modal";
 import { getCustomBrandsAction } from "@/actions/custom-brands-actions";
+import { createCustomTypeAction } from "@/actions/custom-types-actions";
+import { createCustomBrandAction } from "@/actions/custom-brands-actions";
+import { CustomManufacturerModal } from "@/components/custom-manufacturer-modal";
+import { getCustomManufacturersAction } from "@/actions/custom-manufacturers-actions";
+import { createCustomManufacturerAction } from "@/actions/custom-manufacturers-actions";
 
 // Dynamically import components that might cause hydration issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -56,6 +61,7 @@ type CSVItem = {
   name: string
   type: string
   brand: string
+  manufacturer: string
   acquired: string
   cost: string
   value: string
@@ -66,6 +72,16 @@ type CSVItem = {
   ebayListed: string
   ebaySold: string
 }
+
+// Add this function at the top level of the file, after the imports
+const formatDate = (date: Date | string) => {
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+};
 
 // Update the SummaryPanel component
 function SummaryPanel({
@@ -172,23 +188,44 @@ function SummaryPanel({
   )
 }
 
-export default function CatalogPage() {
+console.log('Component Definition Start:', {
+  hasDefaultExport: typeof CatalogPage !== 'undefined',
+  environment: typeof window !== 'undefined' ? 'client' : 'server'
+});
+
+interface CatalogPageProps {
+  initialManufacturers: { id: string; name: string }[];
+  initialTypes: { id: string; name: string }[];
+  initialBrands: { id: string; name: string }[];
+  initialItems: SelectItemType[];
+}
+
+function CatalogPage({
+  initialManufacturers,
+  initialTypes,
+  initialBrands,
+  initialItems
+}: CatalogPageProps) {
+  console.log('CatalogPage Function Start');
+  
   const [ebayValueType, setEbayValueType] = useState("active")
   const [isAddItemOpen, setIsAddItemOpen] = useState(false)
   const [newItem, setNewItem] = useState({
     name: '',
     type: '',
     brand: '',
+    manufacturer: '',
+    year: '',
     acquired: '',
     cost: '',
     value: '',
     notes: '',
-    image: '' // Change this from File | null to string
+    image: ''
   })
   const [view, setView] = useState('list')
-  const [items, setItems] = useState<SelectItemType[]>([])
+  const [items, setItems] = useState<SelectItemType[]>(initialItems)
   const { userId } = useAuth()
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [loadingItemId, setLoadingItemId] = useState<string | null>(null)
   const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
@@ -210,8 +247,9 @@ export default function CatalogPage() {
   const csvInputRef = useRef<HTMLInputElement>(null)
   const [isImporting, setIsImporting] = useState(false);
   const [newItemImages, setNewItemImages] = useState<string[]>([])
-  const [customTypes, setCustomTypes] = useState<{ id: string; name: string }[]>([]);
-  const [customBrands, setCustomBrands] = useState<{ id: string; name: string }[]>([]);
+  const [customTypes, setCustomTypes] = useState<{ id: string; name: string }[]>(initialTypes);
+  const [customBrands, setCustomBrands] = useState<{ id: string; name: string }[]>(initialBrands);
+  const [customManufacturers, setCustomManufacturers] = useState<{ id: string; name: string }[]>(initialManufacturers);
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true)
@@ -237,6 +275,7 @@ export default function CatalogPage() {
     if (userId) {
       loadCustomTypes();
       loadCustomBrands();
+      loadCustomManufacturers();
     }
   }, [userId]);
 
@@ -264,6 +303,26 @@ export default function CatalogPage() {
       if (isAddItemOpen && result.data.length > 0) {
         const mostRecentBrand = result.data[result.data.length - 1];
         handleNewItemBrandChange(mostRecentBrand.name);
+      }
+    }
+  };
+
+  const loadCustomManufacturers = async () => {
+    if (!userId) return;
+    console.log('loadCustomManufacturers - Start', {
+      isClientSide: typeof window !== 'undefined',
+      userId
+    });
+    const result = await getCustomManufacturersAction();
+    console.log('loadCustomManufacturers - Result', {
+      success: result.isSuccess,
+      dataLength: result.data?.length
+    });
+    if (result.isSuccess && result.data) {
+      setCustomManufacturers(result.data);
+      if (isAddItemOpen && result.data.length > 0) {
+        const mostRecentManufacturer = result.data[result.data.length - 1];
+        handleNewItemManufacturerChange(mostRecentManufacturer.name);
       }
     }
   };
@@ -574,6 +633,8 @@ export default function CatalogPage() {
           name: newItem.name,
           type: type,
           brand: brand,
+          manufacturer: newItem.manufacturer || null,
+          year: newItem.year ? parseInt(newItem.year) : null,
           acquired: new Date(newItem.acquired || new Date()),
           cost: cost,
           value: value,
@@ -587,7 +648,18 @@ export default function CatalogPage() {
 
         if (result.isSuccess) {
           await fetchItems()
-          setNewItem({ name: '', type: '', brand: '', acquired: '', cost: '', value: '', notes: '', image: '' })
+          setNewItem({ 
+            name: '', 
+            type: '', 
+            brand: '', 
+            manufacturer: '',
+            year: '',
+            acquired: '', 
+            cost: '', 
+            value: '', 
+            notes: '', 
+            image: '' 
+          })
           setNewItemImages([])
           setIsAddItemOpen(false)
           toast({
@@ -658,6 +730,7 @@ export default function CatalogPage() {
   )
 
   const handleCSVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('CSV Import Handler Start');
     const file = event.target.files?.[0]
     if (file && userId) {
       setIsImporting(true);
@@ -673,12 +746,75 @@ export default function CatalogPage() {
 
             for (const item of csvData) {
               try {
+                // Check if type exists in default enum or custom types
+                const importedType = item.type || 'Other';
+                let finalType = importedType;
+                
+                if (importedType !== 'Other') {
+                  if (!itemTypeEnum.enumValues.includes(importedType as any) && 
+                      !customTypes.find(ct => ct.name === importedType)) {
+                    // Create new custom type
+                    const typeFormData = new FormData();
+                    typeFormData.append("name", importedType);
+                    const typeResult = await createCustomTypeAction(typeFormData);
+                    if (!typeResult.isSuccess) {
+                      console.error('Failed to create custom type:', importedType);
+                      finalType = 'Other';
+                    } else {
+                      // Refresh custom types list
+                      await loadCustomTypes();
+                    }
+                  }
+                }
+
+                // Check if brand exists in default enum or custom brands
+                const importedBrand = item.brand || 'Other';
+                let finalBrand = importedBrand;
+                
+                if (importedBrand !== 'Other') {
+                  if (!brandEnum.enumValues.includes(importedBrand as any) && 
+                      !customBrands.find(cb => cb.name === importedBrand)) {
+                    // Create new custom brand
+                    const brandResult = await createCustomBrandAction({
+                      name: importedBrand
+                    });
+                    if (!brandResult.isSuccess) {
+                      console.error('Failed to create custom brand:', importedBrand);
+                      finalBrand = 'Other';
+                    } else {
+                      // Refresh custom brands list
+                      await loadCustomBrands();
+                    }
+                  }
+                }
+
+                // Check if manufacturer exists in custom manufacturers
+                const importedManufacturer = item.manufacturer || null;
+                let finalManufacturer = importedManufacturer;
+                
+                if (importedManufacturer) {
+                  if (!customManufacturers.find(cm => cm.name === importedManufacturer)) {
+                    // Create new custom manufacturer
+                    const manufacturerResult = await createCustomManufacturerAction({
+                      name: importedManufacturer
+                    });
+                    if (!manufacturerResult.isSuccess) {
+                      console.error('Failed to create custom manufacturer:', importedManufacturer);
+                      finalManufacturer = null;
+                    } else {
+                      // Refresh custom manufacturers list
+                      await loadCustomManufacturers();
+                    }
+                  }
+                }
+
                 const newItem = {
                   id: crypto.randomUUID(),
                   userId,
                   name: item.name || 'Unnamed Item',
-                  type: item.type || 'Other',
-                  brand: item.brand || 'Other',
+                  type: finalType,
+                  brand: finalBrand,
+                  manufacturer: finalManufacturer,
                   acquired: item.acquired ? new Date(item.acquired) : new Date(),
                   cost: item.cost ? parseFloat(item.cost) : 0,
                   value: item.value ? parseFloat(item.value) : 0,
@@ -759,6 +895,33 @@ export default function CatalogPage() {
       };
     });
   };
+
+  const handleNewItemManufacturerChange = (value: string) => {
+    console.log('Manufacturer selected:', value);
+    setNewItem(prev => {
+      console.log('Setting manufacturer to:', value);
+      return {
+        ...prev,
+        manufacturer: value
+      };
+    });
+  };
+
+  const handleManufacturerChange = (value: string) => {
+    if (editingItem) {
+      setEditingItem({ ...editingItem, manufacturer: value });
+    }
+  };
+
+  console.log('Before Return Statement', {
+    hasHandlers: typeof handleCSVImport === 'function',
+    stateInitialized: true // This will help verify if we reach this point
+  });
+
+  console.log('CatalogPage Component Initialization', {
+    isClientSide: typeof window !== 'undefined',
+    hasServerActions: typeof getCustomManufacturersAction === 'function'
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 text-foreground">
@@ -854,6 +1017,45 @@ export default function CatalogPage() {
                       </div>
                       <CustomBrandModal onSuccess={loadCustomBrands} />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="manufacturer" className="text-sm font-medium text-primary">Manufacturer</Label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <Select 
+                          name="manufacturer" 
+                          value={newItem.manufacturer} 
+                          onValueChange={handleNewItemManufacturerChange}
+                        >
+                          <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                            <SelectValue placeholder="Select manufacturer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Custom Manufacturers</SelectLabel>
+                              {customManufacturers.map((manufacturer) => (
+                                <SelectItem key={`new-manufacturer-custom-${manufacturer.id}`} value={manufacturer.name}>{manufacturer.name}</SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <CustomManufacturerModal onSuccess={loadCustomManufacturers} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="year" className="text-sm font-medium text-primary">Year</Label>
+                    <Input
+                      id="year"
+                      name="year"
+                      type="number"
+                      min="1900"
+                      max={new Date().getFullYear()}
+                      value={newItem.year || ''}
+                      onChange={handleInputChange}
+                      placeholder="e.g. 1987"
+                      className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="acquired" className="text-sm font-medium text-primary">Date Acquired</Label>
@@ -1066,12 +1268,16 @@ export default function CatalogPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Sold Years</SelectItem>
-                  {Array.from(new Set(items.filter(item => item.isSold && item.soldDate).map(item => new Date(item.soldDate!).getFullYear())))
+                  {items
+                    .filter(item => item.isSold && item.soldDate)
+                    .map(item => new Date(item.soldDate!).getFullYear())
+                    .filter((year, index, self) => self.indexOf(year) === index)
                     .sort((a, b) => b - a)
                     .map(year => (
-                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                    ))
-                  }
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             )}
@@ -1286,6 +1492,79 @@ export default function CatalogPage() {
                                 </div>
                               </PopoverContent>
                             </Popover>
+
+                            <Popover open={editingItemId === item.id && editingField === 'manufacturer'} onOpenChange={(open) => !open && handleEditCancel()}>
+                              <PopoverTrigger asChild>
+                                <button 
+                                  className="text-sm text-muted-foreground hover:text-primary transition-colors block"
+                                  onClick={() => handleEditStart(item, 'manufacturer')}
+                                >
+                                  {item.manufacturer || 'Add manufacturer'}
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80 bg-card border-border">
+                                <div className="space-y-4">
+                                  <h4 className="font-semibold text-sm text-primary">Edit Manufacturer</h4>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`manufacturer-${item.id}`} className="text-sm font-medium text-primary">Manufacturer</Label>
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1">
+                                        <Select value={editingItem?.manufacturer || ''} onValueChange={handleManufacturerChange}>
+                                          <SelectTrigger id={`manufacturer-${item.id}`} className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                                            <SelectValue placeholder="Select manufacturer" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Custom Manufacturers</SelectLabel>
+                                              {customManufacturers.map((manufacturer) => (
+                                                <SelectItem key={`edit-manufacturer-custom-${manufacturer.id}`} value={manufacturer.name}>{manufacturer.name}</SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <CustomManufacturerModal onSuccess={loadCustomManufacturers} />
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-end space-x-2">
+                                    <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                                    <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+
+                            <Popover open={editingItemId === item.id && editingField === 'year'} onOpenChange={(open) => !open && handleEditCancel()}>
+                              <PopoverTrigger asChild>
+                                <button 
+                                  className="text-sm text-muted-foreground hover:text-primary transition-colors block"
+                                  onClick={() => handleEditStart(item, 'year')}
+                                >
+                                  {item.year || 'Add year'}
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80 bg-card border-border">
+                                <div className="space-y-4">
+                                  <h4 className="font-semibold text-sm text-primary">Edit Year</h4>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`year-${item.id}`} className="text-sm font-medium text-primary">Year</Label>
+                                    <Input
+                                      id={`year-${item.id}`}
+                                      type="number"
+                                      min="1900"
+                                      max={new Date().getFullYear()}
+                                      value={editingItem?.year || ''}
+                                      onChange={(e) => setEditingItem(prev => ({ ...prev!, year: parseInt(e.target.value) }))}
+                                      className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+                                    />
+                                  </div>
+                                  <div className="flex justify-end space-x-2">
+                                    <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                                    <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -1295,7 +1574,7 @@ export default function CatalogPage() {
                                 className="text-sm hover:text-primary transition-colors"
                                 onClick={() => handleEditStart(item, 'acquired')}
                               >
-                                {new Date(item.acquired).toLocaleDateString()}
+                                {formatDate(item.acquired)}
                               </button>
                             </PopoverTrigger>
                             <PopoverContent className="w-80 bg-card border-border">
@@ -1351,9 +1630,9 @@ export default function CatalogPage() {
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell>{new Date(item.updatedAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{formatDate(item.updatedAt)}</TableCell>
                           {showSold && (
-                            <TableCell>{item.soldDate ? new Date(item.soldDate).toLocaleDateString() : 'N/A'}</TableCell>
+                            <TableCell>{item.soldDate ? formatDate(item.soldDate) : 'N/A'}</TableCell>
                           )}
                           <TableCell>
                             <AlertDialog>
@@ -1576,3 +1855,7 @@ export default function CatalogPage() {
     </div>
   )
 }
+
+console.log('Component Definition End');
+
+export default CatalogPage;

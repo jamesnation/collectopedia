@@ -1,0 +1,2 @@
+name,type,brand,manufacturer,year,acquired,cost,value,notes,isSold,soldDate,soldPrice,ebayListed,ebaySold
+Example Item,Action Figures,Other,Tomy,1987,2024-01-01,100,150,Item description here,false,,,,,
