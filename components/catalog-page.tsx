@@ -44,6 +44,7 @@ import { createCustomBrandAction } from "@/actions/custom-brands-actions";
 import { CustomManufacturerModal } from "@/components/custom-manufacturer-modal";
 import { getCustomManufacturersAction } from "@/actions/custom-manufacturers-actions";
 import { createCustomManufacturerAction } from "@/actions/custom-manufacturers-actions";
+import { generateYearOptions } from "@/lib/utils";
 
 // Dynamically import components that might cause hydration issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -250,6 +251,8 @@ function CatalogPage({
   const [customTypes, setCustomTypes] = useState<{ id: string; name: string }[]>(initialTypes);
   const [customBrands, setCustomBrands] = useState<{ id: string; name: string }[]>(initialBrands);
   const [customManufacturers, setCustomManufacturers] = useState<{ id: string; name: string }[]>(initialManufacturers);
+
+  const yearOptions = generateYearOptions();
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true)
@@ -1043,19 +1046,26 @@ function CatalogPage({
                       <CustomManufacturerModal onSuccess={loadCustomManufacturers} />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="year" className="text-sm font-medium text-primary">Year</Label>
-                    <Input
-                      id="year"
-                      name="year"
-                      type="number"
-                      min="1900"
-                      max={new Date().getFullYear()}
-                      value={newItem.year || ''}
-                      onChange={handleInputChange}
-                      placeholder="e.g. 1987"
-                      className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
-                    />
+                  <div className="grid gap-2">
+                    <Label htmlFor="year">Year</Label>
+                    <Select
+                      value={newItem.year?.toString() || ""}
+                      onValueChange={(value) => setNewItem({ ...newItem, year: value ? parseInt(value) : undefined })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Year</SelectLabel>
+                          {yearOptions.map((year) => (
+                            <SelectItem key={year.value} value={year.value}>
+                              {year.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="acquired" className="text-sm font-medium text-primary">Date Acquired</Label>

@@ -24,6 +24,8 @@ import { getImagesByItemIdAction, createImageAction, deleteImageAction } from "@
 import { SelectImage } from "@/db/schema/images-schema"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import DynamicImageUpload from "@/components/image-upload"
+import { generateYearOptions } from "@/lib/utils"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
@@ -55,6 +57,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [images, setImages] = useState<SelectImage[]>([])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const yearOptions = generateYearOptions()
 
   useEffect(() => {
     if (id) {
@@ -596,16 +599,32 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                             <h4 className="font-semibold text-sm text-primary">Edit Year</h4>
                             <div className="space-y-2">
                               <Label htmlFor="year" className="text-sm font-medium text-primary">Year</Label>
-                              <Input
-                                id="year"
-                                name="year"
-                                type="number"
-                                min="1900"
-                                max={new Date().getFullYear()}
-                                value={item.year || ''}
-                                onChange={handleInputChange}
-                                className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
-                              />
+                              <Select
+                                value={item.year?.toString() || ""}
+                                onValueChange={(value) => {
+                                  if (item) {
+                                    const updatedItem = {
+                                      ...item,
+                                      year: value ? parseInt(value) : null
+                                    };
+                                    setItem(updatedItem);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                                  <SelectValue placeholder="Select year" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectGroup>
+                                    <SelectLabel>Year</SelectLabel>
+                                    {yearOptions.map((year) => (
+                                      <SelectItem key={year.value} value={year.value}>
+                                        {year.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div className="flex justify-end space-x-2">
                               <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
