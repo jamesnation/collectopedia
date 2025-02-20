@@ -58,6 +58,10 @@ const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { 
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
+// Add at the top with other type definitions
+type ItemCondition = "New" | "Used - complete" | "Used - item only";
+
+// Update the CSV type to use ItemCondition
 type CSVItem = {
   name: string
   type: string
@@ -74,6 +78,13 @@ type CSVItem = {
   ebayListed: string
   ebaySold: string
 }
+
+// Update the conditionOptions definition
+const conditionOptions: ItemCondition[] = [
+  "New",
+  "Used - complete",
+  "Used - item only"
+];
 
 // Add this function at the top level of the file, after the imports
 const formatDate = (date: Date | string) => {
@@ -212,18 +223,29 @@ function CatalogPage({
   
   const [ebayValueType, setEbayValueType] = useState("active")
   const [isAddItemOpen, setIsAddItemOpen] = useState(false)
-  const [newItem, setNewItem] = useState({
-    name: '',
-    type: '',
-    brand: '',
-    manufacturer: '',
-    year: null as number | null,
-    acquired: '',
-    cost: '',
-    value: '',
-    notes: '',
-    image: ''
-  })
+  const [newItem, setNewItem] = useState<{
+    name: string;
+    type: string;
+    brand: string;
+    manufacturer: string;
+    year: number | null;
+    acquired: string;
+    cost: string;
+    value: string;
+    notes: string;
+    image: string;
+  }>({
+    name: "",
+    type: "",
+    brand: "",
+    manufacturer: "",
+    year: null,
+    acquired: new Date().toISOString().split('T')[0],
+    cost: "",
+    value: "",
+    notes: "",
+    image: ""
+  });
   const [view, setView] = useState('list')
   const [items, setItems] = useState<SelectItemType[]>(initialItems)
   const { userId } = useAuth()
@@ -231,7 +253,20 @@ function CatalogPage({
   const [loadingItemId, setLoadingItemId] = useState<string | null>(null)
   const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
-  const [editingItem, setEditingItem] = useState<SelectItemType | null>(null)
+  const [editingItem, setEditingItem] = useState<{
+    id: string;
+    name: string;
+    type: string;
+    brand: string;
+    manufacturer: string | null;
+    year: number | null;
+    condition: ItemCondition;
+    acquired: string;
+    cost: number;
+    value: number;
+    notes: string | null;
+    image: string | null;
+  } | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -467,9 +502,13 @@ function CatalogPage({
   }, [items, toast])
 
   const handleEditStart = (item: SelectItemType, field: string) => {
-    setEditingItem({ ...item });
-    setEditingItemId(item.id);
     setEditingField(field);
+    setEditingItemId(item.id);
+    setEditingItem({
+      ...item,
+      acquired: new Date(item.acquired).toISOString().split('T')[0],
+      condition: item.condition || "Used - complete"
+    });
   };
 
   const handleEditCancel = () => {
@@ -479,33 +518,38 @@ function CatalogPage({
   };
 
   const handleEditSave = async () => {
-    if (editingItem) {
-      setIsLoading(true);
-      setLoadingItemId(editingItem.id);
+    if (editingItem && editingItemId) {
       try {
-        const result = await updateItemAction(editingItem.id, {
+        const result = await updateItemAction(editingItemId, {
           ...editingItem,
-          image: editingItem.image, // Make sure to include the image URL here
+          acquired: new Date(editingItem.acquired),
         });
+
         if (result.isSuccess) {
-          setItems(items.map(item => item.id === editingItem.id ? editingItem : item));
+          setItems(prevItems =>
+            prevItems.map(item =>
+              item.id === editingItemId
+                ? { ...item, ...editingItem }
+                : item
+            )
+          );
+          setEditingField(null);
+          setEditingItem(null);
+          setEditingItemId(null);
           toast({
-            title: "Item updated",
-            description: "Your changes have been saved successfully.",
+            title: "Success",
+            description: "Item updated successfully",
           });
-          handleEditCancel();
         } else {
-          throw new Error('Action failed');
+          throw new Error(result.error);
         }
       } catch (error) {
+        console.error('Error updating item:', error);
         toast({
           title: "Error",
-          description: "Failed to update item. Please try again.",
+          description: "Failed to update item",
           variant: "destructive",
         });
-      } finally {
-        setIsLoading(false);
-        setLoadingItemId(null);
       }
     }
   };
@@ -608,9 +652,11 @@ function CatalogPage({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    console.log('handleInputChange:', { name, value });
-    setNewItem(prev => ({ ...prev, [name]: value }));
-  }
+    setNewItem(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -663,7 +709,7 @@ function CatalogPage({
           type: type,
           brand: brand,
           manufacturer: newItem.manufacturer || null,
-          year: newItem.year,  // Remove the parseInt since it's already a number
+          year: newItem.year,
           acquired: new Date(newItem.acquired || new Date()),
           cost: cost,
           value: value,
@@ -932,13 +978,10 @@ function CatalogPage({
 
   const handleNewItemManufacturerChange = (value: string) => {
     console.log('Manufacturer selected:', value);
-    setNewItem(prev => {
-      console.log('Setting manufacturer to:', value);
-      return {
-        ...prev,
-        manufacturer: value
-      };
-    });
+    setNewItem(prev => ({
+      ...prev,
+      manufacturer: value
+    }));
   };
 
   const handleManufacturerChange = (value: string) => {
@@ -956,6 +999,45 @@ function CatalogPage({
     isClientSide: typeof window !== 'undefined',
     hasServerActions: typeof getCustomManufacturersAction === 'function'
   });
+
+  const columns = [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      sortKey: 'name'
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      sortable: true,
+      sortKey: 'type'
+    },
+    {
+      key: 'brand',
+      label: 'Brand',
+      sortable: true,
+      sortKey: 'brand'
+    },
+    {
+      key: 'value',
+      label: 'Value',
+      sortable: true,
+      sortKey: 'value'
+    },
+    {
+      key: 'cost',
+      label: 'Cost',
+      sortable: true,
+      sortKey: 'cost'
+    },
+    {
+      key: 'updatedAt',
+      label: 'Last Updated',
+      sortable: true,
+      sortKey: 'updatedAt'
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50 text-foreground">
@@ -1101,6 +1183,27 @@ function CatalogPage({
                           {yearOptions.map((year) => (
                             <SelectItem key={year.value} value={year.value}>
                               {year.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="condition">Condition</Label>
+                    <Select
+                      value={newItem.condition}
+                      onValueChange={(value) => setNewItem({ ...newItem, condition: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select condition" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Condition</SelectLabel>
+                          {conditionOptions.map((condition) => (
+                            <SelectItem key={condition} value={condition}>
+                              {condition}
                             </SelectItem>
                           ))}
                         </SelectGroup>
@@ -1378,15 +1481,6 @@ function CatalogPage({
                   </TableHead>
                   <TableHead className="w-32 text-right">eBay Sold</TableHead>
                   <TableHead className="w-32 text-right">eBay Listed</TableHead>
-                  <TableHead className="w-40">
-                    <Button 
-                      variant="ghost" 
-                      className="font-bold text-primary hover:bg-accent hover:text-accent-foreground"
-                      onClick={() => handleSort('updatedAt')}
-                    >
-                      Last Updated <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'updatedAt' ? 'opacity-100' : 'opacity-50'}`} />
-                    </Button>
-                  </TableHead>
                   {showSold && (
                     <TableHead className="w-32">
                       <Button 
@@ -1680,7 +1774,6 @@ function CatalogPage({
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell>{formatDate(item.updatedAt)}</TableCell>
                           {showSold && (
                             <TableCell>{item.soldDate ? formatDate(item.soldDate) : 'N/A'}</TableCell>
                           )}

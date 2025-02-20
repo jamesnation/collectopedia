@@ -27,6 +27,12 @@ export const brandEnum = pgEnum("brand", [
   'Unknown'
 ]);
 
+export const conditionEnum = pgEnum("condition", [
+  "New",
+  "Used - complete",
+  "Used - item only"
+]);
+
 export const itemsTable = pgTable("items", {
   id: text("id").primaryKey().notNull(),
   userId: text("user_id").notNull(),
@@ -35,6 +41,7 @@ export const itemsTable = pgTable("items", {
   brand: text("brand").notNull(),
   manufacturer: text("manufacturer"),
   year: integer("year"),
+  condition: conditionEnum("condition").notNull().default("Used - complete"),
   acquired: timestamp("acquired").notNull(),
   cost: integer("cost").notNull(),
   value: integer("value").notNull(),

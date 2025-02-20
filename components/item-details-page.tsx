@@ -40,6 +40,9 @@ const valueData = [
   { date: '2023-06', value: 5000 },
 ]
 
+// Add type definition at the top
+type ItemCondition = "New" | "Used - complete" | "Used - item only";
+
 interface ItemDetailsPageProps {
   id: string
 }
@@ -78,6 +81,13 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     'Super7',
     'Takara',
     'Tomy'
+  ];
+
+  // Update conditionOptions definition
+  const conditionOptions: ItemCondition[] = [
+    "New",
+    "Used - complete",
+    "Used - item only"
   ];
 
   useEffect(() => {
@@ -693,6 +703,60 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                       </Popover>
                     </p>
                   </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-semibold">Condition:</span>
+                    <Popover open={editingField === 'condition'} onOpenChange={(open) => !open && handleEditCancel()}>
+                      <PopoverTrigger asChild>
+                        <button 
+                          className="ml-2 text-sm hover:text-primary transition-colors"
+                          onClick={() => handleEditStart('condition')}
+                        >
+                          {item.condition || 'Add condition'}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 bg-card border-border">
+                        <div className="space-y-4">
+                          <h4 className="font-semibold text-sm text-primary">Edit Condition</h4>
+                          <div className="space-y-2">
+                            <Label htmlFor="condition" className="text-sm font-medium text-primary">Condition</Label>
+                            <Select
+                              value={item.condition}
+                              onValueChange={(value: ItemCondition) => {
+                                if (item) {
+                                  const updatedItem = {
+                                    ...item,
+                                    condition: value as ItemCondition
+                                  };
+                                  setItem(updatedItem);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                                <SelectValue placeholder="Select condition" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Condition</SelectLabel>
+                                  {conditionOptions.map((condition) => (
+                                    <SelectItem key={condition} value={condition}>
+                                      {condition}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                            <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </p>
                 </div>
 
                 {isSold && (
