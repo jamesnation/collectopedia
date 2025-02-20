@@ -63,6 +63,7 @@ type CSVItem = {
   type: string
   brand: string
   manufacturer: string
+  year: string
   acquired: string
   cost: string
   value: string
@@ -818,6 +819,7 @@ function CatalogPage({
                   type: finalType,
                   brand: finalBrand,
                   manufacturer: finalManufacturer,
+                  year: item.year ? parseInt(item.year) : null,
                   acquired: item.acquired ? new Date(item.acquired) : new Date(),
                   cost: item.cost ? parseFloat(item.cost) : 0,
                   value: item.value ? parseFloat(item.value) : 0,
