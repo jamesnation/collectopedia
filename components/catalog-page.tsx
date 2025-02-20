@@ -822,8 +822,12 @@ function CatalogPage({
                 let finalManufacturer = importedManufacturer;
                 
                 if (importedManufacturer) {
-                  if (!customManufacturers.find(cm => cm.name === importedManufacturer)) {
-                    // Create new custom manufacturer
+                  // Check if manufacturer exists in default list or custom manufacturers
+                  const manufacturerExists = defaultManufacturers.includes(importedManufacturer) || 
+                                          customManufacturers.some(cm => cm.name === importedManufacturer);
+                  
+                  if (!manufacturerExists) {
+                    // Create new custom manufacturer only if it doesn't exist in either list
                     const manufacturerResult = await createCustomManufacturerAction({
                       name: importedManufacturer
                     });
