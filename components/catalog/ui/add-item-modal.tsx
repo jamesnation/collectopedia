@@ -10,10 +10,10 @@ import { CatalogItem } from '../utils/schema-adapter'
 interface AddItemModalProps {
   onAddItem: (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean | undefined>
   customTypes: { id: string; name: string }[]
-  customBrands: { id: string; name: string }[]
+  customFranchises: { id: string; name: string }[]
   customManufacturers: { id: string; name: string }[]
   onLoadCustomTypes: () => void
-  onLoadCustomBrands: () => void
+  onLoadCustomFranchises: () => void
   onLoadCustomManufacturers: () => void
   isLoading: boolean
 }
@@ -21,10 +21,10 @@ interface AddItemModalProps {
 export function AddItemModal({
   onAddItem,
   customTypes,
-  customBrands,
+  customFranchises,
   customManufacturers,
   onLoadCustomTypes,
-  onLoadCustomBrands,
+  onLoadCustomFranchises,
   onLoadCustomManufacturers,
   isLoading
 }: AddItemModalProps) {
@@ -60,10 +60,10 @@ export function AddItemModal({
             <AddItemForm
               onSubmit={handleSubmit}
               customTypes={customTypes}
-              customBrands={customBrands}
+              customFranchises={customFranchises}
               customManufacturers={customManufacturers}
               onLoadCustomTypes={onLoadCustomTypes}
-              onLoadCustomBrands={onLoadCustomBrands}
+              onLoadCustomFranchises={onLoadCustomFranchises}
               onLoadCustomManufacturers={onLoadCustomManufacturers}
               isLoading={isLoading}
             />

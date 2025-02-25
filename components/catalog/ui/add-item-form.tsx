@@ -15,11 +15,11 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select"
-import { itemTypeEnum, brandEnum } from "@/db/schema/items-schema"
+import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema"
 import { CatalogItem } from '../utils/schema-adapter'
 import { generateYearOptions } from "@/lib/utils"
 import { CustomTypeModal } from "@/components/custom-type-modal"
-import { CustomBrandModal } from "@/components/custom-brand-modal"
+import { CustomFranchiseModal } from "@/components/custom-franchise-modal"
 import { CustomManufacturerModal } from "@/components/custom-manufacturer-modal"
 import { CONDITION_OPTIONS } from '../utils/schema-adapter'
 import dynamic from 'next/dynamic'
@@ -32,10 +32,10 @@ const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { 
 interface AddItemFormProps {
   onSubmit: (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>
   customTypes: { id: string; name: string }[]
-  customBrands: { id: string; name: string }[]
+  customFranchises: { id: string; name: string }[]
   customManufacturers: { id: string; name: string }[]
   onLoadCustomTypes: () => void
-  onLoadCustomBrands: () => void
+  onLoadCustomFranchises: () => void
   onLoadCustomManufacturers: () => void
   isLoading: boolean
 }
@@ -43,17 +43,17 @@ interface AddItemFormProps {
 export function AddItemForm({
   onSubmit,
   customTypes,
-  customBrands,
+  customFranchises,
   customManufacturers,
   onLoadCustomTypes,
-  onLoadCustomBrands,
+  onLoadCustomFranchises,
   onLoadCustomManufacturers,
   isLoading
 }: AddItemFormProps) {
   const [newItem, setNewItem] = useState<{
     name: string
     type: string
-    brand: string
+    franchise: string
     manufacturer: string
     year: number | null
     condition: "New" | "Used - complete" | "Used - item only"
@@ -65,7 +65,7 @@ export function AddItemForm({
   }>({
     name: "",
     type: "",
-    brand: "",
+    franchise: "",
     manufacturer: "",
     year: null,
     condition: "Used - complete",
@@ -101,10 +101,10 @@ export function AddItemForm({
     }))
   }
 
-  const handleBrandChange = (value: string) => {
+  const handleFranchiseChange = (value: string) => {
     setNewItem(prev => ({
       ...prev,
-      brand: value
+      franchise: value
     }))
   }
 
@@ -149,7 +149,7 @@ export function AddItemForm({
       userId: '', // This will be set by the hook
       name: newItem.name,
       type: newItem.type || 'Other',
-      brand: newItem.brand || 'Other',
+      franchise: newItem.franchise || 'Other',
       manufacturer: newItem.manufacturer || null,
       year: newItem.year,
       condition: newItem.condition,
@@ -173,7 +173,7 @@ export function AddItemForm({
       setNewItem({
         name: "",
         type: "",
-        brand: "",
+        franchise: "",
         manufacturer: "",
         year: null,
         condition: "Used - complete",
@@ -235,35 +235,35 @@ export function AddItemForm({
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="brand" className="text-sm font-medium text-primary">Brand</Label>
+        <Label htmlFor="franchise" className="text-sm font-medium text-primary">Franchise</Label>
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <Select 
-              name="brand" 
-              value={newItem.brand} 
-              onValueChange={handleBrandChange}
+              name="franchise"
+              value={newItem.franchise}
+              onValueChange={handleFranchiseChange}
             >
               <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-                <SelectValue placeholder="Select brand" />
+                <SelectValue placeholder="Select franchise" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectLabel>Default Brands</SelectLabel>
-                  {brandEnum.enumValues.map((brand) => (
-                    <SelectItem key={`new-brand-${brand}`} value={brand}>{brand}</SelectItem>
+                  <SelectLabel>Default Franchises</SelectLabel>
+                  {franchiseEnum.enumValues.map((franchise) => (
+                    <SelectItem key={`new-franchise-${franchise}`} value={franchise}>{franchise}</SelectItem>
                   ))}
                 </SelectGroup>
                 <SelectSeparator />
                 <SelectGroup>
-                  <SelectLabel>Custom Brands</SelectLabel>
-                  {customBrands.map((brand) => (
-                    <SelectItem key={`new-brand-custom-${brand.id}`} value={brand.name}>{brand.name}</SelectItem>
+                  <SelectLabel>Custom Franchises</SelectLabel>
+                  {customFranchises.map((franchise) => (
+                    <SelectItem key={`new-franchise-custom-${franchise.id}`} value={franchise.name}>{franchise.name}</SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
           </div>
-          <CustomBrandModal onSuccess={onLoadCustomBrands} />
+          <CustomFranchiseModal onSuccess={onLoadCustomFranchises} />
         </div>
       </div>
       

@@ -38,4 +38,4 @@ export async function deleteCustomFranchise(id: string) {
   await db
     .delete(customFranchisesTable)
     .where(eq(customFranchisesTable.id, id));
-} 
+}

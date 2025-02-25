@@ -11,4 +11,4 @@ export const customFranchisesTable = pgTable("custom_franchises", {
 });
 
 export type InsertCustomFranchise = typeof customFranchisesTable.$inferInsert;
-export type SelectCustomFranchise = typeof customFranchisesTable.$inferSelect; 
+export type SelectCustomFranchise = typeof customFranchisesTable.$inferSelect;

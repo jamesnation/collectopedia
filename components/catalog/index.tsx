@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { SelectItem } from '@/db/schema/items-schema';
-import { itemTypeEnum, brandEnum } from '@/db/schema/items-schema';
+import { itemTypeEnum, franchiseEnum } from '@/db/schema/items-schema';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Package } from "lucide-react";
 import { FilterBar } from './ui/filter-bar';
@@ -22,14 +22,14 @@ import { useCatalogFilters } from './hooks/use-catalog-filters';
 interface CatalogProps {
   initialItems: SelectItem[];
   initialTypes: { id: string; name: string }[];
-  initialBrands: { id: string; name: string }[];
+  initialFranchises: { id: string; name: string }[];
   initialManufacturers: { id: string; name: string }[];
 }
 
 export default function Catalog({
   initialItems = [],
   initialTypes = [],
-  initialBrands = [],
+  initialFranchises = [],
   initialManufacturers = []
 }: CatalogProps) {
   // Initialize hooks with initial data
@@ -47,13 +47,13 @@ export default function Catalog({
   const {
     customTypes,
     loadCustomTypes,
-    customBrands,
-    loadCustomBrands,
+    customFranchises,
+    loadCustomFranchises,
     customManufacturers,
     loadCustomManufacturers,
   } = useCustomEntities({
     initialTypes,
-    initialBrands,
+    initialFranchises,
     initialManufacturers
   });
 
@@ -64,8 +64,8 @@ export default function Catalog({
     setSearchQuery,
     typeFilter,
     setTypeFilter,
-    brandFilter,
-    setBrandFilter,
+    franchiseFilter,
+    setFranchiseFilter,
     yearFilter,
     setYearFilter,
     showSold,
@@ -89,9 +89,9 @@ export default function Catalog({
   useEffect(() => {
     fetchItems();
     loadCustomTypes();
-    loadCustomBrands();
+    loadCustomFranchises();
     loadCustomManufacturers();
-  }, [fetchItems, loadCustomTypes, loadCustomBrands, loadCustomManufacturers]);
+  }, [fetchItems, loadCustomTypes, loadCustomFranchises, loadCustomManufacturers]);
 
   // Handle eBay refresh
   const handleEbayRefresh = async (id: string, name: string, type: 'sold' | 'listed') => {
@@ -163,14 +163,14 @@ export default function Catalog({
     }
   }, []);
 
-  const createCustomBrand = useCallback(async (name: string): Promise<boolean> => {
+  const createCustomFranchise = useCallback(async (name: string): Promise<boolean> => {
     try {
       // This would be your actual implementation
-      // For example: await createCustomBrandAction({ name });
-      console.log('Creating custom brand:', name);
+      // For example: await createCustomFranchiseAction({ name });
+      console.log('Creating custom franchise:', name);
       return true;
     } catch (error) {
-      console.error('Error creating custom brand:', error);
+      console.error('Error creating custom franchise:', error);
       return false;
     }
   }, []);
@@ -197,23 +197,23 @@ export default function Catalog({
             <AddItemModal
               onAddItem={addItem}
               customTypes={customTypes}
-              customBrands={customBrands}
+              customFranchises={customFranchises}
               customManufacturers={customManufacturers}
               onLoadCustomTypes={loadCustomTypes}
-              onLoadCustomBrands={loadCustomBrands}
+              onLoadCustomFranchises={loadCustomFranchises}
               onLoadCustomManufacturers={loadCustomManufacturers}
               isLoading={isLoading}
             />
             <CSVImportButton
               onAddItem={addItem}
               onCreateCustomType={createCustomType}
-              onCreateCustomBrand={createCustomBrand}
+              onCreateCustomFranchise={createCustomFranchise}
               onCreateCustomManufacturer={createCustomManufacturer}
               onLoadCustomTypes={loadCustomTypes}
-              onLoadCustomBrands={loadCustomBrands}
+              onLoadCustomFranchises={loadCustomFranchises}
               onLoadCustomManufacturers={loadCustomManufacturers}
               defaultTypeOptions={itemTypeEnum.enumValues}
-              defaultBrandOptions={brandEnum.enumValues}
+              defaultFranchiseOptions={franchiseEnum.enumValues}
               defaultManufacturerOptions={DEFAULT_MANUFACTURERS}
             />
           </div>
@@ -237,8 +237,8 @@ export default function Catalog({
           setSearchQuery={setSearchQuery}
           typeFilter={typeFilter}
           setTypeFilter={setTypeFilter}
-          brandFilter={brandFilter}
-          setBrandFilter={setBrandFilter}
+          franchiseFilter={franchiseFilter}
+          setFranchiseFilter={setFranchiseFilter}
           yearFilter={yearFilter}
           setYearFilter={setYearFilter}
           showSold={showSold}
@@ -249,8 +249,8 @@ export default function Catalog({
           availableSoldYears={availableSoldYears}
           defaultTypeOptions={itemTypeEnum.enumValues}
           customTypes={customTypes}
-          defaultBrandOptions={brandEnum.enumValues}
-          customBrands={customBrands}
+          defaultFranchiseOptions={franchiseEnum.enumValues}
+          customFranchises={customFranchises}
         />
 
         {/* Main Content - Conditional rendering based on view type */}
@@ -294,10 +294,10 @@ export default function Catalog({
             <AddItemModal
               onAddItem={addItem}
               customTypes={customTypes}
-              customBrands={customBrands}
+              customFranchises={customFranchises}
               customManufacturers={customManufacturers}
               onLoadCustomTypes={loadCustomTypes}
-              onLoadCustomBrands={loadCustomBrands}
+              onLoadCustomFranchises={loadCustomFranchises}
               onLoadCustomManufacturers={loadCustomManufacturers}
               isLoading={isLoading}
             />

@@ -75,4 +75,4 @@ export async function deleteCustomFranchiseAction(id: string) {
     console.error("Error deleting custom franchise:", error);
     return { isSuccess: false, error: "Failed to delete custom franchise" };
   }
-} 
+}

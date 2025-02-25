@@ -1,43 +1,35 @@
-import { Search, LayoutList, LayoutGrid } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Toggle } from "@/components/ui/toggle";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { SortDescriptor } from "../hooks/use-catalog-filters";
-import { CustomEntity } from "../utils/schema-adapter";
+import { useState, useEffect } from 'react';
+import { Search, Filter, LayoutGrid, LayoutList } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Toggle } from '@/components/ui/toggle';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { CustomEntity } from '../utils/schema-adapter';
 
 interface FilterBarProps {
   view: 'list' | 'grid';
   setView: (view: 'list' | 'grid') => void;
-  
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  
   typeFilter: string;
   setTypeFilter: (type: string) => void;
-  
-  brandFilter: string;
-  setBrandFilter: (brand: string) => void;
-  
+  franchiseFilter: string;
+  setFranchiseFilter: (franchise: string) => void;
   yearFilter: string;
   setYearFilter: (year: string) => void;
-  
   showSold: boolean;
-  setShowSold: (showSold: boolean) => void;
-  
+  setShowSold: (show: boolean) => void;
   soldYearFilter: string;
   setSoldYearFilter: (year: string) => void;
-  
   availableYears: number[];
   availableSoldYears: number[];
-  
-  // Custom entities
-  defaultTypeOptions?: string[];
+  defaultTypeOptions: string[];
   customTypes: CustomEntity[];
-  
-  defaultBrandOptions?: string[];
-  customBrands: CustomEntity[];
+  defaultFranchiseOptions: string[];
+  customFranchises: CustomEntity[];
 }
 
 export function FilterBar({
@@ -47,8 +39,8 @@ export function FilterBar({
   setSearchQuery,
   typeFilter,
   setTypeFilter,
-  brandFilter,
-  setBrandFilter,
+  franchiseFilter,
+  setFranchiseFilter,
   yearFilter,
   setYearFilter,
   showSold,
@@ -57,146 +49,153 @@ export function FilterBar({
   setSoldYearFilter,
   availableYears,
   availableSoldYears,
-  defaultTypeOptions = [],
+  defaultTypeOptions,
   customTypes,
-  defaultBrandOptions = [],
-  customBrands
+  defaultFranchiseOptions,
+  customFranchises
 }: FilterBarProps) {
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
+  useEffect(() => {
+    setYearFilter('all');
+    setSoldYearFilter('all');
+  }, [showSold, setYearFilter, setSoldYearFilter]);
+  
   return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-      {/* Search Input */}
-      <div className="relative w-full md:w-64">
+    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+      <div className="relative w-full sm:w-auto flex-1 max-w-md">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search items..."
-          className="pl-10 border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+          type="search"
+          placeholder="Search your collection..."
+          className="pl-8"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
       </div>
       
-      <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-        {/* View Toggle */}
-        <div className="flex items-center space-x-2 bg-background rounded-md p-1">
+      <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto justify-end">
+        <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9">
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <h4 className="font-medium">Filters</h4>
+                <p className="text-sm text-muted-foreground">
+                  Narrow down your collection view
+                </p>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-sold"
+                  checked={showSold}
+                  onCheckedChange={setShowSold}
+                />
+                <Label htmlFor="show-sold">Show Sold Items</Label>
+              </div>
+              
+              <div className="space-y-1">
+                <Label htmlFor="type-filter">Type</Label>
+                <Select
+                  value={typeFilter}
+                  onValueChange={setTypeFilter}
+                >
+                  <SelectTrigger id="type-filter">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {defaultTypeOptions.map((type) => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                    {customTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-1">
+                <Label htmlFor="franchise-filter">Franchise</Label>
+                <Select
+                  value={franchiseFilter}
+                  onValueChange={setFranchiseFilter}
+                >
+                  <SelectTrigger id="franchise-filter">
+                    <SelectValue placeholder="All Franchises" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Franchises</SelectItem>
+                    {defaultFranchiseOptions.map((franchise) => (
+                      <SelectItem key={franchise} value={franchise}>{franchise}</SelectItem>
+                    ))}
+                    {customFranchises.map((franchise) => (
+                      <SelectItem key={franchise.id} value={franchise.name}>{franchise.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-1">
+                <Label htmlFor="year-filter">
+                  {showSold ? 'Sold Year' : 'Year'}
+                </Label>
+                <Select
+                  value={showSold ? soldYearFilter : yearFilter}
+                  onValueChange={showSold ? setSoldYearFilter : setYearFilter}
+                >
+                  <SelectTrigger id="year-filter">
+                    <SelectValue placeholder={`All ${showSold ? 'Sold ' : ''}Years`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{`All ${showSold ? 'Sold ' : ''}Years`}</SelectItem>
+                    {(showSold ? availableSoldYears : availableYears).map((year) => (
+                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setTypeFilter('all');
+                  setFranchiseFilter('all');
+                  setYearFilter('all');
+                  setSoldYearFilter('all');
+                  setIsFilterOpen(false);
+                }}
+              >
+                Reset Filters
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+        
+        <div className="border rounded-md flex">
           <Toggle
             pressed={view === 'list'}
             onPressedChange={() => setView('list')}
             aria-label="List view"
-            className={`${view === 'list' ? 'bg-muted text-primary' : ''} p-2 rounded-md`}
+            className="rounded-none rounded-l-md"
           >
-            <LayoutList className="h-5 w-5" />
+            <LayoutList className="h-4 w-4" />
           </Toggle>
           <Toggle
             pressed={view === 'grid'}
             onPressedChange={() => setView('grid')}
             aria-label="Grid view"
-            className={`${view === 'grid' ? 'bg-muted text-primary' : ''} p-2 rounded-md`}
+            className="rounded-none rounded-r-md"
           >
-            <LayoutGrid className="h-5 w-5" />
+            <LayoutGrid className="h-4 w-4" />
           </Toggle>
         </div>
-
-        {/* Type Filter */}
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-full md:w-[140px] border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-            <SelectValue placeholder="Filter by type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {defaultTypeOptions.length > 0 && (
-              <>
-                <SelectSeparator />
-                <SelectGroup>
-                  <SelectLabel>Default Types</SelectLabel>
-                  {defaultTypeOptions.map((type) => (
-                    <SelectItem key={`filter-type-${type}`} value={type}>{type}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </>
-            )}
-            {customTypes.length > 0 && (
-              <>
-                <SelectSeparator />
-                <SelectGroup>
-                  <SelectLabel>Custom Types</SelectLabel>
-                  {customTypes.map((type) => (
-                    <SelectItem key={`filter-type-custom-${type.id}`} value={type.name}>{type.name}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </>
-            )}
-          </SelectContent>
-        </Select>
-
-        {/* Brand Filter */}
-        <Select value={brandFilter} onValueChange={setBrandFilter}>
-          <SelectTrigger className="w-full md:w-[140px] border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-            <SelectValue placeholder="Filter by brand" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Brands</SelectItem>
-            {defaultBrandOptions.length > 0 && (
-              <>
-                <SelectSeparator />
-                <SelectGroup>
-                  <SelectLabel>Default Brands</SelectLabel>
-                  {defaultBrandOptions.map((brand) => (
-                    <SelectItem key={`filter-brand-${brand}`} value={brand}>{brand}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </>
-            )}
-            {customBrands.length > 0 && (
-              <>
-                <SelectSeparator />
-                <SelectGroup>
-                  <SelectLabel>Custom Brands</SelectLabel>
-                  {customBrands.map((brand) => (
-                    <SelectItem key={`filter-brand-custom-${brand.id}`} value={brand.name}>{brand.name}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </>
-            )}
-          </SelectContent>
-        </Select>
-
-        {/* Year Filter */}
-        <Select value={yearFilter} onValueChange={setYearFilter}>
-          <SelectTrigger className="w-full md:w-[140px] border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-            <SelectValue placeholder="Filter by year" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Years</SelectItem>
-            {availableYears.map(year => (
-              <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Show Sold Toggle */}
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="show-sold"
-            checked={showSold}
-            onCheckedChange={setShowSold}
-          />
-          <Label htmlFor="show-sold">Show Sold Items</Label>
-        </div>
-
-        {/* Sold Year Filter (only shown when showSold is true) */}
-        {showSold && (
-          <Select value={soldYearFilter} onValueChange={setSoldYearFilter}>
-            <SelectTrigger className="w-full md:w-[140px] border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-              <SelectValue placeholder="Filter sold by year" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sold Years</SelectItem>
-              {availableSoldYears.map(year => (
-                <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
     </div>
   );

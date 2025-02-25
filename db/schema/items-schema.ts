@@ -13,7 +13,7 @@ export const itemTypeEnum = pgEnum("item_type", [
   "Other"
 ]);
 
-export const brandEnum = pgEnum("brand", [
+export const franchiseEnum = pgEnum("franchise", [
   'Transformers',
   'TMNT',
   'M.A.S.K',
@@ -38,7 +38,7 @@ export const itemsTable = pgTable("items", {
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
   type: text("type").notNull(),
-  brand: text("brand").notNull(),
+  franchise: text("franchise").notNull(),
   manufacturer: text("manufacturer"),
   year: integer("year"),
   condition: conditionEnum("condition").notNull().default("Used - complete"),

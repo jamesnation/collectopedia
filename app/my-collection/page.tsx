@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { getCustomManufacturersAction } from "@/actions/custom-manufacturers-actions";
 import { getCustomTypesAction } from "@/actions/custom-types-actions";
-import { getCustomBrandsAction } from "@/actions/custom-brands-actions";
+import { getCustomFranchisesAction } from "@/actions/custom-franchises-actions";
 import { getItemsByUserIdAction } from "@/actions/items-actions";
 import CatalogPage from "@/components/catalog-page";
 
@@ -15,19 +15,19 @@ export default async function CollectionPage() {
   const [
     manufacturersResult,
     typesResult,
-    brandsResult,
+    franchisesResult,
     itemsResult
   ] = await Promise.all([
     getCustomManufacturersAction(),
     getCustomTypesAction(),
-    getCustomBrandsAction(),
+    getCustomFranchisesAction(),
     userId ? getItemsByUserIdAction(userId) : { isSuccess: false, data: [] }
   ]);
 
   console.log('CollectionPage - Data Fetching Complete', {
     manufacturersCount: manufacturersResult.data?.length,
     typesCount: typesResult.data?.length,
-    brandsCount: brandsResult.data?.length,
+    franchisesCount: franchisesResult.data?.length,
     itemsCount: itemsResult.data?.length
   });
 
@@ -36,7 +36,7 @@ export default async function CollectionPage() {
     <CatalogPage
       initialManufacturers={manufacturersResult.data || []}
       initialTypes={typesResult.data || []}
-      initialBrands={brandsResult.data || []}
+      initialFranchises={franchisesResult.data || []}
       initialItems={itemsResult.data || []}
     />
   );

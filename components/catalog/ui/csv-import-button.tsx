@@ -11,7 +11,7 @@ import { CatalogItem } from '../utils/schema-adapter'
 type CSVItem = {
   name: string
   type: string
-  brand: string
+  franchise: string
   manufacturer: string
   year: string
   acquired: string
@@ -29,26 +29,26 @@ type CSVItem = {
 interface CSVImportButtonProps {
   onAddItem: (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean | undefined>
   onCreateCustomType: (name: string) => Promise<boolean>
-  onCreateCustomBrand: (name: string) => Promise<boolean>
+  onCreateCustomFranchise: (name: string) => Promise<boolean>
   onCreateCustomManufacturer: (name: string) => Promise<boolean>
   onLoadCustomTypes: () => Promise<any>
-  onLoadCustomBrands: () => Promise<any>
+  onLoadCustomFranchises: () => Promise<any>
   onLoadCustomManufacturers: () => Promise<any>
   defaultTypeOptions: string[]
-  defaultBrandOptions: string[]
+  defaultFranchiseOptions: string[]
   defaultManufacturerOptions: string[]
 }
 
 export function CSVImportButton({
   onAddItem,
   onCreateCustomType,
-  onCreateCustomBrand,
+  onCreateCustomFranchise,
   onCreateCustomManufacturer,
   onLoadCustomTypes,
-  onLoadCustomBrands,
+  onLoadCustomFranchises,
   onLoadCustomManufacturers,
   defaultTypeOptions,
-  defaultBrandOptions,
+  defaultFranchiseOptions,
   defaultManufacturerOptions
 }: CSVImportButtonProps) {
   const [isImporting, setIsImporting] = useState(false)
@@ -90,19 +90,19 @@ export function CSVImportButton({
                 }
               }
               
-              // Check if brand exists in default options or create a new custom brand
-              const importedBrand = item.brand || 'Other'
-              let finalBrand = importedBrand
+              // Check if franchise exists in default options or create a new custom franchise
+              const importedFranchise = item.franchise || 'Other'
+              let finalFranchise = importedFranchise
               
-              if (importedBrand !== 'Other' && !defaultBrandOptions.includes(importedBrand)) {
-                // Create new custom brand
-                const brandResult = await onCreateCustomBrand(importedBrand)
-                if (!brandResult) {
-                  console.error('Failed to create custom brand:', importedBrand)
-                  finalBrand = 'Other'
+              if (importedFranchise !== 'Other' && !defaultFranchiseOptions.includes(importedFranchise)) {
+                // Create new custom franchise
+                const franchiseResult = await onCreateCustomFranchise(importedFranchise)
+                if (!franchiseResult) {
+                  console.error('Failed to create custom franchise:', importedFranchise)
+                  finalFranchise = 'Other'
                 } else {
-                  // Refresh custom brands list
-                  await onLoadCustomBrands()
+                  // Refresh custom franchises list
+                  await onLoadCustomFranchises()
                 }
               }
               
@@ -127,7 +127,7 @@ export function CSVImportButton({
                 userId: '',
                 name: item.name || 'Unnamed Item',
                 type: finalType,
-                brand: finalBrand,
+                franchise: finalFranchise,
                 manufacturer: finalManufacturer,
                 year: item.year ? parseInt(item.year) : null,
                 condition: (item.condition || 'Used - complete') as "New" | "Used - complete" | "Used - item only",

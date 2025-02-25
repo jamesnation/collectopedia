@@ -7,21 +7,21 @@ import Catalog from './catalog'
 interface CatalogPageProps {
   initialManufacturers: { id: string; name: string }[];
   initialTypes: { id: string; name: string }[];
-  initialBrands: { id: string; name: string }[];
+  initialFranchises: { id: string; name: string }[];
   initialItems: SelectItemType[];
 }
 
 export default function CatalogPage({
   initialManufacturers,
   initialTypes,
-  initialBrands,
+  initialFranchises,
   initialItems
 }: CatalogPageProps) {
   return (
     <Catalog
       initialItems={initialItems}
       initialTypes={initialTypes}
-      initialBrands={initialBrands}
+      initialFranchises={initialFranchises}
       initialManufacturers={initialManufacturers}
     />
   );

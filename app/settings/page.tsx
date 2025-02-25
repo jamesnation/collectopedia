@@ -1,25 +1,12 @@
 "use client";
 
 import { CustomTypesList } from "@/components/custom-types-list";
-import { CustomBrandsList } from "@/components/custom-brands-list";
+import { CustomFranchisesList } from "@/components/custom-franchises-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings, Tags, BookmarkIcon, Building2 } from "lucide-react";
 
-console.log('Settings Page Component Environment:', {
-  isClient: typeof window !== 'undefined',
-  imports: {
-    CustomTypesList: typeof CustomTypesList,
-    CustomBrandsList: typeof CustomBrandsList
-  }
-});
-
 export default function SettingsPage() {
-  console.log('Settings Page Render Environment:', {
-    isClient: typeof window !== 'undefined',
-    hasDocument: typeof document !== 'undefined'
-  });
-
   return (
     <div className="h-full flex-1 flex flex-col gap-4 p-4 md:gap-8 md:p-6 bg-white">
       <div className="flex items-center">
@@ -48,22 +35,22 @@ export default function SettingsPage() {
           <div className="grid gap-6">
             <Card className="border shadow-sm">
               <CardHeader>
-                <CardTitle>Manage Types & Brands</CardTitle>
+                <CardTitle>Manage Types & Franchises</CardTitle>
                 <CardDescription>
-                  Customize the types and brands for your collection items
+                  Customize the types and franchises for your collection items
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="types" className="w-full">
                   <TabsList className="mb-4">
                     <TabsTrigger value="types">Types</TabsTrigger>
-                    <TabsTrigger value="brands">Brands</TabsTrigger>
+                    <TabsTrigger value="franchises">Franchises</TabsTrigger>
                   </TabsList>
                   <TabsContent value="types">
                     <CustomTypesList />
                   </TabsContent>
-                  <TabsContent value="brands">
-                    <CustomBrandsList />
+                  <TabsContent value="franchises">
+                    <CustomFranchisesList />
                   </TabsContent>
                 </Tabs>
               </CardContent>

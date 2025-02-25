@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import Catalog from '@/components/catalog';
 import { getItemsByUserIdAction } from '@/actions/items-actions';
 import { getCustomTypesAction } from '@/actions/custom-types-actions';
-import { getCustomBrandsAction } from '@/actions/custom-brands-actions';
+import { getCustomFranchisesAction } from '@/actions/custom-franchises-actions';
 import { getCustomManufacturersAction } from '@/actions/custom-manufacturers-actions';
 import { auth } from "@clerk/nextjs/server";
 
@@ -13,13 +13,13 @@ export default async function CatalogPage() {
   // Fetch initial data
   const itemsResult = await getItemsByUserIdAction(userId as string);
   const typesResult = await getCustomTypesAction();
-  const brandsResult = await getCustomBrandsAction();
+  const franchisesResult = await getCustomFranchisesAction();
   const manufacturersResult = await getCustomManufacturersAction();
 
   // Ensure we always pass arrays, even if the fetch fails
   const initialItems = itemsResult.isSuccess && itemsResult.data ? itemsResult.data : [];
   const initialTypes = typesResult.isSuccess && typesResult.data ? typesResult.data : [];
-  const initialBrands = brandsResult.isSuccess && brandsResult.data ? brandsResult.data : [];
+  const initialFranchises = franchisesResult.isSuccess && franchisesResult.data ? franchisesResult.data : [];
   const initialManufacturers = manufacturersResult.isSuccess && manufacturersResult.data ? manufacturersResult.data : [];
 
   return (
@@ -27,7 +27,7 @@ export default async function CatalogPage() {
       <Catalog 
         initialItems={initialItems}
         initialTypes={initialTypes}
-        initialBrands={initialBrands}
+        initialFranchises={initialFranchises}
         initialManufacturers={initialManufacturers}
       />
     </Suspense>

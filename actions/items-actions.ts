@@ -6,7 +6,7 @@ import { itemsTable, SelectItem } from "@/db/schema/items-schema";
 import { imagesTable } from "@/db/schema/images-schema"; // Add this line
 import { eq, ne, and, or } from 'drizzle-orm';
 import { db } from '@/db/db'; // Updated import
-import { itemTypeEnum, brandEnum } from "@/db/schema/items-schema";
+import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema";
 import crypto from 'crypto'; // Added import for crypto
 
 // Define ActionResult type
@@ -41,7 +41,7 @@ export const createItemAction = async (item: {
   userId: string;
   name: string;
   type: string;
-  brand: string;
+  franchise: string;
   manufacturer?: string | null;
   year?: number | null;
   acquired: Date;
@@ -59,7 +59,7 @@ export const createItemAction = async (item: {
   try {
     console.log('Attempting to create item:', JSON.stringify(item, null, 2));
 
-    // Remove the enum validation since we now support custom types and brands
+    // Remove the enum validation since we now support custom types and franchises
     const insertData = {
       ...item,
       cost: Math.round(item.cost), // Round to nearest integer
@@ -134,12 +134,12 @@ export const deleteItemAction = async (id: string): Promise<ActionResult<void>> 
   }
 };
 
-export const getRelatedItemsAction = async (brand: string, currentItemId: string, isSold: boolean): Promise<ActionResult<SelectItem[]>> => {
+export const getRelatedItemsAction = async (franchise: string, currentItemId: string, isSold: boolean): Promise<ActionResult<SelectItem[]>> => {
   try {
     const relatedItems = await db.select().from(itemsTable)
       .where(
         and(
-          eq(itemsTable.brand, brand as any), // Type assertion to avoid enum type mismatch
+          eq(itemsTable.franchise, franchise as any), // Type assertion to avoid enum type mismatch
           ne(itemsTable.id, currentItemId),
           eq(itemsTable.isSold, isSold)
         )

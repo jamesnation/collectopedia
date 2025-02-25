@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getProfileByUserId } from "@/db/queries/profiles-queries";
 import { getCustomManufacturersAction } from "@/actions/custom-manufacturers-actions";
 import { getCustomTypesAction } from "@/actions/custom-types-actions";
-import { getCustomBrandsAction } from "@/actions/custom-brands-actions";
+import { getCustomFranchisesAction } from "@/actions/custom-franchises-actions";
 import { getItemsByUserIdAction } from "@/actions/items-actions";
 import CatalogPage from "@/components/catalog-page";
 
@@ -35,19 +35,19 @@ export default async function NotesPage() {
   const [
     manufacturersResult,
     typesResult,
-    brandsResult,
+    franchisesResult,
     itemsResult
   ] = await Promise.all([
     getCustomManufacturersAction(),
     getCustomTypesAction(),
-    getCustomBrandsAction(),
+    getCustomFranchisesAction(),
     getItemsByUserIdAction(userId)
   ]);
 
   console.log('NotesPage - Data Fetching Complete', {
     manufacturersCount: manufacturersResult.data?.length,
     typesCount: typesResult.data?.length,
-    brandsCount: brandsResult.data?.length,
+    franchisesCount: franchisesResult.data?.length,
     itemsCount: itemsResult.data?.length
   });
 
@@ -56,7 +56,7 @@ export default async function NotesPage() {
     <CatalogPage
       initialManufacturers={manufacturersResult.data || []}
       initialTypes={typesResult.data || []}
-      initialBrands={brandsResult.data || []}
+      initialFranchises={franchisesResult.data || []}
       initialItems={itemsResult.data || []}
     />
   );

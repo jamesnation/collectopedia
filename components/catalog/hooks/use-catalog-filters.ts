@@ -23,7 +23,7 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
   
   // Filter state
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [brandFilter, setBrandFilter] = useState<string>('all');
+  const [franchiseFilter, setFranchiseFilter] = useState<string>('all');
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [showSold, setShowSold] = useState(false);
   const [soldYearFilter, setSoldYearFilter] = useState<string>('all');
@@ -66,7 +66,8 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
       result = result.filter(item => 
         item.name.toLowerCase().includes(lowercasedQuery) ||
         item.type.toLowerCase().includes(lowercasedQuery) ||
-        item.brand.toLowerCase().includes(lowercasedQuery)
+        item.franchise.toLowerCase().includes(lowercasedQuery) ||
+        (item.manufacturer && item.manufacturer.toLowerCase().includes(lowercasedQuery))
       );
     }
     
@@ -75,9 +76,9 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
       result = result.filter(item => item.type === typeFilter);
     }
     
-    // Apply brand filter
-    if (brandFilter !== 'all') {
-      result = result.filter(item => item.brand === brandFilter);
+    // Apply franchise filter
+    if (franchiseFilter !== 'all') {
+      result = result.filter(item => item.franchise === franchiseFilter);
     }
     
     // Apply year filter
@@ -139,7 +140,7 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     items, 
     debouncedSearchQuery, 
     typeFilter, 
-    brandFilter, 
+    franchiseFilter, 
     yearFilter, 
     sortDescriptor, 
     showSold, 
@@ -194,8 +195,8 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     // Filter state
     typeFilter,
     setTypeFilter,
-    brandFilter,
-    setBrandFilter,
+    franchiseFilter,
+    setFranchiseFilter,
     yearFilter,
     setYearFilter,
     showSold,

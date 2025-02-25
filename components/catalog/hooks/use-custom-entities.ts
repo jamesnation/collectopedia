@@ -5,10 +5,10 @@ import {
   getCustomTypesAction, 
   createCustomTypeAction 
 } from '@/actions/custom-types-actions';
-import {
-  getCustomBrandsAction,
-  createCustomBrandAction
-} from '@/actions/custom-brands-actions';
+import { 
+  getCustomFranchisesAction,
+  createCustomFranchiseAction
+} from '@/actions/custom-franchises-actions';
 import {
   getCustomManufacturersAction,
   createCustomManufacturerAction
@@ -16,21 +16,21 @@ import {
 
 interface UseCustomEntitiesProps {
   initialTypes?: CustomEntity[];
-  initialBrands?: CustomEntity[];
+  initialFranchises?: CustomEntity[];
   initialManufacturers?: CustomEntity[];
 }
 
 export function useCustomEntities({
   initialTypes = [],
-  initialBrands = [],
+  initialFranchises = [],
   initialManufacturers = []
 }: UseCustomEntitiesProps = {}) {
   const [customTypes, setCustomTypes] = useState<CustomEntity[]>(initialTypes);
-  const [customBrands, setCustomBrands] = useState<CustomEntity[]>(initialBrands);
+  const [customFranchises, setCustomFranchises] = useState<CustomEntity[]>(initialFranchises);
   const [customManufacturers, setCustomManufacturers] = useState<CustomEntity[]>(initialManufacturers);
   const [isLoading, setIsLoading] = useState({
     types: false,
-    brands: false,
+    franchises: false,
     manufacturers: false
   });
   const { toast } = useToast();
@@ -89,56 +89,56 @@ export function useCustomEntities({
     }
   }, [loadCustomTypes, toast]);
 
-  // Brands
-  const loadCustomBrands = useCallback(async () => {
-    setIsLoading(prev => ({ ...prev, brands: true }));
+  // Franchises
+  const loadCustomFranchises = useCallback(async () => {
+    setIsLoading(prev => ({ ...prev, franchises: true }));
     try {
-      const result = await getCustomBrandsAction();
+      const result = await getCustomFranchisesAction();
       if (result.isSuccess && result.data) {
-        setCustomBrands(result.data);
+        setCustomFranchises(result.data);
         return result.data;
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Error loading custom brands:', error);
+      console.error('Error loading custom franchises:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load custom brands',
+        description: 'Failed to load custom franchises',
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(prev => ({ ...prev, brands: false }));
+      setIsLoading(prev => ({ ...prev, franchises: false }));
     }
   }, [toast]);
 
-  const addCustomBrand = useCallback(async (name: string) => {
-    setIsLoading(prev => ({ ...prev, brands: true }));
+  const addCustomFranchise = useCallback(async (name: string) => {
+    setIsLoading(prev => ({ ...prev, franchises: true }));
     try {
-      const result = await createCustomBrandAction({ name });
+      const result = await createCustomFranchiseAction({ name });
       
       if (result.isSuccess) {
-        await loadCustomBrands();
+        await loadCustomFranchises();
         toast({
           title: 'Success',
-          description: 'Custom brand added successfully',
+          description: 'Custom franchise added successfully',
         });
         return true;
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Error adding custom brand:', error);
+      console.error('Error adding custom franchise:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add custom brand',
+        description: 'Failed to add custom franchise',
         variant: 'destructive',
       });
       return false;
     } finally {
-      setIsLoading(prev => ({ ...prev, brands: false }));
+      setIsLoading(prev => ({ ...prev, franchises: false }));
     }
-  }, [loadCustomBrands, toast]);
+  }, [loadCustomFranchises, toast]);
 
   // Manufacturers
   const loadCustomManufacturers = useCallback(async () => {
@@ -198,11 +198,11 @@ export function useCustomEntities({
     addCustomType,
     isLoadingTypes: isLoading.types,
     
-    // Brands
-    customBrands,
-    loadCustomBrands,
-    addCustomBrand,
-    isLoadingBrands: isLoading.brands,
+    // Franchises
+    customFranchises,
+    loadCustomFranchises,
+    addCustomFranchise,
+    isLoadingFranchises: isLoading.franchises,
     
     // Manufacturers
     customManufacturers,

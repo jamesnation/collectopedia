@@ -6,7 +6,7 @@ export interface CatalogItem {
   userId: string;
   name: string;
   type: string;
-  brand: string;
+  franchise: string;
   manufacturer: string | null;
   year: number | null;
   condition: "New" | "Used - complete" | "Used - item only";
