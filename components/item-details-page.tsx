@@ -101,7 +101,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
   useEffect(() => {
     if (item) {
-      fetchRelatedItems(item.brand, item.id, item.isSold)
+      fetchRelatedItems(item.franchise, item.id, item.isSold)
     }
   }, [item])
 
@@ -129,8 +129,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     }
   }
 
-  const fetchRelatedItems = async (brand: string, itemId: string, isSold: boolean) => {
-    const result = await getRelatedItemsAction(brand, itemId, isSold)
+  const fetchRelatedItems = async (franchise: string, itemId: string, isSold: boolean) => {
+    const result = await getRelatedItemsAction(franchise, itemId, isSold)
     if (result.isSuccess && result.data) {
       setRelatedItems(result.data)
     }
@@ -436,7 +436,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               <h1 className="text-4xl font-serif text-foreground mb-2">{item.name}</h1>
               <div className="flex flex-wrap gap-2 mb-2">
                 <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.type}</Badge>
-                <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.brand}</Badge>
+                <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.franchise}</Badge>
                 {item.manufacturer && (
                   <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.manufacturer}</Badge>
                 )}

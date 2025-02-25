@@ -10,11 +10,18 @@ import { PlusCircle, Pencil, Trash2, Save, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
+console.log('CustomFranchisesList Component Imports:', {
+  hasServerActions: typeof getCustomFranchisesAction !== 'undefined',
+  environment: typeof window !== 'undefined' ? 'client' : 'server'
+});
+
 interface CustomFranchisesListProps {
   onFranchisesChange?: () => void;
 }
 
 export function CustomFranchisesList({ onFranchisesChange }: CustomFranchisesListProps) {
+  console.log('CustomFranchisesList Render - Checking for quote escaping issues');
+
   const [franchises, setFranchises] = useState<SelectCustomFranchise[]>([]);
   const [newFranchise, setNewFranchise] = useState("");
   const [editingFranchiseId, setEditingFranchiseId] = useState<string | null>(null);
@@ -26,9 +33,11 @@ export function CustomFranchisesList({ onFranchisesChange }: CustomFranchisesLis
     if (!userId) return;
     const result = await getCustomFranchisesAction();
     if (result.isSuccess && result.data) {
+      console.log('Loaded franchises:', result.data.length);
       setFranchises(result.data);
       onFranchisesChange?.();
     } else {
+      console.error('Failed to load franchises:', result.error);
       toast({
         title: "Error",
         description: "Failed to load custom franchises",

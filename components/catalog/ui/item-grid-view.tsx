@@ -88,7 +88,7 @@ export function ItemGridView({
                 {item.name}
               </Link>
               <div className="text-sm text-muted-foreground mb-1">
-                {item.type} • {item.brand}
+                {item.type} • {item.franchise}
               </div>
               {item.manufacturer && (
                 <div className="text-sm text-muted-foreground mb-2">
