@@ -99,8 +99,21 @@ export const createItemAction = async (item: {
 
 export const updateItemAction = async (id: string, data: Partial<SelectItem>): Promise<ActionResult<SelectItem[]>> => {
   try {
-    console.log('Updating item:', id, 'with data:', data);
-    const updatedItem = await updateItem(id, data);
+    console.log('Updating item:', id, 'with data:', JSON.stringify(data, null, 2));
+    
+    // Process numeric values to ensure they're properly formatted for the database
+    const processedData = {
+      ...data,
+      cost: data.cost !== undefined ? Math.round(data.cost) : undefined,
+      value: data.value !== undefined ? Math.round(data.value) : undefined,
+      soldPrice: data.soldPrice !== undefined ? Math.round(Number(data.soldPrice)) : undefined,
+      ebayListed: data.ebayListed !== undefined ? Math.round(Number(data.ebayListed)) : undefined,
+      ebaySold: data.ebaySold !== undefined ? Math.round(Number(data.ebaySold)) : undefined,
+    };
+    
+    console.log('Processed data for update:', JSON.stringify(processedData, null, 2));
+    
+    const updatedItem = await updateItem(id, processedData);
     console.log('Item updated successfully:', updatedItem);
     revalidatePath("/my-collection");
     return { isSuccess: true, data: updatedItem };
