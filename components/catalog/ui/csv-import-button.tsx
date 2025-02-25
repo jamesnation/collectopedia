@@ -12,7 +12,7 @@ type CSVItem = {
   name: string
   type: string
   franchise: string
-  manufacturer: string
+  brand: string
   year: string
   acquired: string
   cost: string
@@ -30,26 +30,26 @@ interface CSVImportButtonProps {
   onAddItem: (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean | undefined>
   onCreateCustomType: (name: string) => Promise<boolean>
   onCreateCustomFranchise: (name: string) => Promise<boolean>
-  onCreateCustomManufacturer: (name: string) => Promise<boolean>
+  onCreateCustomBrand: (name: string) => Promise<boolean>
   onLoadCustomTypes: () => Promise<any>
   onLoadCustomFranchises: () => Promise<any>
-  onLoadCustomManufacturers: () => Promise<any>
+  onLoadCustomBrands: () => Promise<any>
   defaultTypeOptions: string[]
   defaultFranchiseOptions: string[]
-  defaultManufacturerOptions: string[]
+  defaultBrandOptions: string[]
 }
 
 export function CSVImportButton({
   onAddItem,
   onCreateCustomType,
   onCreateCustomFranchise,
-  onCreateCustomManufacturer,
+  onCreateCustomBrand,
   onLoadCustomTypes,
   onLoadCustomFranchises,
-  onLoadCustomManufacturers,
+  onLoadCustomBrands,
   defaultTypeOptions,
   defaultFranchiseOptions,
-  defaultManufacturerOptions
+  defaultBrandOptions
 }: CSVImportButtonProps) {
   const [isImporting, setIsImporting] = useState(false)
   const csvInputRef = useRef<HTMLInputElement>(null)
@@ -106,19 +106,19 @@ export function CSVImportButton({
                 }
               }
               
-              // Check if manufacturer exists in default options or create a new custom manufacturer
-              const importedManufacturer = item.manufacturer || null
-              let finalManufacturer = importedManufacturer
+              // Check if brand exists in default options or create a new custom brand
+              const importedBrand = item.brand || null
+              let finalBrand = importedBrand
               
-              if (importedManufacturer && !defaultManufacturerOptions.includes(importedManufacturer)) {
-                // Create new custom manufacturer
-                const manufacturerResult = await onCreateCustomManufacturer(importedManufacturer)
-                if (!manufacturerResult) {
-                  console.error('Failed to create custom manufacturer:', importedManufacturer)
-                  finalManufacturer = null
+              if (importedBrand && !defaultBrandOptions.includes(importedBrand)) {
+                // Create new custom brand
+                const brandResult = await onCreateCustomBrand(importedBrand)
+                if (!brandResult) {
+                  console.error('Failed to create custom brand:', importedBrand)
+                  finalBrand = null
                 } else {
-                  // Refresh custom manufacturers list
-                  await onLoadCustomManufacturers()
+                  // Refresh custom brands list
+                  await onLoadCustomBrands()
                 }
               }
               
@@ -128,7 +128,7 @@ export function CSVImportButton({
                 name: item.name || 'Unnamed Item',
                 type: finalType,
                 franchise: finalFranchise,
-                manufacturer: finalManufacturer,
+                brand: finalBrand,
                 year: item.year ? parseInt(item.year) : null,
                 condition: (item.condition || 'Used - complete') as "New" | "Used - complete" | "Used - item only",
                 acquired: item.acquired ? new Date(item.acquired) : new Date(),

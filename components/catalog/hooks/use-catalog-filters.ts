@@ -67,7 +67,7 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
         item.name.toLowerCase().includes(lowercasedQuery) ||
         item.type.toLowerCase().includes(lowercasedQuery) ||
         item.franchise.toLowerCase().includes(lowercasedQuery) ||
-        (item.manufacturer && item.manufacturer.toLowerCase().includes(lowercasedQuery))
+        (item.brand && item.brand.toLowerCase().includes(lowercasedQuery))
       );
     }
     

@@ -90,9 +90,9 @@ export function ItemGridView({
               <div className="text-sm text-muted-foreground mb-1">
                 {item.type} • {item.franchise}
               </div>
-              {item.manufacturer && (
+              {item.brand && (
                 <div className="text-sm text-muted-foreground mb-2">
-                  {item.manufacturer}
+                  {item.brand}
                 </div>
               )}
               <div className="flex flex-wrap justify-between mt-3 gap-2">

@@ -42,7 +42,7 @@ export const createItemAction = async (item: {
   name: string;
   type: string;
   franchise: string;
-  manufacturer?: string | null;
+  brand?: string | null;
   year?: number | null;
   acquired: Date;
   cost: number;

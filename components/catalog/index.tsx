@@ -11,7 +11,7 @@ import { ItemListView } from './ui/item-list-view';
 import { ItemGridView } from './ui/item-grid-view';
 import { AddItemModal } from './ui/add-item-modal';
 import { CSVImportButton } from './ui/csv-import-button';
-import { DEFAULT_MANUFACTURERS } from './utils/schema-adapter';
+import { DEFAULT_BRANDS } from './utils/schema-adapter';
 import { toast } from "@/components/ui/use-toast";
 
 // Import custom hooks
@@ -23,14 +23,14 @@ interface CatalogProps {
   initialItems: SelectItem[];
   initialTypes: { id: string; name: string }[];
   initialFranchises: { id: string; name: string }[];
-  initialManufacturers: { id: string; name: string }[];
+  initialBrands: { id: string; name: string }[];
 }
 
 export default function Catalog({
   initialItems = [],
   initialTypes = [],
   initialFranchises = [],
-  initialManufacturers = []
+  initialBrands = []
 }: CatalogProps) {
   // Initialize hooks with initial data
   const { 
@@ -49,12 +49,12 @@ export default function Catalog({
     loadCustomTypes,
     customFranchises,
     loadCustomFranchises,
-    customManufacturers,
-    loadCustomManufacturers,
+    customBrands,
+    loadCustomBrands,
   } = useCustomEntities({
     initialTypes,
     initialFranchises,
-    initialManufacturers
+    initialBrands
   });
 
   const {
@@ -90,8 +90,8 @@ export default function Catalog({
     fetchItems();
     loadCustomTypes();
     loadCustomFranchises();
-    loadCustomManufacturers();
-  }, [fetchItems, loadCustomTypes, loadCustomFranchises, loadCustomManufacturers]);
+    loadCustomBrands();
+  }, [fetchItems, loadCustomTypes, loadCustomFranchises, loadCustomBrands]);
 
   // Handle eBay refresh
   const handleEbayRefresh = async (id: string, name: string, type: 'sold' | 'listed') => {
@@ -175,14 +175,14 @@ export default function Catalog({
     }
   }, []);
 
-  const createCustomManufacturer = useCallback(async (name: string): Promise<boolean> => {
+  const createCustomBrand = useCallback(async (name: string): Promise<boolean> => {
     try {
       // This would be your actual implementation
-      // For example: await createCustomManufacturerAction({ name });
-      console.log('Creating custom manufacturer:', name);
+      // For example: await createCustomBrandAction({ name });
+      console.log('Creating custom brand:', name);
       return true;
     } catch (error) {
-      console.error('Error creating custom manufacturer:', error);
+      console.error('Error creating custom brand:', error);
       return false;
     }
   }, []);
@@ -198,23 +198,23 @@ export default function Catalog({
               onAddItem={addItem}
               customTypes={customTypes}
               customFranchises={customFranchises}
-              customManufacturers={customManufacturers}
+              customBrands={customBrands}
               onLoadCustomTypes={loadCustomTypes}
               onLoadCustomFranchises={loadCustomFranchises}
-              onLoadCustomManufacturers={loadCustomManufacturers}
+              onLoadCustomBrands={loadCustomBrands}
               isLoading={isLoading}
             />
             <CSVImportButton
               onAddItem={addItem}
               onCreateCustomType={createCustomType}
               onCreateCustomFranchise={createCustomFranchise}
-              onCreateCustomManufacturer={createCustomManufacturer}
+              onCreateCustomBrand={createCustomBrand}
               onLoadCustomTypes={loadCustomTypes}
               onLoadCustomFranchises={loadCustomFranchises}
-              onLoadCustomManufacturers={loadCustomManufacturers}
+              onLoadCustomBrands={loadCustomBrands}
               defaultTypeOptions={itemTypeEnum.enumValues}
               defaultFranchiseOptions={franchiseEnum.enumValues}
-              defaultManufacturerOptions={DEFAULT_MANUFACTURERS}
+              defaultBrandOptions={DEFAULT_BRANDS}
             />
           </div>
         </div>
@@ -295,10 +295,10 @@ export default function Catalog({
               onAddItem={addItem}
               customTypes={customTypes}
               customFranchises={customFranchises}
-              customManufacturers={customManufacturers}
+              customBrands={customBrands}
               onLoadCustomTypes={loadCustomTypes}
               onLoadCustomFranchises={loadCustomFranchises}
-              onLoadCustomManufacturers={loadCustomManufacturers}
+              onLoadCustomBrands={loadCustomBrands}
               isLoading={isLoading}
             />
           </div>

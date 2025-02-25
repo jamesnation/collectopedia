@@ -11,10 +11,10 @@ interface AddItemModalProps {
   onAddItem: (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean | undefined>
   customTypes: { id: string; name: string }[]
   customFranchises: { id: string; name: string }[]
-  customManufacturers: { id: string; name: string }[]
+  customBrands: { id: string; name: string }[]
   onLoadCustomTypes: () => void
   onLoadCustomFranchises: () => void
-  onLoadCustomManufacturers: () => void
+  onLoadCustomBrands: () => void
   isLoading: boolean
 }
 
@@ -22,10 +22,10 @@ export function AddItemModal({
   onAddItem,
   customTypes,
   customFranchises,
-  customManufacturers,
+  customBrands,
   onLoadCustomTypes,
   onLoadCustomFranchises,
-  onLoadCustomManufacturers,
+  onLoadCustomBrands,
   isLoading
 }: AddItemModalProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -61,10 +61,10 @@ export function AddItemModal({
               onSubmit={handleSubmit}
               customTypes={customTypes}
               customFranchises={customFranchises}
-              customManufacturers={customManufacturers}
+              customBrands={customBrands}
               onLoadCustomTypes={onLoadCustomTypes}
               onLoadCustomFranchises={onLoadCustomFranchises}
-              onLoadCustomManufacturers={onLoadCustomManufacturers}
+              onLoadCustomBrands={onLoadCustomBrands}
               isLoading={isLoading}
             />
           </div>

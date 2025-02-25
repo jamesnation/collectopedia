@@ -2,6 +2,7 @@
 
 import { CustomTypesList } from "@/components/custom-types-list";
 import { CustomFranchisesList } from "@/components/custom-franchises-list";
+import { CustomBrandsList } from "@/components/custom-brands-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings, Tags, BookmarkIcon, Building2 } from "lucide-react";
@@ -35,9 +36,9 @@ export default function SettingsPage() {
           <div className="grid gap-6">
             <Card className="border shadow-sm">
               <CardHeader>
-                <CardTitle>Manage Types & Franchises</CardTitle>
+                <CardTitle>Manage Types, Franchises & Brands</CardTitle>
                 <CardDescription>
-                  Customize the types and franchises for your collection items
+                  Customize the types, franchises, and brands for your collection items
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -45,12 +46,16 @@ export default function SettingsPage() {
                   <TabsList className="mb-4">
                     <TabsTrigger value="types">Types</TabsTrigger>
                     <TabsTrigger value="franchises">Franchises</TabsTrigger>
+                    <TabsTrigger value="brands">Brands</TabsTrigger>
                   </TabsList>
                   <TabsContent value="types">
                     <CustomTypesList />
                   </TabsContent>
                   <TabsContent value="franchises">
                     <CustomFranchisesList />
+                  </TabsContent>
+                  <TabsContent value="brands">
+                    <CustomBrandsList />
                   </TabsContent>
                 </Tabs>
               </CardContent>

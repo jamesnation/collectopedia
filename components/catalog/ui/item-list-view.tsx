@@ -146,9 +146,9 @@ export function ItemListView({
                     <div className="text-sm text-muted-foreground hover:text-primary transition-colors">
                       {item.franchise}
                     </div>
-                    {item.manufacturer && (
+                    {item.brand && (
                       <div className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                        {item.manufacturer}
+                        {item.brand}
                       </div>
                     )}
                   </div>

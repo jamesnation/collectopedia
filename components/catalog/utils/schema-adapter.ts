@@ -7,7 +7,7 @@ export interface CatalogItem {
   name: string;
   type: string;
   franchise: string;
-  manufacturer: string | null;
+  brand: string | null;
   year: number | null;
   condition: "New" | "Used - complete" | "Used - item only";
   acquired: Date | string;
@@ -70,7 +70,7 @@ export const mapCatalogItemToSchemaItem = (item: CatalogItem) => {
 export const CONDITION_OPTIONS = ["New", "Used - complete", "Used - item only"];
 
 // These could be fetched from an API or config file instead of hardcoded
-export const DEFAULT_MANUFACTURERS = [
+export const DEFAULT_BRANDS = [
   'DC',
   'Filmation',
   'Funko',

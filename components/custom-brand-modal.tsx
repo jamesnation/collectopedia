@@ -12,14 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PlusCircle, Loader2 } from "lucide-react";
-import { createCustomManufacturerAction } from "@/actions/custom-manufacturers-actions";
+import { createCustomBrandAction } from "@/actions/custom-brands-actions";
 import { useToast } from "@/components/ui/use-toast";
 
-interface CustomManufacturerModalProps {
+interface CustomBrandModalProps {
   onSuccess?: () => void;
 }
 
-export function CustomManufacturerModal({ onSuccess }: CustomManufacturerModalProps) {
+export function CustomBrandModal({ onSuccess }: CustomBrandModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -34,17 +34,17 @@ export function CustomManufacturerModal({ onSuccess }: CustomManufacturerModalPr
     setIsSubmitting(true);
 
     try {
-      console.log('Creating custom manufacturer:', formData);
-      const result = await createCustomManufacturerAction({
+      console.log('Creating custom brand:', formData);
+      const result = await createCustomBrandAction({
         name: formData.name,
         description: formData.description
       });
-      console.log('Create custom manufacturer result:', result);
+      console.log('Create custom brand result:', result);
 
       if (result.isSuccess) {
         toast({
           title: "Success",
-          description: "Custom manufacturer created successfully",
+          description: "Custom brand created successfully",
         });
         setFormData({ name: "", description: "" });
         setIsOpen(false);
@@ -53,10 +53,10 @@ export function CustomManufacturerModal({ onSuccess }: CustomManufacturerModalPr
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Error creating custom manufacturer:', error);
+      console.error('Error creating custom brand:', error);
       toast({
         title: "Error",
-        description: "Failed to create custom manufacturer",
+        description: "Failed to create custom brand",
         variant: "destructive",
       });
     } finally {
@@ -73,14 +73,14 @@ export function CustomManufacturerModal({ onSuccess }: CustomManufacturerModalPr
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Custom Manufacturer</DialogTitle>
+          <DialogTitle>Add Custom Brand</DialogTitle>
           <DialogDescription>
-            Create a new custom manufacturer for your collection items.
+            Create a new custom brand for your collection items.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Manufacturer Name</Label>
+            <Label htmlFor="name">Brand Name</Label>
             <Input
               id="name"
               value={formData.name}
@@ -107,7 +107,7 @@ export function CustomManufacturerModal({ onSuccess }: CustomManufacturerModalPr
                 Creating...
               </>
             ) : (
-              "Create Manufacturer"
+              "Create Brand"
             )}
           </Button>
         </form>

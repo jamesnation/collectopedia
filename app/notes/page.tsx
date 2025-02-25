@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getProfileByUserId } from "@/db/queries/profiles-queries";
-import { getCustomManufacturersAction } from "@/actions/custom-manufacturers-actions";
+import { getCustomBrandsAction } from "@/actions/custom-brands-actions";
 import { getCustomTypesAction } from "@/actions/custom-types-actions";
 import { getCustomFranchisesAction } from "@/actions/custom-franchises-actions";
 import { getItemsByUserIdAction } from "@/actions/items-actions";
@@ -33,19 +33,19 @@ export default async function NotesPage() {
   
   // Fetch initial data on the server
   const [
-    manufacturersResult,
+    brandsResult,
     typesResult,
     franchisesResult,
     itemsResult
   ] = await Promise.all([
-    getCustomManufacturersAction(),
+    getCustomBrandsAction(),
     getCustomTypesAction(),
     getCustomFranchisesAction(),
     getItemsByUserIdAction(userId)
   ]);
 
   console.log('NotesPage - Data Fetching Complete', {
-    manufacturersCount: manufacturersResult.data?.length,
+    brandsCount: brandsResult.data?.length,
     typesCount: typesResult.data?.length,
     franchisesCount: franchisesResult.data?.length,
     itemsCount: itemsResult.data?.length
@@ -54,7 +54,7 @@ export default async function NotesPage() {
   // Pass the data as props to the client component
   return (
     <CatalogPage
-      initialManufacturers={manufacturersResult.data || []}
+      initialBrands={brandsResult.data || []}
       initialTypes={typesResult.data || []}
       initialFranchises={franchisesResult.data || []}
       initialItems={itemsResult.data || []}

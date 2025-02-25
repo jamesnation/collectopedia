@@ -5,14 +5,14 @@ import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
 import Catalog from './catalog'
 
 interface CatalogPageProps {
-  initialManufacturers: { id: string; name: string }[];
+  initialBrands: { id: string; name: string }[];
   initialTypes: { id: string; name: string }[];
   initialFranchises: { id: string; name: string }[];
   initialItems: SelectItemType[];
 }
 
 export default function CatalogPage({
-  initialManufacturers,
+  initialBrands,
   initialTypes,
   initialFranchises,
   initialItems
@@ -22,7 +22,7 @@ export default function CatalogPage({
       initialItems={initialItems}
       initialTypes={initialTypes}
       initialFranchises={initialFranchises}
-      initialManufacturers={initialManufacturers}
+      initialBrands={initialBrands}
     />
   );
 } 

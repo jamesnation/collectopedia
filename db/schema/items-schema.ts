@@ -39,7 +39,7 @@ export const itemsTable = pgTable("items", {
   name: text("name").notNull(),
   type: text("type").notNull(),
   franchise: text("franchise").notNull(),
-  manufacturer: text("manufacturer"),
+  brand: text("brand"),
   year: integer("year"),
   condition: conditionEnum("condition").notNull().default("Used - complete"),
   acquired: timestamp("acquired").notNull(),

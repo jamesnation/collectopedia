@@ -20,8 +20,8 @@ import { CatalogItem } from '../utils/schema-adapter'
 import { generateYearOptions } from "@/lib/utils"
 import { CustomTypeModal } from "@/components/custom-type-modal"
 import { CustomFranchiseModal } from "@/components/custom-franchise-modal"
-import { CustomManufacturerModal } from "@/components/custom-manufacturer-modal"
-import { CONDITION_OPTIONS } from '../utils/schema-adapter'
+import { CustomBrandModal } from "@/components/custom-brand-modal"
+import { CONDITION_OPTIONS, DEFAULT_BRANDS } from '../utils/schema-adapter'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { X } from 'lucide-react'
@@ -33,10 +33,10 @@ interface AddItemFormProps {
   onSubmit: (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>
   customTypes: { id: string; name: string }[]
   customFranchises: { id: string; name: string }[]
-  customManufacturers: { id: string; name: string }[]
+  customBrands: { id: string; name: string }[]
   onLoadCustomTypes: () => void
   onLoadCustomFranchises: () => void
-  onLoadCustomManufacturers: () => void
+  onLoadCustomBrands: () => void
   isLoading: boolean
 }
 
@@ -44,17 +44,17 @@ export function AddItemForm({
   onSubmit,
   customTypes,
   customFranchises,
-  customManufacturers,
+  customBrands,
   onLoadCustomTypes,
   onLoadCustomFranchises,
-  onLoadCustomManufacturers,
+  onLoadCustomBrands,
   isLoading
 }: AddItemFormProps) {
   const [newItem, setNewItem] = useState<{
     name: string
     type: string
     franchise: string
-    manufacturer: string
+    brand: string
     year: number | null
     condition: "New" | "Used - complete" | "Used - item only"
     acquired: string
@@ -66,7 +66,7 @@ export function AddItemForm({
     name: "",
     type: "",
     franchise: "",
-    manufacturer: "",
+    brand: "",
     year: null,
     condition: "Used - complete",
     acquired: new Date().toISOString().split('T')[0],
@@ -79,13 +79,6 @@ export function AddItemForm({
   const [newItemImages, setNewItemImages] = useState<string[]>([])
   const yearOptions = generateYearOptions()
   
-  // Default manufacturers list
-  const defaultManufacturers = [
-    'DC', 'Filmation', 'Funko', 'Games Workshop', 'Hasbro', 'Kenner',
-    'Marvel', 'Matchbox', 'Mattel', 'Medium', 'Playmates', 'Senate',
-    'Sunbow', 'Super7', 'Takara', 'Tomy'
-  ]
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setNewItem(prev => ({
@@ -108,11 +101,8 @@ export function AddItemForm({
     }))
   }
 
-  const handleManufacturerChange = (value: string) => {
-    setNewItem(prev => ({
-      ...prev,
-      manufacturer: value
-    }))
+  const handleBrandChange = (value: string) => {
+    setNewItem({ ...newItem, brand: value })
   }
 
   const handleYearChange = (value: string) => {
@@ -150,7 +140,7 @@ export function AddItemForm({
       name: newItem.name,
       type: newItem.type || 'Other',
       franchise: newItem.franchise || 'Other',
-      manufacturer: newItem.manufacturer || null,
+      brand: newItem.brand || null,
       year: newItem.year,
       condition: newItem.condition,
       acquired: new Date(newItem.acquired || new Date()),
@@ -174,7 +164,7 @@ export function AddItemForm({
         name: "",
         type: "",
         franchise: "",
-        manufacturer: "",
+        brand: "",
         year: null,
         condition: "Used - complete",
         acquired: new Date().toISOString().split('T')[0],
@@ -268,29 +258,29 @@ export function AddItemForm({
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="manufacturer">Manufacturer</Label>
+        <Label htmlFor="brand">Brand</Label>
         <div className="flex gap-2">
           <Select
-            value={newItem.manufacturer || ""}
-            onValueChange={handleManufacturerChange}
+            value={newItem.brand || ""}
+            onValueChange={handleBrandChange}
           >
             <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Select manufacturer" />
+              <SelectValue placeholder="Select brand" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Default Manufacturers</SelectLabel>
-                {defaultManufacturers.map((manufacturer) => (
-                  <SelectItem key={manufacturer} value={manufacturer}>
-                    {manufacturer}
+                <SelectLabel>Default Brands</SelectLabel>
+                {DEFAULT_BRANDS.map((brand) => (
+                  <SelectItem key={brand} value={brand}>
+                    {brand}
                   </SelectItem>
                 ))}
-                {customManufacturers.length > 0 && (
+                {customBrands.length > 0 && (
                   <>
-                    <SelectLabel>Custom Manufacturers</SelectLabel>
-                    {customManufacturers.map((manufacturer) => (
-                      <SelectItem key={manufacturer.id} value={manufacturer.name}>
-                        {manufacturer.name}
+                    <SelectLabel>Custom Brands</SelectLabel>
+                    {customBrands.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.name}>
+                        {brand.name}
                       </SelectItem>
                     ))}
                   </>
@@ -298,7 +288,7 @@ export function AddItemForm({
               </SelectGroup>
             </SelectContent>
           </Select>
-          <CustomManufacturerModal onSuccess={onLoadCustomManufacturers} />
+          <CustomBrandModal onSuccess={onLoadCustomBrands} />
         </div>
       </div>
       

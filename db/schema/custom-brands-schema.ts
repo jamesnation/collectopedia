@@ -1,7 +1,7 @@
 import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
-export const customManufacturersTable = pgTable("custom_manufacturers", {
+export const customBrandsTable = pgTable("custom_brands", {
   id: uuid("id").primaryKey(),
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
@@ -10,5 +10,5 @@ export const customManufacturersTable = pgTable("custom_manufacturers", {
   updatedAt: timestamp("updated_at").default(sql`now()`).notNull()
 });
 
-export type InsertCustomManufacturer = typeof customManufacturersTable.$inferInsert;
-export type SelectCustomManufacturer = typeof customManufacturersTable.$inferSelect; 
+export type InsertCustomBrand = typeof customBrandsTable.$inferInsert;
+export type SelectCustomBrand = typeof customBrandsTable.$inferSelect; 

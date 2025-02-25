@@ -4,6 +4,9 @@ import { profilesTable } from "./schema/profiles-schema";
 import { itemsTable } from "./schema/items-schema";
 import { soldItemsTable } from "./schema/sold-items-schema";
 import { imagesTable } from "./schema/images-schema";
+import { customTypesTable } from "./schema/custom-types-schema";
+import { customFranchisesTable } from "./schema/custom-franchises-schema";
+import { customBrandsTable } from "./schema/custom-brands-schema";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -18,5 +21,8 @@ export const db = drizzle(client, {
     items: itemsTable,
     soldItems: soldItemsTable,
     images: imagesTable,
+    customTypes: customTypesTable,
+    customFranchises: customFranchisesTable,
+    customBrands: customBrandsTable,
   },
 });
