@@ -1,6 +1,5 @@
-import { DollarSign, ShoppingCart, TrendingUp, BarChart4, Percent, Package } from "lucide-react";
+import { DollarSign, ShoppingCart, BarChart4, Percent } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 interface SummaryPanelProps {
   totalValue?: number;
@@ -11,99 +10,84 @@ interface SummaryPanelProps {
   showSold: boolean;
 }
 
+// Utility function for formatting currency values
+const formatCurrency = (value: number) => {
+  return value.toLocaleString('en-GB', { 
+    style: 'currency', 
+    currency: 'GBP',
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  });
+};
+
+const formatNumber = (value: number) => {
+  return value.toLocaleString('en-US');
+};
+
 export default function SummaryPanel({
   totalValue = 0,
   totalCost = 0,
   totalItems = 0,
   ebayListedValue = 0,
   ebaySoldValue = 0,
-  showSold
+  showSold = false
 }: SummaryPanelProps) {
   const profit = totalValue - totalCost;
   const profitMargin = totalCost > 0 ? (profit / totalCost) * 100 : 0;
 
-  const formatCurrency = (value: number) => {
-    return value.toLocaleString('en-GB', { 
-      style: 'currency', 
-      currency: 'GBP',
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
-    });
-  };
-
-  const formatNumber = (value: number) => {
-    return value.toLocaleString('en-US');
-  };
-
   return (
-    <Card className="mb-8 bg-card">
-      <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-medium text-primary">Total {showSold ? "Sold" : "Collection"} Value</h3>
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">Total {showSold ? "Sold" : "Collection"} Value</p>
+              <p className="text-2xl font-bold">{formatCurrency(totalValue)}</p>
             </div>
-            <p className="text-2xl font-bold text-primary">{formatCurrency(totalValue)}</p>
+            <DollarSign className="h-6 w-6 text-primary" aria-label="Total Value" />
           </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <ShoppingCart className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-medium text-primary">Total Cost</h3>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">Total Cost</p>
+              <p className="text-2xl font-bold">{formatCurrency(totalCost)}</p>
             </div>
-            <p className="text-2xl font-bold text-primary">{formatCurrency(totalCost)}</p>
+            <ShoppingCart className="h-6 w-6 text-primary" aria-label="Total Cost" />
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Package className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-medium text-primary">Total Items</h3>
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">Total Profit</p>
+              <p className={`text-2xl font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
+                {formatCurrency(profit)}
+              </p>
             </div>
-            <p className="text-2xl font-bold text-primary">{formatNumber(totalItems)}</p>
+            <BarChart4 className="h-6 w-6 text-primary" aria-label="Total Profit" />
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-medium text-primary">eBay Listed Value</h3>
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">Profit Margin</p>
+              <p className={`text-2xl font-bold ${profitMargin >= 0 ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
+                {profitMargin.toFixed(2)}%
+              </p>
             </div>
-            <p className="text-2xl font-bold text-primary">{formatCurrency(ebayListedValue)}</p>
+            <Percent className="h-6 w-6 text-primary" aria-label="Profit Margin" />
           </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-medium text-primary">eBay Sold Value</h3>
-            </div>
-            <p className="text-2xl font-bold text-primary">{formatCurrency(ebaySoldValue)}</p>
-          </div>
-        </div>
-
-        <Separator className="my-6" />
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <BarChart4 className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-medium text-primary">Total Profit</h3>
-            </div>
-            <p className={`text-xl font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(profit)}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Percent className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-medium text-primary">Profit Margin</h3>
-            </div>
-            <p className={`text-xl font-semibold ${profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {profitMargin.toFixed(2)}%
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 } 
