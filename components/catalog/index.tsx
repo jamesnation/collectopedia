@@ -259,9 +259,7 @@ export default function Catalog({
             <ItemGridView
               items={filteredAndSortedItems}
               isLoading={isLoading}
-              onDelete={deleteItem}
               showSold={showSold}
-              loadingItemId={loadingItemId}
             />
           )}
         </div>
