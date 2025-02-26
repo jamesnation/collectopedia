@@ -427,52 +427,12 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             )}
           </div>
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-border">
-              <div className="space-y-4">
-                <div>
-                  <h1 className="text-4xl font-serif text-foreground">{item.name}</h1>
-                  <div className="flex items-center mt-2 text-sm text-muted-foreground">
-                    <span className="font-medium">{item.franchise}</span>
-                    {item.year && (
-                      <>
-                        <span className="mx-2">•</span>
-                        <span>{item.year}</span>
-                      </>
-                    )}
-                    {item.brand && (
-                      <>
-                        <span className="mx-2">•</span>
-                        <span>{item.brand}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
-                  <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.type}</Badge>
-                  {item.condition && (
-                    <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.condition}</Badge>
-                  )}
-                  <div className="ml-auto flex items-center space-x-2">
-                    <Label htmlFor="item-status" className="text-sm font-medium">Status:</Label>
-                    <Switch
-                      id="item-status"
-                      checked={isSold}
-                      onCheckedChange={handleSoldToggle}
-                    />
-                    <span className={`text-sm ${isSold ? "text-rose-500 font-medium" : "text-emerald-600 font-medium"}`}>
-                      {isSold ? 'Sold' : 'In Collection'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <h1 className="text-4xl font-serif text-foreground">{item.name}</h1>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border-primary/20 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Estimated Value</CardTitle>
-                  <CardDescription>Current estimated value of this item</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Popover open={editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
@@ -514,7 +474,6 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               <Card className="border-primary/20 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Purchase Cost</CardTitle>
-                  <CardDescription>How much you paid for this item</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Popover open={editingField === 'cost'} onOpenChange={(open) => !open && handleEditCancel()}>
@@ -561,18 +520,43 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Acquisition</h3>
-                  <div className="grid grid-cols-1 gap-4">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Status & Acquisition</h3>
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Date Acquired</Label>
                       <p>{item && new Date(item.acquired).toLocaleDateString()}</p>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Collection Status</Label>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="item-status"
+                          checked={isSold}
+                          onCheckedChange={handleSoldToggle}
+                        />
+                        <span className={`text-sm ${isSold ? "text-rose-500 font-medium" : "text-emerald-600 font-medium"}`}>
+                          {isSold ? 'Sold' : 'In Collection'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4 pt-4 border-t border-border">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Item Specifications</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground">Item Information</h3>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Type</Label>
+                      <div className="flex items-center">
+                        <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.type}</Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Franchise</Label>
+                      <p>{item.franchise}</p>
+                    </div>
+                    
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Brand</Label>
                       <Popover open={editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
@@ -741,11 +725,6 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                           </div>
                         </PopoverContent>
                       </Popover>
-                    </div>
-                    
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Franchise</Label>
-                      <p>{item.franchise}</p>
                     </div>
                   </div>
                 </div>
