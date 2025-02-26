@@ -1,235 +1,196 @@
-import { useEffect, useState, useCallback } from "react";
-import { SelectCustomBrand } from "@/db/schema/custom-brands-schema";
+"use client";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
-import { createCustomBrandAction, updateCustomBrandAction, deleteCustomBrandAction, getCustomBrandsAction } from "@/actions/custom-brands-actions";
-import { useAuth } from "@clerk/nextjs";
-import { PlusCircle, Pencil, Trash2, Save, X } from "lucide-react";
+import { PlusCircle, Edit, Trash, Save, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { createCustomBrandAction, getCustomBrandsAction, updateCustomBrandAction, deleteCustomBrandAction } from "@/actions/custom-brands-actions";
+import { useToast } from "@/components/ui/use-toast";
 
-console.log('CustomBrandsList Component Imports:', {
-  hasServerActions: typeof getCustomBrandsAction !== 'undefined',
-  environment: typeof window !== 'undefined' ? 'client' : 'server'
-});
-
-interface CustomBrandsListProps {
-  onBrandsChange?: () => void;
-}
-
-export function CustomBrandsList({ onBrandsChange }: CustomBrandsListProps) {
-  console.log('CustomBrandsList Render - Checking for quote escaping issues');
-
-  const [brands, setBrands] = useState<SelectCustomBrand[]>([]);
-  const [newBrand, setNewBrand] = useState("");
-  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const { userId } = useAuth();
+export function CustomBrandsList() {
+  const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
+  const [newBrandName, setNewBrandName] = useState("");
+  const [editingBrand, setEditingBrand] = useState<{ id: string; name: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const loadBrands = useCallback(async () => {
-    if (!userId) return;
-    const result = await getCustomBrandsAction();
-    if (result.isSuccess && result.data) {
-      console.log('Loaded brands:', result.data.length);
-      setBrands(result.data);
-      onBrandsChange?.();
-    } else {
-      console.error('Failed to load brands:', result.error);
-      toast({
-        title: "Error",
-        description: "Failed to load custom brands",
-        variant: "destructive",
-      });
-    }
-  }, [userId, onBrandsChange, toast]);
-
   useEffect(() => {
-    if (userId) {
-      loadBrands();
-    }
-  }, [userId, loadBrands]);
+    loadBrands();
+  }, []);
 
-  async function handleAddBrand() {
-    if (!newBrand.trim()) return;
-
+  const loadBrands = async () => {
     try {
-      const result = await createCustomBrandAction({
-        name: newBrand,
-      });
-      
-      if (result.isSuccess) {
+      const result = await getCustomBrandsAction();
+      if (result.isSuccess && result.data) {
+        setBrands(result.data);
+      }
+    } catch (error) {
+      console.error("Error loading brands:", error);
+    }
+  };
+
+  const handleAddBrand = async () => {
+    if (!newBrandName.trim()) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await createCustomBrandAction({ name: newBrandName });
+      if (result.isSuccess && result.data) {
+        setBrands([...brands, result.data]);
+        setNewBrandName("");
         toast({
-          title: "Success",
-          description: "Custom brand created successfully",
+          title: "Brand added",
+          description: "Custom brand has been added successfully.",
         });
-        setNewBrand("");
-        loadBrands();
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || "Failed to add brand");
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create custom brand",
+        description: "Failed to add brand. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
-  async function handleDelete(brandId: string) {
-    try {
-      const result = await deleteCustomBrandAction(brandId);
-      
-      if (result.isSuccess) {
-        toast({
-          title: "Success",
-          description: "Custom brand deleted successfully",
-        });
-        loadBrands();
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete custom brand",
-        variant: "destructive",
-      });
-    }
-  }
+  const handleEditBrand = (brand: { id: string; name: string }) => {
+    setEditingBrand(brand);
+  };
 
-  async function handleSaveEdit() {
-    if (!editingBrandId || !editValue.trim()) return;
-
+  const handleSaveEdit = async () => {
+    if (!editingBrand) return;
+    
+    setIsLoading(true);
     try {
       const result = await updateCustomBrandAction({
-        id: editingBrandId,
-        name: editValue,
+        id: editingBrand.id,
+        name: editingBrand.name
       });
-      
       if (result.isSuccess) {
+        setBrands(brands.map(b => b.id === editingBrand.id ? editingBrand : b));
+        setEditingBrand(null);
         toast({
-          title: "Success",
-          description: "Custom brand updated successfully",
+          title: "Brand updated",
+          description: "Custom brand has been updated successfully.",
         });
-        setEditingBrandId(null);
-        setEditValue("");
-        loadBrands();
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || "Failed to update brand");
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update custom brand",
+        description: "Failed to update brand. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
-  function startEditing(brand: SelectCustomBrand) {
-    setEditingBrandId(brand.id);
-    setEditValue(brand.name);
-  }
-
-  function cancelEdit() {
-    setEditingBrandId(null);
-    setEditValue("");
-  }
+  const handleDeleteBrand = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this brand?")) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await deleteCustomBrandAction(id);
+      if (result.isSuccess) {
+        setBrands(brands.filter(b => b.id !== id));
+        toast({
+          title: "Brand deleted",
+          description: "Custom brand has been deleted successfully.",
+        });
+      } else {
+        throw new Error(result.error || "Failed to delete brand");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete brand. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center space-x-2">
-        <Label htmlFor="new-brand" className="sr-only">
-          New Brand
-        </Label>
+      <div className="flex space-x-2">
         <Input
-          id="new-brand"
-          placeholder="Enter new brand"
-          value={newBrand}
-          onChange={(e) => setNewBrand(e.target.value)}
+          placeholder="Add new brand..."
+          value={newBrandName}
+          onChange={(e) => setNewBrandName(e.target.value)}
           className="max-w-sm"
         />
-        <Button onClick={handleAddBrand} disabled={!newBrand.trim()}>
-          <PlusCircle className="h-4 w-4 mr-2" />
+        <Button 
+          onClick={handleAddBrand} 
+          disabled={isLoading || !newBrandName.trim()}
+          className="flex items-center"
+        >
+          <PlusCircle className="mr-2 h-4 w-4" />
           Add Brand
         </Button>
       </div>
 
-      {brands.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">No brands added yet.</p>
-      ) : (
-        <Table>
-          <TableHeader>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Brand Name</TableHead>
+            <TableHead className="w-[100px]">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {brands.length === 0 ? (
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableCell colSpan={2} className="text-center text-muted-foreground">
+                No custom brands added yet
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {brands.map((brand) => (
+          ) : (
+            brands.map((brand) => (
               <TableRow key={brand.id}>
                 <TableCell>
-                  {editingBrandId === brand.id ? (
+                  {editingBrand?.id === brand.id ? (
                     <Input
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      className="max-w-sm"
+                      value={editingBrand.name}
+                      onChange={(e) => setEditingBrand({ ...editingBrand, name: e.target.value })}
                     />
                   ) : (
                     brand.name
                   )}
                 </TableCell>
-                <TableCell className="text-right">
-                  {editingBrandId === brand.id ? (
-                    <>
-                      <Button variant="ghost" size="sm" onClick={handleSaveEdit}>
-                        <Save className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={cancelEdit}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button variant="ghost" size="sm" onClick={() => startEditing(brand)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Custom Brand</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete &ldquo;{brand.name}&rdquo;? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(brand.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </>
-                  )}
+                <TableCell>
+                  <div className="flex items-center space-x-2">
+                    {editingBrand?.id === brand.id ? (
+                      <>
+                        <Button size="icon" variant="ghost" onClick={handleSaveEdit} disabled={isLoading}>
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => setEditingBrand(null)} disabled={isLoading}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button size="icon" variant="ghost" onClick={() => handleEditBrand(brand)} disabled={isLoading}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDeleteBrand(brand.id)} disabled={isLoading}>
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 } 
