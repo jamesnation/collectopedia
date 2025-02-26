@@ -10,7 +10,6 @@ import SummaryPanel from './ui/summary-panel';
 import { ItemListView } from './ui/item-list-view';
 import { ItemGridView } from './ui/item-grid-view';
 import { AddItemModal } from './ui/add-item-modal';
-import { CSVImportButton } from './ui/csv-import-button';
 import { DEFAULT_BRANDS } from './utils/schema-adapter';
 import { toast } from "@/components/ui/use-toast";
 
@@ -203,18 +202,6 @@ export default function Catalog({
               onLoadCustomFranchises={loadCustomFranchises}
               onLoadCustomBrands={loadCustomBrands}
               isLoading={isLoading}
-            />
-            <CSVImportButton
-              onAddItem={addItem}
-              onCreateCustomType={createCustomType}
-              onCreateCustomFranchise={createCustomFranchise}
-              onCreateCustomBrand={createCustomBrand}
-              onLoadCustomTypes={loadCustomTypes}
-              onLoadCustomFranchises={loadCustomFranchises}
-              onLoadCustomBrands={loadCustomBrands}
-              defaultTypeOptions={itemTypeEnum.enumValues}
-              defaultFranchiseOptions={franchiseEnum.enumValues}
-              defaultBrandOptions={DEFAULT_BRANDS}
             />
           </div>
         </div>
