@@ -1,2 +1,2 @@
-name,type,brand,year,acquired,cost,value,notes,isSold,soldDate,soldPrice,ebayListed,ebaySold
-Example Item,Action Figures,Tomy,1987,2024-01-01,100,150,Item description here,false,,,,,
+name,type,franchise,brand,year,condition,acquired,cost,value,notes,isSold,soldDate,soldPrice,ebayListed,ebaySold
+Example Item,Action Figures,Transformers,Tomy,1987,Used - complete,2024-01-01,100,150,Item description here,false,,,,

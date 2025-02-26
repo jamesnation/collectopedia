@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ArrowLeft, RefreshCw, Edit, Loader2, Save, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { getItemByIdAction, updateItemAction } from "@/actions/items-actions"
 import { createSoldItemAction, getSoldItemByItemIdAction, updateSoldItemAction } from "@/actions/sold-items-actions"
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
@@ -191,11 +191,6 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     }
   }
 
-  const handleEbayRefresh = async (type: 'sold' | 'listed') => {
-    // Implement eBay API call here
-    console.log(`Refresh eBay ${type} data for item with id: ${item?.id}`)
-  }
-
   const handleSoldToggle = async (checked: boolean) => {
     setIsSold(checked)
     if (item) {
@@ -338,7 +333,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       <main className="container mx-auto px-4 py-12">
-        <Link href="/my-collection" className="inline-flex items-center text-primary hover:text-primary/80 mb-6">
+        <Link href="/my-collection" className="inline-flex items-center text-primary hover:text-primary/80 mb-8">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Collection
         </Link>
@@ -432,36 +427,65 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             )}
           </div>
           <div className="space-y-6">
-            <div>
-              <h1 className="text-4xl font-serif text-foreground mb-2">{item.name}</h1>
-              <div className="flex flex-wrap gap-2 mb-2">
-                <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.type}</Badge>
-                <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.franchise}</Badge>
-                {item.brand && (
-                  <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.brand}</Badge>
-                )}
-                {item.year && (
-                  <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{item.year}</Badge>
-                )}
+            <div className="bg-white rounded-lg shadow-sm p-6 border border-border">
+              <div className="space-y-4">
+                <div>
+                  <h1 className="text-4xl font-serif text-foreground">{item.name}</h1>
+                  <div className="flex items-center mt-2 text-sm text-muted-foreground">
+                    <span className="font-medium">{item.franchise}</span>
+                    {item.year && (
+                      <>
+                        <span className="mx-2">•</span>
+                        <span>{item.year}</span>
+                      </>
+                    )}
+                    {item.brand && (
+                      <>
+                        <span className="mx-2">•</span>
+                        <span>{item.brand}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
+                  <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.type}</Badge>
+                  {item.condition && (
+                    <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.condition}</Badge>
+                  )}
+                  <div className="ml-auto flex items-center space-x-2">
+                    <Label htmlFor="item-status" className="text-sm font-medium">Status:</Label>
+                    <Switch
+                      id="item-status"
+                      checked={isSold}
+                      onCheckedChange={handleSoldToggle}
+                    />
+                    <span className={`text-sm ${isSold ? "text-rose-500 font-medium" : "text-emerald-600 font-medium"}`}>
+                      {isSold ? 'Sold' : 'In Collection'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="border-primary/20 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Estimated Value</CardTitle>
+                  <CardDescription>Current estimated value of this item</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Popover open={editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="p-0 h-auto font-normal"
+                        className="p-0 h-auto font-normal group"
                         onClick={() => handleEditStart('value')}
                       >
-                        <span className="text-3xl font-bold text-primary">
+                        <span className="text-4xl font-bold text-primary">
                           ${typeof item.value === 'number' ? item.value.toFixed(2) : parseFloat(item.value).toFixed(2)}
                         </span>
-                        <Edit className="ml-2 h-4 w-4" />
+                        <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-80">
@@ -487,22 +511,23 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </Popover>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-primary/20 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Purchase Cost</CardTitle>
+                  <CardDescription>How much you paid for this item</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Popover open={editingField === 'cost'} onOpenChange={(open) => !open && handleEditCancel()}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="p-0 h-auto font-normal"
+                        className="p-0 h-auto font-normal group"
                         onClick={() => handleEditStart('cost')}
                       >
-                        <span className="text-3xl font-bold">
+                        <span className="text-4xl font-bold">
                           ${typeof item.cost === 'number' ? item.cost.toFixed(2) : parseFloat(item.cost).toFixed(2)}
                         </span>
-                        <Edit className="ml-2 h-4 w-4" />
+                        <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-80">
@@ -528,74 +553,37 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </Popover>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">eBay Sold</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <p className="text-2xl font-bold">${item.ebaySold?.toFixed(2) || 'N/A'}</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEbayRefresh('sold')}
-                      className="text-primary hover:text-primary/80 hover:bg-accent"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">eBay Listed</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <p className="text-2xl font-bold">${item.ebayListed?.toFixed(2) || 'N/A'}</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEbayRefresh('listed')}
-                      className="text-primary hover:text-primary/80 hover:bg-accent"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
-            <Card>
+            
+            <Card className="border-primary/20 shadow-sm">
               <CardHeader>
                 <CardTitle>Item Details</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold">Date Acquired:</span> {item && new Date(item.acquired).toLocaleDateString()}
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor="item-status" className="text-sm font-semibold">Status:</Label>
-                    <Switch
-                      id="item-status"
-                      checked={isSold}
-                      onCheckedChange={handleSoldToggle}
-                    />
-                    <span className="text-sm text-muted-foreground">{isSold ? 'Sold' : 'In Collection'}</span>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Acquisition</h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Date Acquired</Label>
+                      <p>{item && new Date(item.acquired).toLocaleDateString()}</p>
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-semibold">Brand:</span>
+                
+                <div className="space-y-4 pt-4 border-t border-border">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Item Specifications</h3>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Brand</Label>
                       <Popover open={editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-auto py-1 px-2 flex items-center"
+                          <Button
+                            variant="ghost"
+                            className="p-0 h-auto font-normal text-left justify-start w-full group"
                             onClick={() => handleEditStart('brand')}
                           >
-                            {item.brand || 'Add brand'}
-                            <Edit className="h-3.5 w-3.5 ml-1" />
+                            <span>{item.brand || 'Not specified'}</span>
+                            <Edit className="ml-2 h-3.5 w-3.5 inline opacity-0 group-hover:opacity-100 transition-opacity" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80">
@@ -645,20 +633,20 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                           </div>
                         </PopoverContent>
                       </Popover>
-                    </p>
-                  </div>
+                    </div>
 
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-semibold">Year:</span>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Year</Label>
                       <Popover open={editingField === 'year'} onOpenChange={(open) => !open && handleEditCancel()}>
                         <PopoverTrigger asChild>
-                          <button 
-                            className="ml-2 text-sm hover:text-primary transition-colors"
+                          <Button
+                            variant="ghost"
+                            className="p-0 h-auto font-normal text-left justify-start w-full group"
                             onClick={() => handleEditStart('year')}
                           >
-                            {item.year || 'Add year'}
-                          </button>
+                            <span>{item.year || 'Not specified'}</span>
+                            <Edit className="ml-2 h-3.5 w-3.5 inline opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 bg-card border-border">
                           <div className="space-y-4">
@@ -699,69 +687,75 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                           </div>
                         </PopoverContent>
                       </Popover>
-                    </p>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Condition</Label>
+                      <Popover open={editingField === 'condition'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="p-0 h-auto font-normal text-left justify-start w-full group"
+                            onClick={() => handleEditStart('condition')}
+                          >
+                            <span>{item.condition || 'Not specified'}</span>
+                            <Edit className="ml-2 h-3.5 w-3.5 inline opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-card border-border">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-primary">Edit Condition</h4>
+                            <div className="space-y-2">
+                              <Label htmlFor="condition" className="text-sm font-medium text-primary">Condition</Label>
+                              <Select
+                                value={item.condition}
+                                onValueChange={(value: ItemCondition) => {
+                                  if (item) {
+                                    const updatedItem = {
+                                      ...item,
+                                      condition: value as ItemCondition
+                                    };
+                                    setItem(updatedItem);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+                                  <SelectValue placeholder="Select condition" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectGroup>
+                                    <SelectLabel>Condition</SelectLabel>
+                                    {conditionOptions.map((condition) => (
+                                      <SelectItem key={condition} value={condition}>
+                                        {condition}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Franchise</Label>
+                      <p>{item.franchise}</p>
+                    </div>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold">Condition:</span>
-                    <Popover open={editingField === 'condition'} onOpenChange={(open) => !open && handleEditCancel()}>
-                      <PopoverTrigger asChild>
-                        <button 
-                          className="ml-2 text-sm hover:text-primary transition-colors"
-                          onClick={() => handleEditStart('condition')}
-                        >
-                          {item.condition || 'Add condition'}
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80 bg-card border-border">
-                        <div className="space-y-4">
-                          <h4 className="font-semibold text-sm text-primary">Edit Condition</h4>
-                          <div className="space-y-2">
-                            <Label htmlFor="condition" className="text-sm font-medium text-primary">Condition</Label>
-                            <Select
-                              value={item.condition}
-                              onValueChange={(value: ItemCondition) => {
-                                if (item) {
-                                  const updatedItem = {
-                                    ...item,
-                                    condition: value as ItemCondition
-                                  };
-                                  setItem(updatedItem);
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
-                                <SelectValue placeholder="Select condition" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>Condition</SelectLabel>
-                                  {conditionOptions.map((condition) => (
-                                    <SelectItem key={condition} value={condition}>
-                                      {condition}
-                                    </SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex justify-end space-x-2">
-                            <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary hover:bg-accent hover:text-accent-foreground">Cancel</Button>
-                            <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </p>
                 </div>
 
                 {isSold && (
                   <div className="space-y-4 pt-4 border-t border-border">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-1">
-                        <Label htmlFor="sold-price" className="text-sm font-semibold">Sold Price:</Label>
+                    <h3 className="text-sm font-semibold text-muted-foreground">Sale Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="sold-price" className="text-xs text-muted-foreground">Sold Price</Label>
                         <Input
                           id="sold-price"
                           type="number"
@@ -771,8 +765,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                           className="mt-1"
                         />
                       </div>
-                      <div className="flex-1">
-                        <Label htmlFor="sold-date" className="text-sm font-semibold">Sold Date:</Label>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="sold-date" className="text-xs text-muted-foreground">Sold Date</Label>
                         <Input
                           id="sold-date"
                           type="date"
@@ -787,14 +781,20 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     </Button>
                   </div>
                 )}
-                {item.isSold && item.soldPrice && item.soldDate && (
+                
+                {item.isSold && item.soldPrice && item.soldDate && !isSold && (
                   <div className="pt-4 border-t border-border">
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-semibold">Sold Price:</span> ${item.soldPrice.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-semibold">Sold Date:</span> {new Date(item.soldDate).toLocaleDateString()}
-                    </p>
+                    <h3 className="text-sm font-semibold text-muted-foreground mb-3">Sale Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Sold Price</Label>
+                        <p className="font-medium">${item.soldPrice.toFixed(2)}</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Sold Date</Label>
+                        <p className="font-medium">{new Date(item.soldDate).toLocaleDateString()}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -817,16 +817,16 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   <PopoverTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="w-full justify-start text-left font-normal p-0 h-auto"
+                      className="w-full justify-start text-left font-normal p-4 bg-muted/30 hover:bg-muted/50 rounded-md group"
                       onClick={() => handleEditStart('notes')}
                     >
                       <div className="flex items-start">
                         <div className="max-h-40 overflow-y-auto pr-2 flex-grow">
                           <p className="text-muted-foreground whitespace-pre-wrap">
-                            {item.notes || 'No notes available.'}
+                            {item && (item.notes || 'No notes available. Click to add notes about this item.')}
                           </p>
                         </div>
-                        <Edit className="ml-2 h-4 w-4 flex-shrink-0" />
+                        <Edit className="ml-2 h-4 w-4 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </Button>
                   </PopoverTrigger>
@@ -838,10 +838,11 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         <textarea
                           id="notes"
                           name="notes"
-                          value={item.notes || ''}
+                          value={item ? (item.notes || '') : ''}
                           onChange={handleInputChange}
                           className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                           rows={4}
+                          placeholder="Add notes about this item..."
                         />
                       </div>
                       <div className="flex justify-end space-x-2">
