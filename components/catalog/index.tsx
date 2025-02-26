@@ -259,25 +259,22 @@ export default function Catalog({
             <ItemListView
               items={filteredAndSortedItems}
               isLoading={isLoading}
-              sortDescriptor={sortDescriptor}
-              onSort={handleSort}
               onDelete={deleteItem}
               onEbayRefresh={handleEbayRefresh}
               showSold={showSold}
               loadingItemId={loadingItemId}
               loadingListedItemId={loadingListedItemId}
               loadingSoldItemId={loadingSoldItemId}
+              sortDescriptor={sortDescriptor}
+              onSort={handleSort}
             />
           ) : (
             <ItemGridView
               items={filteredAndSortedItems}
               isLoading={isLoading}
               onDelete={deleteItem}
-              onEbayRefresh={handleEbayRefresh}
               showSold={showSold}
               loadingItemId={loadingItemId}
-              loadingListedItemId={loadingListedItemId}
-              loadingSoldItemId={loadingSoldItemId}
             />
           )}
         </div>
