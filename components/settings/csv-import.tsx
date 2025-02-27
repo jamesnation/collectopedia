@@ -612,13 +612,13 @@ export function CSVImport({
   }, [importErrors])
 
   return (
-    <Card className="border shadow-sm">
+    <Card className="border shadow-sm dark:bg-gray-900/50 dark:border-gray-800 dark:border-l-purple-500/20">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 dark:text-white">
           <Package className="h-5 w-5" />
-          Import Collection Items
+          CSV Import
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="dark:text-gray-300">
           Import your collection items from a CSV file
         </CardDescription>
       </CardHeader>
@@ -629,7 +629,7 @@ export function CSVImport({
             <Button
               onClick={downloadTemplate}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 dark:bg-transparent dark:border-purple-500/20 dark:text-white dark:hover:bg-gray-900/80"
             >
               <Download className="h-4 w-4" />
               Download Template
@@ -637,7 +637,7 @@ export function CSVImport({
             
             <Button
               onClick={() => csvInputRef.current?.click()}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700"
               disabled={isImporting}
             >
               {isImporting ? (
@@ -664,8 +664,8 @@ export function CSVImport({
           
           {/* Progress indicator */}
           {isImporting && (
-            <div className="space-y-2 border p-3 rounded-md bg-slate-50">
-              <div className="flex justify-between text-sm font-medium">
+            <div className="space-y-2 border p-3 rounded-md bg-slate-50 dark:bg-gray-900/30 dark:border-gray-800">
+              <div className="flex justify-between text-sm font-medium dark:text-gray-300">
                 <span>{currentStatus}</span>
                 {importSummary.totalRecords > 0 && (
                   <span>
@@ -675,9 +675,9 @@ export function CSVImport({
               </div>
               
               {/* Use a single, simpler progress bar with inline styles for maximum compatibility */}
-              <div className="w-full h-4 bg-gray-200 rounded-md overflow-hidden relative" ref={progressBarRef}>
+              <div className="w-full h-4 bg-gray-200 dark:bg-gray-800 rounded-md overflow-hidden relative" ref={progressBarRef}>
                 <div 
-                  className="h-full bg-blue-500 transition-all duration-100 ease-linear absolute left-0 top-0"
+                  className="h-full bg-blue-500 dark:bg-purple-600 transition-all duration-100 ease-linear absolute left-0 top-0"
                   style={{ 
                     width: `${progress}%`,
                     transition: "width 100ms linear"
@@ -705,7 +705,7 @@ export function CSVImport({
               `}</style>
               
               {/* Debug information */}
-              <div className="text-xs text-slate-500 pt-1 flex justify-between">
+              <div className="text-xs text-slate-500 dark:text-gray-400 pt-1 flex justify-between">
                 <span>Progress: {progress}%</span>
                 <span>Items processed: {Math.floor((progress - 20) * importSummary.totalRecords / 80) || 0}</span>
               </div>
@@ -716,7 +716,7 @@ export function CSVImport({
           {importSummary.completed && !isImporting && (
             <div className="mt-4">
               {importSummary.errorCount > 0 ? (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="dark:bg-red-900/20 dark:border-red-800 dark:text-red-200">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Import completed with errors</AlertTitle>
                   <AlertDescription>
@@ -725,8 +725,8 @@ export function CSVImport({
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Alert variant="default" className="bg-green-50 border-green-200">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <Alert variant="default" className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200">
+                  <CheckCircle2 className="h-4 w-4 text-green-500 dark:text-green-400" />
                   <AlertTitle>Import completed successfully</AlertTitle>
                   <AlertDescription>
                     All {importSummary.successCount} items were imported successfully.
@@ -741,12 +741,12 @@ export function CSVImport({
             <Collapsible
               open={showErrors}
               onOpenChange={setShowErrors}
-              className="mt-4 border rounded-md overflow-hidden"
+              className="mt-4 border rounded-md overflow-hidden dark:border-gray-800"
             >
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="flex w-full justify-between p-4">
+                <Button variant="ghost" className="flex w-full justify-between p-4 dark:text-white dark:hover:bg-gray-900/50">
                   <div className="flex items-center">
-                    <FileWarning className="h-4 w-4 mr-2 text-red-500" />
+                    <FileWarning className="h-4 w-4 mr-2 text-red-500 dark:text-red-400" />
                     <span>Show {importErrors.length} error{importErrors.length > 1 ? 's' : ''}</span>
                   </div>
                   <span>{showErrors ? '▲' : '▼'}</span>
@@ -754,30 +754,30 @@ export function CSVImport({
               </CollapsibleTrigger>
               
               <CollapsibleContent>
-                <ScrollArea className="h-[200px] p-4 border-t">
+                <ScrollArea className="h-[200px] p-4 border-t dark:border-gray-800 dark:bg-gray-900/30">
                   <div className="space-y-2">
                     {importErrors.map((error, index) => (
-                      <div key={index} className="p-2 border rounded-md bg-red-50">
+                      <div key={index} className="p-2 border rounded-md bg-red-50 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200">
                         <div className="flex justify-between">
                           <span className="font-medium">
                             {error.rowIndex > 0 ? `Row ${error.rowIndex}` : 'File Error'}
                           </span>
                           {error.rowData.name && (
-                            <span className="text-sm text-gray-500">Item: {error.rowData.name}</span>
+                            <span className="text-sm text-gray-500 dark:text-red-300/70">Item: {error.rowData.name}</span>
                           )}
                         </div>
-                        <p className="text-sm text-red-600">{error.error}</p>
+                        <p className="text-sm text-red-600 dark:text-red-300">{error.error}</p>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
                 
-                <div className="p-4 border-t bg-gray-50">
+                <div className="p-4 border-t bg-gray-50 dark:bg-gray-900/50 dark:border-gray-800">
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={downloadErrorReport}
-                    className="w-full"
+                    className="w-full dark:bg-transparent dark:border-purple-500/20 dark:text-white dark:hover:bg-gray-900/80"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download Error Report

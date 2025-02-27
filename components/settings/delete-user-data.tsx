@@ -74,8 +74,8 @@ export function DeleteUserData() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col space-y-2">
-        <h3 className="text-lg font-medium">Delete All My Data</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-lg font-medium dark:text-white">Delete All My Data</h3>
+        <p className="text-sm text-muted-foreground dark:text-gray-400">
           This will permanently delete all your collection items, custom types, brands, and franchises.
         </p>
       </div>
@@ -83,62 +83,60 @@ export function DeleteUserData() {
       <Button 
         variant="destructive" 
         onClick={handleOpenDialog}
-        className="w-full sm:w-auto"
+        className="w-full sm:w-auto dark:bg-red-900/80 dark:hover:bg-red-900"
       >
         <AlertTriangle className="mr-2 h-4 w-4" />
         Delete My Data
       </Button>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dark:bg-gray-900/80 dark:border-gray-800">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
+            <DialogTitle className="flex items-center gap-2 dark:text-white">
+              <AlertTriangle className="h-5 w-5 text-destructive dark:text-red-400" />
               Delete All Your Data
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="dark:text-gray-300">
               This action will permanently delete:
-              <ul className="list-disc pl-5 mt-2 space-y-1">
-                <li>All items in your collection</li>
-                <li>All custom types you&#39;ve created</li>
-                <li>All custom brands you&#39;ve created</li>
-                <li>All custom franchises you&#39;ve created</li>
-              </ul>
-              <p className="mt-2 font-semibold text-destructive">
-                This action cannot be undone.
-              </p>
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="confirm-delete" className="text-destructive">
-                Type DELETE to confirm
+          <div className="py-4">
+            <ul className="list-disc pl-5 space-y-2 text-sm dark:text-gray-300">
+              <li>All your collection items</li>
+              <li>All your custom types</li>
+              <li>All your custom franchises</li>
+              <li>All your custom brands</li>
+            </ul>
+            
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="confirm-delete" className="text-sm font-medium dark:text-gray-300">
+                Type <span className="font-bold">DELETE</span> to confirm
               </Label>
               <Input
                 id="confirm-delete"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="DELETE"
-                className="border-destructive"
+                placeholder="Type DELETE here"
+                className="dark:bg-gray-800/50 dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500"
               />
             </div>
           </div>
           
-          <DialogFooter className="sm:justify-between">
+          <DialogFooter>
             <Button
-              type="button"
               variant="outline"
               onClick={handleCloseDialog}
               disabled={isDeleting}
+              className="dark:bg-transparent dark:border-gray-700 dark:text-white dark:hover:bg-gray-800"
             >
               Cancel
             </Button>
             <Button
-              type="button"
               variant="destructive"
               onClick={handleDeleteData}
-              disabled={confirmText !== "DELETE" || isDeleting}
+              disabled={isDeleting || confirmText !== "DELETE"}
+              className="dark:bg-red-900/80 dark:hover:bg-red-900"
             >
               {isDeleting ? "Deleting..." : "Delete All My Data"}
             </Button>

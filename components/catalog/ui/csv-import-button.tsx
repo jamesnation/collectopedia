@@ -2,10 +2,14 @@
 
 import { useState, useRef } from 'react'
 import { Button } from "@/components/ui/button"
-import { Package, Loader2 } from "lucide-react"
+import { Package, Loader2, FileUp } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import Papa from 'papaparse'
 import { CatalogItem } from '../utils/schema-adapter'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 // Define the CSV item structure
 type CSVItem = {
@@ -52,15 +56,28 @@ export function CSVImportButton({
   defaultBrandOptions
 }: CSVImportButtonProps) {
   const [isImporting, setIsImporting] = useState(false)
-  const csvInputRef = useRef<HTMLInputElement>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [hasHeaderRow, setHasHeaderRow] = useState(true)
   const { toast } = useToast()
 
-  const handleCSVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0])
+    }
+  }
+
+  const handleImport = async () => {
+    if (!file) {
+      toast({
+        title: "No file selected",
+        description: "Please select a CSV file to import",
+        variant: "destructive"
+      })
+      return
+    }
+
     setIsImporting(true)
-    
+
     try {
       const text = await file.text()
       
@@ -164,6 +181,10 @@ export function CSVImportButton({
             title: "CSV Import Completed",
             description: `Successfully imported ${importedCount} items. ${errorCount} items failed to import.`,
           })
+          
+          // Reset the file input
+          setFile(null)
+          setIsImporting(false)
         },
         error: (error: Error) => {
           console.error('CSV Parse Error:', error)
@@ -172,6 +193,7 @@ export function CSVImportButton({
             description: "There was an error parsing the CSV file. Please check the file format and try again.",
             variant: "destructive",
           })
+          setIsImporting(false)
         }
       })
     } catch (error) {
@@ -181,41 +203,77 @@ export function CSVImportButton({
         description: "There was an error reading the CSV file. Please try again.",
         variant: "destructive",
       })
-    } finally {
       setIsImporting(false)
-      // Reset the file input
-      if (csvInputRef.current) {
-        csvInputRef.current.value = ''
-      }
     }
   }
 
   return (
-    <>
-      <Button
-        onClick={() => csvInputRef.current?.click()}
-        className="bg-secondary text-secondary-foreground hover:bg-secondary/90 w-full sm:w-auto"
-        disabled={isImporting}
-      >
-        {isImporting ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Importing...
-          </>
-        ) : (
-          <>
-            <Package className="mr-2 h-4 w-4" /> Import CSV
-          </>
-        )}
-      </Button>
-      <input
-        type="file"
-        ref={csvInputRef}
-        className="hidden"
-        accept=".csv"
-        onChange={handleCSVImport}
-        disabled={isImporting}
-      />
-    </>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          className="gap-2 dark:bg-gray-900/50 dark:border-purple-500/20 dark:text-white dark:hover:border-purple-500/40"
+        >
+          <FileUp className="h-4 w-4" /> Import CSV
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px] dark:bg-gray-900/80 dark:border-gray-800">
+        <DialogHeader>
+          <DialogTitle className="dark:text-white">Import Items from CSV</DialogTitle>
+          <DialogDescription className="dark:text-gray-300">
+            Upload a CSV file to import multiple items at once.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="csv-file" className="dark:text-gray-300">CSV File</Label>
+            <Input
+              id="csv-file"
+              type="file"
+              accept=".csv"
+              onChange={handleFileChange}
+              className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
+            />
+          </div>
+          
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="header-row" 
+                checked={hasHeaderRow} 
+                onCheckedChange={(checked) => setHasHeaderRow(!!checked)} 
+                className="dark:border-purple-500/20 dark:data-[state=checked]:bg-purple-600"
+              />
+              <label
+                htmlFor="header-row"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-300"
+              >
+                File has header row
+              </label>
+            </div>
+            <p className="text-sm text-muted-foreground dark:text-gray-400">
+              Check this if your CSV file includes column headers in the first row.
+            </p>
+          </div>
+          
+          {file && (
+            <div className="text-sm dark:text-white">
+              Selected file: <span className="font-medium">{file.name}</span> ({(file.size / 1024).toFixed(1)} KB)
+            </div>
+          )}
+        </div>
+        
+        <DialogFooter>
+          <Button 
+            disabled={isImporting || !file} 
+            onClick={handleImport}
+            className="dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700"
+          >
+            {isImporting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Importing...</> : 'Import'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 } 

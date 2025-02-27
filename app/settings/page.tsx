@@ -6,7 +6,7 @@ import { CustomBrandsList } from "@/components/custom-brands-list";
 import { CSVImport, DeleteUserData } from "@/components/settings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Tags, BookmarkIcon, Building2, AlertTriangle } from "lucide-react";
+import { Settings, Tags, BookmarkIcon, Building2, AlertTriangle, Moon, Sun } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createCustomTypeAction, getCustomTypesAction } from '@/actions/custom-types-actions';
 import { createCustomFranchiseAction, getCustomFranchisesAction } from '@/actions/custom-franchises-actions';
@@ -17,6 +17,7 @@ import { itemTypeEnum, franchiseEnum } from '@/db/schema/items-schema';
 import { DEFAULT_BRANDS } from '@/components/catalog/utils/schema-adapter';
 import { useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 
 // Custom UUID generation function that works in browser
 function generateUUID() {
@@ -30,9 +31,21 @@ function generateUUID() {
 export default function SettingsPage() {
   const { toast } = useToast();
   const { userId } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [customTypes, setCustomTypes] = useState<{ id: string; name: string }[]>([]);
   const [customFranchises, setCustomFranchises] = useState<{ id: string; name: string }[]>([]);
   const [customBrands, setCustomBrands] = useState<{ id: string; name: string }[]>([]);
+
+  // After mounting, we can safely show the UI that depends on the theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Function to toggle theme
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
 
   // Function to test item creation with hardcoded data
   const testItemCreation = async () => {
@@ -251,24 +264,42 @@ export default function SettingsPage() {
     }
   };
 
+  if (!mounted) {
+    return null; // Avoid rendering theme-dependent UI until mounted
+  }
+
   return (
-    <div className="h-full flex-1 flex flex-col gap-4 p-4 md:gap-8 md:p-6 bg-white">
-      <div className="flex items-center">
-        <h1 className="font-semibold text-lg md:text-2xl">Settings</h1>
+    <div className="min-h-screen flex-1 flex flex-col gap-4 p-4 md:gap-8 md:p-6 
+      bg-white dark:bg-[#0A0118] dark:text-white transition-colors duration-200">
+      <div className="flex items-center justify-between">
+        <h1 className="font-semibold text-lg md:text-2xl dark:text-white">Settings</h1>
+        <Button
+          variant="outline" 
+          size="icon"
+          onClick={toggleTheme}
+          className="rounded-full w-10 h-10 dark:bg-gray-900/50 dark:text-white dark:border-purple-500/20 dark:hover:bg-gray-800 dark:hover:border-purple-500/40"
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? (
+            <Sun className="h-5 w-5 text-purple-400" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </Button>
       </div>
       
       <Tabs defaultValue="customization" className="h-full space-y-6">
         <div className="space-y-4">
-          <TabsList className="inline-flex h-9 items-center justify-center rounded-lg bg-gray-100/80 p-1 text-muted-foreground w-full sm:w-auto">
-            <TabsTrigger value="customization" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-primary data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+          <TabsList className="inline-flex h-9 items-center justify-center rounded-lg bg-gray-100/80 dark:bg-gray-800/30 p-1 text-muted-foreground dark:text-gray-300 w-full sm:w-auto">
+            <TabsTrigger value="customization" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-primary data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900/50 data-[state=active]:text-foreground dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
               <Tags className="h-4 w-4" />
               Customization
             </TabsTrigger>
-            <TabsTrigger value="preferences" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-primary data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+            <TabsTrigger value="preferences" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-primary data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900/50 data-[state=active]:text-foreground dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
               <Settings className="h-4 w-4" />
               Preferences
             </TabsTrigger>
-            <TabsTrigger value="collections" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-primary data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+            <TabsTrigger value="collections" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-primary data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900/50 data-[state=active]:text-foreground dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
               <BookmarkIcon className="h-4 w-4" />
               Collections
             </TabsTrigger>
@@ -277,19 +308,19 @@ export default function SettingsPage() {
 
         <TabsContent value="customization" className="h-full flex-1 space-y-6">
           <div className="grid gap-6">
-            <Card className="border shadow-sm">
+            <Card className="border shadow-sm dark:bg-gray-900/50 dark:border-gray-800 dark:border-l-purple-500/20">
               <CardHeader>
-                <CardTitle>Manage Types, Franchises & Brands</CardTitle>
-                <CardDescription>
+                <CardTitle className="dark:text-white">Manage Types, Franchises & Brands</CardTitle>
+                <CardDescription className="dark:text-gray-300">
                   Customize the types, franchises, and brands for your collection items
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="types" className="w-full">
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="types">Types</TabsTrigger>
-                    <TabsTrigger value="franchises">Franchises</TabsTrigger>
-                    <TabsTrigger value="brands">Brands</TabsTrigger>
+                  <TabsList className="mb-4 dark:bg-gray-800/30 dark:text-gray-300">
+                    <TabsTrigger value="types" className="dark:data-[state=active]:bg-gray-900/50 dark:data-[state=active]:text-white">Types</TabsTrigger>
+                    <TabsTrigger value="franchises" className="dark:data-[state=active]:bg-gray-900/50 dark:data-[state=active]:text-white">Franchises</TabsTrigger>
+                    <TabsTrigger value="brands" className="dark:data-[state=active]:bg-gray-900/50 dark:data-[state=active]:text-white">Brands</TabsTrigger>
                   </TabsList>
                   <TabsContent value="types">
                     <CustomTypesList />
@@ -307,18 +338,18 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="preferences" className="h-full flex-1 space-y-6">
-          <Card className="border shadow-sm">
+          <Card className="border shadow-sm dark:bg-gray-900/50 dark:border-gray-800 dark:border-l-purple-500/20">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 dark:text-white">
                 <Settings className="h-5 w-5" />
                 Display Preferences
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="dark:text-gray-300">
                 Customize how your collection is displayed
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Display preferences will be added in a future update.</p>
+              <p className="text-muted-foreground dark:text-gray-400">Display preferences will be added in a future update.</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -337,13 +368,13 @@ export default function SettingsPage() {
             defaultBrandOptions={DEFAULT_BRANDS}
           />
           
-          <Card className="border shadow-sm">
+          <Card className="border shadow-sm dark:bg-gray-900/50 dark:border-gray-800 dark:border-l-purple-500/20">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
+              <CardTitle className="flex items-center gap-2 text-destructive dark:text-red-400">
                 <AlertTriangle className="h-5 w-5" />
                 Danger Zone
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="dark:text-gray-300">
                 Actions that will permanently affect your data
               </CardDescription>
             </CardHeader>

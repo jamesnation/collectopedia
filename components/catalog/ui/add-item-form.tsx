@@ -38,6 +38,7 @@ interface AddItemFormProps {
   onLoadCustomFranchises: () => void
   onLoadCustomBrands: () => void
   isLoading: boolean
+  hideSubmitButton?: boolean
 }
 
 export function AddItemForm({
@@ -48,7 +49,8 @@ export function AddItemForm({
   onLoadCustomTypes,
   onLoadCustomFranchises,
   onLoadCustomBrands,
-  isLoading
+  isLoading,
+  hideSubmitButton = false
 }: AddItemFormProps) {
   const [newItem, setNewItem] = useState<{
     name: string
@@ -178,21 +180,21 @@ export function AddItemForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-sm font-medium text-primary">Name</Label>
+        <Label htmlFor="name" className="text-sm font-medium dark:text-white">Name</Label>
         <Input
           id="name"
           name="name"
           value={newItem.name}
           onChange={handleInputChange}
           required
-          className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+          className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
         />
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="type" className="text-sm font-medium text-primary">Type</Label>
+        <Label htmlFor="type" className="text-sm font-medium dark:text-white">Type</Label>
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <Select 
@@ -200,21 +202,21 @@ export function AddItemForm({
               value={newItem.type} 
               onValueChange={handleTypeChange}
             >
-              <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+              <SelectTrigger className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-gray-900/80 dark:border-gray-800">
                 <SelectGroup>
-                  <SelectLabel>Default Types</SelectLabel>
+                  <SelectLabel className="dark:text-gray-300">Default Types</SelectLabel>
                   {itemTypeEnum.enumValues.map((type) => (
-                    <SelectItem key={`new-type-${type}`} value={type}>{type}</SelectItem>
+                    <SelectItem key={`new-type-${type}`} value={type} className="dark:text-white dark:focus:bg-purple-500/20">{type}</SelectItem>
                   ))}
                 </SelectGroup>
-                <SelectSeparator />
+                <SelectSeparator className="dark:bg-gray-700" />
                 <SelectGroup>
-                  <SelectLabel>Custom Types</SelectLabel>
+                  <SelectLabel className="dark:text-gray-300">Custom Types</SelectLabel>
                   {customTypes.map((type) => (
-                    <SelectItem key={`new-type-custom-${type.id}`} value={type.name}>{type.name}</SelectItem>
+                    <SelectItem key={`new-type-custom-${type.id}`} value={type.name} className="dark:text-white dark:focus:bg-purple-500/20">{type.name}</SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
@@ -225,7 +227,7 @@ export function AddItemForm({
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="franchise" className="text-sm font-medium text-primary">Franchise</Label>
+        <Label htmlFor="franchise" className="text-sm font-medium dark:text-white">Franchise</Label>
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <Select 
@@ -233,21 +235,21 @@ export function AddItemForm({
               value={newItem.franchise}
               onValueChange={handleFranchiseChange}
             >
-              <SelectTrigger className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground">
+              <SelectTrigger className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500">
                 <SelectValue placeholder="Select franchise" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-gray-900/80 dark:border-gray-800">
                 <SelectGroup>
-                  <SelectLabel>Default Franchises</SelectLabel>
+                  <SelectLabel className="dark:text-gray-300">Default Franchises</SelectLabel>
                   {franchiseEnum.enumValues.map((franchise) => (
-                    <SelectItem key={`new-franchise-${franchise}`} value={franchise}>{franchise}</SelectItem>
+                    <SelectItem key={`new-franchise-${franchise}`} value={franchise} className="dark:text-white dark:focus:bg-purple-500/20">{franchise}</SelectItem>
                   ))}
                 </SelectGroup>
-                <SelectSeparator />
+                <SelectSeparator className="dark:bg-gray-700" />
                 <SelectGroup>
-                  <SelectLabel>Custom Franchises</SelectLabel>
+                  <SelectLabel className="dark:text-gray-300">Custom Franchises</SelectLabel>
                   {customFranchises.map((franchise) => (
-                    <SelectItem key={`new-franchise-custom-${franchise.id}`} value={franchise.name}>{franchise.name}</SelectItem>
+                    <SelectItem key={`new-franchise-custom-${franchise.id}`} value={franchise.name} className="dark:text-white dark:focus:bg-purple-500/20">{franchise.name}</SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
@@ -258,28 +260,28 @@ export function AddItemForm({
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="brand">Brand</Label>
+        <Label htmlFor="brand" className="text-sm font-medium dark:text-white">Brand</Label>
         <div className="flex gap-2">
           <Select
             value={newItem.brand || ""}
             onValueChange={handleBrandChange}
           >
-            <SelectTrigger className="flex-1">
+            <SelectTrigger className="flex-1 dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500">
               <SelectValue placeholder="Select brand" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="dark:bg-gray-900/80 dark:border-gray-800">
               <SelectGroup>
-                <SelectLabel>Default Brands</SelectLabel>
+                <SelectLabel className="dark:text-gray-300">Default Brands</SelectLabel>
                 {DEFAULT_BRANDS.map((brand) => (
-                  <SelectItem key={brand} value={brand}>
+                  <SelectItem key={brand} value={brand} className="dark:text-white dark:focus:bg-purple-500/20">
                     {brand}
                   </SelectItem>
                 ))}
                 {customBrands.length > 0 && (
                   <>
-                    <SelectLabel>Custom Brands</SelectLabel>
+                    <SelectLabel className="dark:text-gray-300">Custom Brands</SelectLabel>
                     {customBrands.map((brand) => (
-                      <SelectItem key={brand.id} value={brand.name}>
+                      <SelectItem key={brand.id} value={brand.name} className="dark:text-white dark:focus:bg-purple-500/20">
                         {brand.name}
                       </SelectItem>
                     ))}
@@ -292,20 +294,20 @@ export function AddItemForm({
         </div>
       </div>
       
-      <div className="grid gap-2">
-        <Label htmlFor="year">Year</Label>
+      <div className="space-y-2">
+        <Label htmlFor="year" className="text-sm font-medium dark:text-white">Year</Label>
         <Select
           value={newItem.year?.toString() || ""}
           onValueChange={handleYearChange}
         >
-          <SelectTrigger>
+          <SelectTrigger className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500">
             <SelectValue placeholder="Select year" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="dark:bg-gray-900/80 dark:border-gray-800">
             <SelectGroup>
-              <SelectLabel>Year</SelectLabel>
+              <SelectLabel className="dark:text-gray-300">Year</SelectLabel>
               {yearOptions.map((year) => (
-                <SelectItem key={year.value} value={year.value}>
+                <SelectItem key={year.value} value={year.value} className="dark:text-white dark:focus:bg-purple-500/20">
                   {year.label}
                 </SelectItem>
               ))}
@@ -314,20 +316,20 @@ export function AddItemForm({
         </Select>
       </div>
       
-      <div className="grid gap-2">
-        <Label htmlFor="condition">Condition</Label>
+      <div className="space-y-2">
+        <Label htmlFor="condition" className="text-sm font-medium dark:text-white">Condition</Label>
         <Select
           value={newItem.condition}
           onValueChange={handleConditionChange}
         >
-          <SelectTrigger>
+          <SelectTrigger className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500">
             <SelectValue placeholder="Select condition" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="dark:bg-gray-900/80 dark:border-gray-800">
             <SelectGroup>
-              <SelectLabel>Condition</SelectLabel>
+              <SelectLabel className="dark:text-gray-300">Condition</SelectLabel>
               {CONDITION_OPTIONS.map((condition) => (
-                <SelectItem key={condition} value={condition}>
+                <SelectItem key={condition} value={condition} className="dark:text-white dark:focus:bg-purple-500/20">
                   {condition}
                 </SelectItem>
               ))}
@@ -337,7 +339,7 @@ export function AddItemForm({
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="acquired" className="text-sm font-medium text-primary">Date Acquired</Label>
+        <Label htmlFor="acquired" className="text-sm font-medium dark:text-white">Date Acquired</Label>
         <Input
           id="acquired"
           name="acquired"
@@ -345,12 +347,12 @@ export function AddItemForm({
           value={newItem.acquired}
           onChange={handleInputChange}
           required
-          className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+          className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
         />
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="cost" className="text-sm font-medium text-primary">Cost</Label>
+        <Label htmlFor="cost" className="text-sm font-medium dark:text-white">Cost</Label>
         <Input
           id="cost"
           name="cost"
@@ -358,12 +360,12 @@ export function AddItemForm({
           value={newItem.cost}
           onChange={handleInputChange}
           required
-          className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+          className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
         />
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="value" className="text-sm font-medium text-primary">Estimated Value</Label>
+        <Label htmlFor="value" className="text-sm font-medium dark:text-white">Estimated Value</Label>
         <Input
           id="value"
           name="value"
@@ -371,23 +373,23 @@ export function AddItemForm({
           value={newItem.value}
           onChange={handleInputChange}
           required
-          className="border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+          className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
         />
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes" className="text-sm font-medium dark:text-white">Notes</Label>
         <Textarea
           id="notes"
           name="notes"
           value={newItem.notes}
           onChange={handleInputChange}
-          className="min-h-[100px] border-input text-foreground bg-background hover:bg-accent hover:text-accent-foreground"
+          className="min-h-[100px] dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
         />
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="image">Images</Label>
+        <Label htmlFor="image" className="text-sm font-medium dark:text-white">Images</Label>
         <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
         <div className="grid grid-cols-3 gap-2 mt-2">
           {newItemImages.map((image, index) => (
@@ -397,7 +399,7 @@ export function AddItemForm({
                 type="button"
                 variant="destructive"
                 size="icon"
-                className="absolute top-0 right-0 h-6 w-6"
+                className="absolute top-0 right-0 h-6 w-6 dark:bg-red-600/80 dark:hover:bg-red-600"
                 onClick={() => handleRemoveImage(index)}
               >
                 <X className="h-4 w-4" />
@@ -407,13 +409,15 @@ export function AddItemForm({
         </div>
       </div>
       
-      <Button 
-        type="submit" 
-        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-        disabled={isLoading}
-      >
-        {isLoading ? 'Adding...' : 'Add Item'}
-      </Button>
+      {!hideSubmitButton && (
+        <Button 
+          type="submit" 
+          className="w-full dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Adding...' : 'Add Item'}
+        </Button>
+      )}
     </form>
   )
 } 

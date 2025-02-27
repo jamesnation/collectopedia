@@ -39,15 +39,15 @@ export function ItemGridView({
       {isLoading ? (
         // Show skeleton cards when loading
         Array(8).fill(0).map((_, index) => (
-          <Card key={index} className="overflow-hidden bg-card">
-            <div className="relative h-52 w-full bg-muted">
-              <Skeleton className="h-full w-full" />
+          <Card key={index} className="overflow-hidden bg-card dark:bg-gray-900/50 dark:border-gray-800">
+            <div className="relative h-52 w-full bg-muted dark:bg-gray-900/80">
+              <Skeleton className="h-full w-full dark:bg-gray-800/50" />
             </div>
             <CardContent className="p-4 space-y-3">
-              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-5 w-3/4 dark:bg-gray-800/50" />
               <div className="flex justify-between mt-2">
-                <Skeleton className="h-6 w-1/4" />
-                <Skeleton className="h-6 w-1/4" />
+                <Skeleton className="h-6 w-1/4 dark:bg-gray-800/50" />
+                <Skeleton className="h-6 w-1/4 dark:bg-gray-800/50" />
               </div>
             </CardContent>
           </Card>
@@ -57,13 +57,13 @@ export function ItemGridView({
         items.map((item) => (
           <Card 
             key={item.id} 
-            className="group overflow-hidden bg-card hover:shadow-lg transition-all duration-300 border border-border hover:border-primary/20 hover:-translate-y-1"
+            className="group overflow-hidden bg-card dark:bg-gray-900/50 dark:border-gray-800 hover:shadow-lg transition-all duration-300 border border-border hover:border-primary/20 dark:hover:border-purple-500/40 hover:-translate-y-1"
           >
-            <div className="relative h-52 w-full overflow-hidden bg-muted">
+            <div className="relative h-52 w-full overflow-hidden bg-muted dark:bg-gray-900/80">
               <Link href={`/item/${item.id}`} className="block h-full">
                 {!loadedImages[item.id] && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted dark:bg-gray-900/80">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-purple-400" />
                   </div>
                 )}
                 <Image
@@ -76,30 +76,30 @@ export function ItemGridView({
                   onLoadingComplete={() => handleImageLoad(item.id)}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <Button variant="secondary" size="sm" className="gap-1">
+                  <Button variant="secondary" size="sm" className="gap-1 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700">
                     <Eye className="h-4 w-4" /> View Details
                   </Button>
                 </div>
               </Link>
               {item.isSold && (
-                <Badge className="absolute top-2 right-2 bg-destructive text-destructive-foreground z-10">
+                <Badge className="absolute top-2 right-2 bg-destructive text-destructive-foreground dark:bg-red-600/80 dark:text-white z-10">
                   SOLD
                 </Badge>
               )}
             </div>
             <CardContent className="p-4">
-              <Link href={`/item/${item.id}`} className="block mb-3 font-medium text-primary hover:text-primary/80 transition-colors">
+              <Link href={`/item/${item.id}`} className="block mb-3 font-medium text-primary dark:text-white hover:text-primary/80 dark:hover:text-purple-400 transition-colors">
                 {item.name}
               </Link>
               
               <div className="flex justify-between mt-2">
                 <div>
-                  <div className="text-xs text-muted-foreground">Cost</div>
-                  <div className="text-sm font-medium">£{item.cost.toFixed(2)}</div>
+                  <div className="text-xs text-muted-foreground dark:text-gray-400">Cost</div>
+                  <div className="text-sm font-medium dark:text-gray-300">£{item.cost.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">{showSold ? 'Sold For' : 'Value'}</div>
-                  <div className="text-sm font-bold text-primary">
+                  <div className="text-xs text-muted-foreground dark:text-gray-400">{showSold ? 'Sold For' : 'Value'}</div>
+                  <div className="text-sm font-bold text-primary dark:text-purple-400">
                     £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
                   </div>
                 </div>
