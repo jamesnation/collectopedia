@@ -100,9 +100,9 @@ export function DeleteUserData() {
               This action will permanently delete:
               <ul className="list-disc pl-5 mt-2 space-y-1">
                 <li>All items in your collection</li>
-                <li>All custom types you've created</li>
-                <li>All custom brands you've created</li>
-                <li>All custom franchises you've created</li>
+                <li>All custom types you&#39;ve created</li>
+                <li>All custom brands you&#39;ve created</li>
+                <li>All custom franchises you&#39;ve created</li>
               </ul>
               <p className="mt-2 font-semibold text-destructive">
                 This action cannot be undone.

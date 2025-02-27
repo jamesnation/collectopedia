@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { SelectCustomType } from "@/db/schema";
 import { CustomTypeModal } from "./custom-type-modal";
 import { CustomTypesList } from "./custom-types-list";
@@ -16,17 +16,17 @@ export function CustomTypesManager({ onTypeSelect, selectedTypeId, showSelect = 
   const [types, setTypes] = useState<SelectCustomType[]>([]);
   const { userId } = useAuth();
 
+  const loadTypes = useCallback(async () => {
+    if (!userId) return;
+    const customTypes = await getCustomTypesByUserId(userId);
+    setTypes(customTypes);
+  }, [userId]);
+
   useEffect(() => {
     if (userId) {
       loadTypes();
     }
-  }, [userId]);
-
-  async function loadTypes() {
-    if (!userId) return;
-    const customTypes = await getCustomTypesByUserId(userId);
-    setTypes(customTypes);
-  }
+  }, [userId, loadTypes]);
 
   function handleTypeCreated() {
     loadTypes();
