@@ -84,7 +84,7 @@ export function AddItemModal({
         <SheetHeader className="pb-4 text-left">
           <SheetTitle className="text-2xl dark:text-white">Add New Item</SheetTitle>
           <SheetDescription className="dark:text-gray-300">
-            Add the details for your new collection item. Fill out the form and click "Submit" first, then "Save Item".
+            Add the details for your new collection item. Fill out the form and click &quot;Submit&quot; first, then &quot;Save Item&quot;.
           </SheetDescription>
         </SheetHeader>
         
