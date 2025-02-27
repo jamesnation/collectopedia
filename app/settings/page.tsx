@@ -3,10 +3,10 @@
 import { CustomTypesList } from "@/components/custom-types-list";
 import { CustomFranchisesList } from "@/components/custom-franchises-list";
 import { CustomBrandsList } from "@/components/custom-brands-list";
-import { CSVImport } from "@/components/settings";
+import { CSVImport, DeleteUserData } from "@/components/settings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Tags, BookmarkIcon, Building2 } from "lucide-react";
+import { Settings, Tags, BookmarkIcon, Building2, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createCustomTypeAction, getCustomTypesAction } from '@/actions/custom-types-actions';
 import { createCustomFranchiseAction, getCustomFranchisesAction } from '@/actions/custom-franchises-actions';
@@ -319,6 +319,21 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">Display preferences will be added in a future update.</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Danger Zone
+              </CardTitle>
+              <CardDescription>
+                Actions that will permanently affect your data
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeleteUserData />
             </CardContent>
           </Card>
         </TabsContent>
