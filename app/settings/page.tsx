@@ -321,21 +321,6 @@ export default function SettingsPage() {
               <p className="text-muted-foreground">Display preferences will be added in a future update.</p>
             </CardContent>
           </Card>
-          
-          <Card className="border shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
-                <AlertTriangle className="h-5 w-5" />
-                Danger Zone
-              </CardTitle>
-              <CardDescription>
-                Actions that will permanently affect your data
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DeleteUserData />
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="collections" className="h-full flex-1 space-y-6">
@@ -351,6 +336,21 @@ export default function SettingsPage() {
             defaultFranchiseOptions={franchiseEnum.enumValues}
             defaultBrandOptions={DEFAULT_BRANDS}
           />
+          
+          <Card className="border shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Danger Zone
+              </CardTitle>
+              <CardDescription>
+                Actions that will permanently affect your data
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeleteUserData />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
