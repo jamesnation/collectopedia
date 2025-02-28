@@ -84,7 +84,7 @@ export default function Sidebar() {
           <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-card shadow-sm border-b border-border flex items-center justify-between px-4">
             <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
               <Package className="h-6 w-6 text-purple-400" />
-              <span className="text-lg font-bold ml-3 text-purple-400">Collectopedia</span>
+              <span className="text-lg font-bold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
             </Link>
             <button
               onClick={toggleSidebar}
@@ -112,7 +112,7 @@ export default function Sidebar() {
         <aside className="hidden md:flex flex-col w-64 bg-card text-foreground p-4 h-screen text-sm border-r border-border">
           <Link href="/" className="flex items-center mb-8">
             <Package className="h-6 w-6 text-purple-400" />
-            <span className="text-lg font-bold ml-3 text-purple-400">Collectopedia</span>
+            <span className="text-lg font-bold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
           </Link>
           <SidebarContent />
         </aside>
