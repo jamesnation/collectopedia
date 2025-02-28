@@ -10,7 +10,7 @@ export default async function CatalogPage() {
   // Get the current user ID from the auth sessions
   const { userId } = auth();
   
-  // Fetch initial data
+  // Fetch the initial data
   const itemsResult = await getItemsByUserIdAction(userId as string);
   const typesResult = await getCustomTypesAction();
   const franchisesResult = await getCustomFranchisesAction();
