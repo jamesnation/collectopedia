@@ -212,7 +212,7 @@ export function CSVImportButton({
       <DialogTrigger asChild>
         <Button
           onClick={handleImport}
-          className="flex items-center gap-2 dark:bg-card/50 dark:text-foreground dark:border-primary/20 dark:hover:bg-card/80"
+          className="flex items-center gap-2 dark:bg-card/50 dark:text-foreground dark:border-border dark:hover:bg-card/80"
           variant="outline"
           size="sm"
         >
@@ -220,7 +220,7 @@ export function CSVImportButton({
           Import CSV
         </Button>
       </DialogTrigger>
-      <DialogContent className="dark:bg-card dark:text-foreground dark:border-primary/20">
+      <DialogContent className="dark:bg-card dark:text-foreground dark:border-border">
         <DialogHeader>
           <DialogTitle className="dark:text-foreground">Import Collection Items</DialogTitle>
           <DialogDescription className="dark:text-muted-foreground">
@@ -236,7 +236,7 @@ export function CSVImportButton({
               type="file"
               accept=".csv"
               onChange={handleFileChange}
-              className="dark:bg-card/50 dark:text-foreground dark:border-primary/20"
+              className="dark:bg-card/50 dark:text-foreground dark:border-border"
             />
           </div>
           
@@ -271,7 +271,7 @@ export function CSVImportButton({
           <Button
             variant="outline"
             onClick={() => setIsImporting(false)}
-            className="dark:bg-card/50 dark:text-foreground dark:border-primary/20"
+            className="dark:bg-card/50 dark:text-foreground dark:border-border"
           >
             Cancel
           </Button>

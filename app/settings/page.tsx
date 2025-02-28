@@ -280,7 +280,7 @@ export default function SettingsPage() {
           variant="outline" 
           size="icon"
           onClick={toggleTheme}
-          className="rounded-full w-10 h-10 dark:bg-card/50 dark:text-foreground dark:border-primary/20 dark:hover:bg-card/80 dark:hover:border-primary/40"
+          className="rounded-full w-10 h-10 dark:bg-card/50 dark:text-foreground dark:border-border dark:hover:bg-card/80 dark:hover:border-primary/40"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? (
@@ -292,7 +292,7 @@ export default function SettingsPage() {
       </div>
       
       <Tabs defaultValue="customization" className="flex-1 h-full">
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-start mb-6">
           <TabsList className="grid grid-cols-3 w-full max-w-md bg-muted dark:bg-background/30 rounded-lg p-1">
             <TabsTrigger value="customization" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-purple-400 data-[state=active]:bg-white dark:data-[state=active]:bg-card/50 data-[state=active]:text-foreground dark:data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               <Tags className="h-4 w-4" />
@@ -310,7 +310,7 @@ export default function SettingsPage() {
         </div>
 
         <TabsContent value="customization" className="h-full flex-1">
-          <div className="rounded-lg border dark:border-primary/20 bg-card/50 dark:bg-card/60 p-6 shadow-sm">
+          <div className="rounded-lg border dark:border-border bg-card/50 dark:bg-card/60 p-6 shadow-sm">
             <div className="flex flex-col space-y-8">
               <div className="space-y-2">
                 <h1 className="text-xl font-semibold">Customization</h1>
@@ -331,7 +331,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="preferences" className="h-full flex-1">
-          <div className="rounded-lg border dark:border-primary/20 bg-card/50 dark:bg-card/60 p-6 shadow-sm">
+          <div className="rounded-lg border dark:border-border bg-card/50 dark:bg-card/60 p-6 shadow-sm">
             <div className="flex flex-col space-y-8">
               <div className="space-y-2">
                 <h1 className="text-xl font-semibold">Preferences</h1>
@@ -345,7 +345,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="collections" className="h-full flex-1">
-          <div className="rounded-lg border dark:border-primary/20 bg-card/50 dark:bg-card/60 p-6 shadow-sm">
+          <div className="rounded-lg border dark:border-border bg-card/50 dark:bg-card/60 p-6 shadow-sm">
             <div className="flex flex-col space-y-8">
               <div className="space-y-2">
                 <h1 className="text-xl font-semibold">Collections</h1>

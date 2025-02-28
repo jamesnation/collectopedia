@@ -28,7 +28,7 @@ export function CustomBrandsList() {
               placeholder="Enter custom brand"
               value={newBrand}
               onChange={(e) => setNewBrand(e.target.value)}
-              className="dark:bg-card dark:text-foreground dark:border-primary/20"
+              className="dark:bg-card dark:text-foreground dark:border-border"
             />
             <Button 
               onClick={handleAddBrand}

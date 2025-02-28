@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export function PreferencesTab() {
   return (
     <div className="space-y-6">
-      <Card className="border shadow-sm dark:bg-card/60 dark:border-primary/20">
+      <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 dark:text-foreground">
             <Settings className="h-5 w-5 text-purple-400" />

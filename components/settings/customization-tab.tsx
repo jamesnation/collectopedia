@@ -13,7 +13,7 @@ export function CustomizationTab({ onSave }: CustomizationTabProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="types" className="w-full">
-        <TabsList className="mb-4 dark:bg-background/30 dark:text-muted-foreground">
+        <TabsList className="mb-4 dark:bg-background/30 dark:text-muted-foreground dark:border dark:border-border rounded-lg">
           <TabsTrigger 
             value="types" 
             className="dark:data-[state=active]:bg-card/50 dark:data-[state=active]:text-foreground hover:text-purple-400"

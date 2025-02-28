@@ -50,7 +50,7 @@ export function DeleteUserData() {
             {isDeleting ? "Deleting..." : "Delete All Data"}
           </Button>
         </AlertDialogTrigger>
-        <AlertDialogContent className="dark:bg-card dark:text-foreground dark:border-primary/20">
+        <AlertDialogContent className="dark:bg-card dark:text-foreground dark:border-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="dark:text-foreground">Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription className="dark:text-muted-foreground">
@@ -59,7 +59,7 @@ export function DeleteUserData() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="dark:bg-card/50 dark:text-foreground dark:border-primary/20">
+            <AlertDialogCancel className="dark:bg-card/50 dark:text-foreground dark:border-border">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction 

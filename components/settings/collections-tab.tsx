@@ -72,7 +72,7 @@ export function CollectionsTab() {
         defaultBrandOptions={DEFAULT_BRANDS}
       />
       
-      <Card className="border shadow-sm dark:bg-card/60 dark:border-primary/20">
+      <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive dark:text-red-400">
             <AlertTriangle className="h-5 w-5" />

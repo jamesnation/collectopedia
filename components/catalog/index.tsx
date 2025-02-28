@@ -203,13 +203,13 @@ export default function Catalog({
       <main className="container mx-auto px-4 py-12">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
-          <h1 className="text-4xl font-serif text-purple-400 dark:text-foreground">Your Collection <span className="dark:text-purple-400">Catalog</span></h1>
+          <h1 className="text-4xl font-serif text-foreground dark:text-foreground">Your Collection <span className="text-foreground dark:text-foreground">Catalog</span></h1>
           <div className="flex items-center space-x-2">
             <Button
               variant="outline" 
               size="icon"
               onClick={toggleTheme}
-              className="rounded-full w-10 h-10 dark:bg-card/50 dark:text-foreground dark:border-primary/20 dark:hover:bg-card dark:hover:border-primary/40 mr-2"
+              className="rounded-full w-10 h-10 dark:bg-card/50 dark:text-foreground dark:border-border dark:hover:bg-card dark:hover:border-primary/40 mr-2"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
@@ -320,7 +320,7 @@ export default function Catalog({
         </div>
       </main>
 
-      <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border dark:border-primary/10">
+      <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border dark:border-border">
         <div className="text-center text-sm text-muted-foreground dark:text-muted-foreground">
           © 2024 <span className="dark:text-purple-400">Collectopedia</span>. All rights reserved.
         </div>

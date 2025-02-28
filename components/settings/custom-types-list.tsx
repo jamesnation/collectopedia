@@ -28,7 +28,7 @@ export function CustomTypesList() {
               placeholder="Enter custom type"
               value={newType}
               onChange={(e) => setNewType(e.target.value)}
-              className="dark:bg-card dark:text-foreground dark:border-primary/20"
+              className="dark:bg-card dark:text-foreground dark:border-border"
             />
             <Button 
               onClick={handleAddType}

@@ -430,7 +430,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             <h1 className="text-2xl font-bold font-serif mb-4 dark:text-foreground">Item Details <span className="text-purple-400">({isSold ? 'Sold' : 'In Collection'})</span></h1>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="border-primary/20 shadow-sm">
+              <Card className="border dark:border-border shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Estimated Value</CardTitle>
                 </CardHeader>
@@ -448,7 +448,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80 dark:bg-black/90 dark:border-primary/20">
+                    <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
                       <div className="space-y-4">
                         <h4 className="font-semibold text-sm text-foreground">Edit Item Value</h4>
                         <div className="space-y-2">
@@ -471,7 +471,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </Popover>
                 </CardContent>
               </Card>
-              <Card className="border-primary/20 shadow-sm">
+              <Card className="border dark:border-border shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Purchase Cost</CardTitle>
                 </CardHeader>
@@ -489,7 +489,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80 dark:bg-black/90 dark:border-primary/20">
+                    <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
                       <div className="space-y-4">
                         <h4 className="font-semibold text-sm text-foreground">Edit Item Cost</h4>
                         <div className="space-y-2">
@@ -514,7 +514,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               </Card>
             </div>
             
-            <Card className="border-primary/20 shadow-sm dark:bg-card/60">
+            <Card className="border dark:border-border shadow-sm dark:bg-card/60">
               <CardHeader>
                 <CardTitle>Item Details</CardTitle>
               </CardHeader>
@@ -570,7 +570,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                             <Edit className="ml-2 h-3.5 w-3.5 inline opacity-0 group-hover:opacity-100 transition-opacity" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80 dark:bg-black/90 dark:border-primary/20">
+                        <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
                           <h4 className="font-semibold text-sm text-purple-400">Edit Brand</h4>
                           <div className="space-y-2 mt-2">
                             <Label htmlFor="brand" className="text-sm font-medium text-purple-400">Brand</Label>
@@ -632,7 +632,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                             <Edit className="ml-2 h-3.5 w-3.5 inline opacity-0 group-hover:opacity-100 transition-opacity" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80 dark:bg-black/90 dark:border-primary/20">
+                        <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
                           <div className="space-y-4">
                             <h4 className="font-semibold text-sm text-purple-400">Edit Year</h4>
                             <div className="space-y-2">
@@ -686,7 +686,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                             <Edit className="ml-2 h-3.5 w-3.5 inline opacity-0 group-hover:opacity-100 transition-opacity" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80 dark:bg-black/90 dark:border-primary/20">
+                        <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
                           <div className="space-y-4">
                             <h4 className="font-semibold text-sm text-purple-400">Edit Condition</h4>
                             <div className="space-y-2">
@@ -809,7 +809,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                       </div>
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80 dark:bg-black/90 dark:border-primary/20">
+                  <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
                     <div className="space-y-4">
                       <h4 className="font-semibold text-sm text-foreground">Edit Notes</h4>
                       <div className="space-y-2">
@@ -860,7 +860,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
           {relatedItems.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {relatedItems.map((relatedItem) => (
-                <Card key={relatedItem.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300 dark:bg-card/60 dark:border-primary/20">
+                <Card key={relatedItem.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300 dark:bg-card/60 dark:border-border">
                   <CardHeader className="p-0">
                     <Image
                       src={relatedItem.image || placeholderImage}

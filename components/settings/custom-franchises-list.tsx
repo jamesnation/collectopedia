@@ -28,7 +28,7 @@ export function CustomFranchisesList() {
               placeholder="Enter custom franchise"
               value={newFranchise}
               onChange={(e) => setNewFranchise(e.target.value)}
-              className="dark:bg-card dark:text-foreground dark:border-primary/20"
+              className="dark:bg-card dark:text-foreground dark:border-border"
             />
             <Button 
               onClick={handleAddFranchise}
