@@ -61,7 +61,7 @@ export function ItemListView({
             <TableHead className="w-52">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
                 onClick={() => onSort('name')}
               >
                 Name <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'name' ? 'opacity-100' : 'opacity-50'}`} />
@@ -70,7 +70,7 @@ export function ItemListView({
             <TableHead className="w-32">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
                 onClick={() => onSort('acquired')}
               >
                 Acquired <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'acquired' ? 'opacity-100' : 'opacity-50'}`} />
@@ -79,7 +79,7 @@ export function ItemListView({
             <TableHead className="w-24">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
                 onClick={() => onSort('cost')}
               >
                 Cost <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'cost' ? 'opacity-100' : 'opacity-50'}`} />
@@ -88,7 +88,7 @@ export function ItemListView({
             <TableHead className="w-24">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
                 onClick={() => onSort(showSold ? 'soldPrice' : 'value')}
               >
                 {showSold ? 'Sold For' : 'Value'} <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === (showSold ? 'soldPrice' : 'value') ? 'opacity-100' : 'opacity-50'}`} />
@@ -97,7 +97,7 @@ export function ItemListView({
             <TableHead className="w-32">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
                 onClick={() => onSort('ebaySold')}
               >
                 eBay Sold <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebaySold' ? 'opacity-100' : 'opacity-50'}`} />
@@ -106,7 +106,7 @@ export function ItemListView({
             <TableHead className="w-32">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
                 onClick={() => onSort('ebayListed')}
               >
                 eBay Listed <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebayListed' ? 'opacity-100' : 'opacity-50'}`} />
@@ -116,7 +116,7 @@ export function ItemListView({
               <TableHead className="w-32">
                 <Button 
                   variant="ghost" 
-                  className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
+                  className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
                   onClick={() => onSort('soldDate')}
                 >
                   Sold Date <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'soldDate' ? 'opacity-100' : 'opacity-50'}`} />
