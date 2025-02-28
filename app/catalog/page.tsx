@@ -7,7 +7,7 @@ import { getCustomBrandsAction } from '@/actions/custom-brands-actions';
 import { auth } from "@clerk/nextjs/server";
 
 export default async function CatalogPage() {
-  // Get the current user ID from the auth session
+  // Get the current user ID from the auth sessions
   const { userId } = auth();
   
   // Fetch initial data
