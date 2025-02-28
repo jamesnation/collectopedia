@@ -182,19 +182,19 @@ export function AddItemForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-sm font-medium dark:text-white">Name</Label>
+        <Label htmlFor="name" className="text-sm font-medium dark:text-foreground">Name</Label>
         <Input
           id="name"
           name="name"
           value={newItem.name}
           onChange={handleInputChange}
           required
-          className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
+          className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary"
         />
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="type" className="text-sm font-medium dark:text-white">Type</Label>
+        <Label htmlFor="type" className="text-sm font-medium dark:text-foreground">Type</Label>
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <Select 
@@ -202,54 +202,53 @@ export function AddItemForm({
               value={newItem.type} 
               onValueChange={handleTypeChange}
             >
-              <SelectTrigger className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500">
+              <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
-              <SelectContent className="dark:bg-gray-900/80 dark:border-gray-800">
+              <SelectContent className="dark:bg-black/90 dark:border-border">
                 <SelectGroup>
-                  <SelectLabel className="dark:text-gray-300">Default Types</SelectLabel>
+                  <SelectLabel className="dark:text-muted-foreground">Default Types</SelectLabel>
                   {itemTypeEnum.enumValues.map((type) => (
-                    <SelectItem key={`new-type-${type}`} value={type} className="dark:text-white dark:focus:bg-purple-500/20">{type}</SelectItem>
+                    <SelectItem key={`new-type-${type}`} value={type} className="dark:text-foreground dark:focus:bg-primary/20">{type}</SelectItem>
                   ))}
                 </SelectGroup>
-                <SelectSeparator className="dark:bg-gray-700" />
+                <SelectSeparator className="dark:bg-border" />
                 <SelectGroup>
-                  <SelectLabel className="dark:text-gray-300">Custom Types</SelectLabel>
+                  <SelectLabel className="dark:text-muted-foreground">Custom Types</SelectLabel>
                   {customTypes.map((type) => (
-                    <SelectItem key={`new-type-custom-${type.id}`} value={type.name} className="dark:text-white dark:focus:bg-purple-500/20">{type.name}</SelectItem>
+                    <SelectItem key={`new-type-custom-${type.id}`} value={type.name} className="dark:text-foreground dark:focus:bg-primary/20">{type.name}</SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
+            <CustomTypeModal onSuccess={onLoadCustomTypes} />
           </div>
-          <CustomTypeModal onSuccess={onLoadCustomTypes} />
         </div>
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="franchise" className="text-sm font-medium dark:text-white">Franchise</Label>
+        <Label htmlFor="franchise" className="text-sm font-medium dark:text-foreground">Franchise</Label>
         <div className="flex items-center gap-2">
           <div className="flex-1">
-            <Select 
-              name="franchise"
-              value={newItem.franchise}
+            <Select
+              value={newItem.franchise || ""}
               onValueChange={handleFranchiseChange}
             >
-              <SelectTrigger className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500">
+              <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary">
                 <SelectValue placeholder="Select franchise" />
               </SelectTrigger>
-              <SelectContent className="dark:bg-gray-900/80 dark:border-gray-800">
+              <SelectContent className="dark:bg-black/90 dark:border-border">
                 <SelectGroup>
-                  <SelectLabel className="dark:text-gray-300">Default Franchises</SelectLabel>
+                  <SelectLabel className="dark:text-muted-foreground">Default Franchises</SelectLabel>
                   {franchiseEnum.enumValues.map((franchise) => (
-                    <SelectItem key={`new-franchise-${franchise}`} value={franchise} className="dark:text-white dark:focus:bg-purple-500/20">{franchise}</SelectItem>
+                    <SelectItem key={`new-franchise-${franchise}`} value={franchise} className="dark:text-foreground dark:focus:bg-primary/20">{franchise}</SelectItem>
                   ))}
                 </SelectGroup>
-                <SelectSeparator className="dark:bg-gray-700" />
+                <SelectSeparator className="dark:bg-border" />
                 <SelectGroup>
-                  <SelectLabel className="dark:text-gray-300">Custom Franchises</SelectLabel>
+                  <SelectLabel className="dark:text-muted-foreground">Custom Franchises</SelectLabel>
                   {customFranchises.map((franchise) => (
-                    <SelectItem key={`new-franchise-custom-${franchise.id}`} value={franchise.name} className="dark:text-white dark:focus:bg-purple-500/20">{franchise.name}</SelectItem>
+                    <SelectItem key={`new-franchise-custom-${franchise.id}`} value={franchise.name} className="dark:text-foreground dark:focus:bg-primary/20">{franchise.name}</SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
@@ -260,28 +259,28 @@ export function AddItemForm({
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="brand" className="text-sm font-medium dark:text-white">Brand</Label>
+        <Label htmlFor="brand" className="text-sm font-medium dark:text-foreground">Brand</Label>
         <div className="flex gap-2">
           <Select
             value={newItem.brand || ""}
             onValueChange={handleBrandChange}
           >
-            <SelectTrigger className="flex-1 dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500">
+            <SelectTrigger className="flex-1 dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary">
               <SelectValue placeholder="Select brand" />
             </SelectTrigger>
-            <SelectContent className="dark:bg-gray-900/80 dark:border-gray-800">
+            <SelectContent className="dark:bg-black/90 dark:border-border">
               <SelectGroup>
-                <SelectLabel className="dark:text-gray-300">Default Brands</SelectLabel>
+                <SelectLabel className="dark:text-muted-foreground">Default Brands</SelectLabel>
                 {DEFAULT_BRANDS.map((brand) => (
-                  <SelectItem key={brand} value={brand} className="dark:text-white dark:focus:bg-purple-500/20">
+                  <SelectItem key={brand} value={brand} className="dark:text-foreground dark:focus:bg-primary/20">
                     {brand}
                   </SelectItem>
                 ))}
                 {customBrands.length > 0 && (
                   <>
-                    <SelectLabel className="dark:text-gray-300">Custom Brands</SelectLabel>
+                    <SelectLabel className="dark:text-muted-foreground">Custom Brands</SelectLabel>
                     {customBrands.map((brand) => (
-                      <SelectItem key={brand.id} value={brand.name} className="dark:text-white dark:focus:bg-purple-500/20">
+                      <SelectItem key={brand.id} value={brand.name} className="dark:text-foreground dark:focus:bg-primary/20">
                         {brand.name}
                       </SelectItem>
                     ))}
@@ -295,19 +294,19 @@ export function AddItemForm({
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="year" className="text-sm font-medium dark:text-white">Year</Label>
+        <Label htmlFor="year" className="text-sm font-medium dark:text-foreground">Year</Label>
         <Select
           value={newItem.year?.toString() || ""}
           onValueChange={handleYearChange}
         >
-          <SelectTrigger className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500">
+          <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary">
             <SelectValue placeholder="Select year" />
           </SelectTrigger>
-          <SelectContent className="dark:bg-gray-900/80 dark:border-gray-800">
+          <SelectContent className="dark:bg-black/90 dark:border-border">
             <SelectGroup>
-              <SelectLabel className="dark:text-gray-300">Year</SelectLabel>
+              <SelectLabel className="dark:text-muted-foreground">Year</SelectLabel>
               {yearOptions.map((year) => (
-                <SelectItem key={year.value} value={year.value} className="dark:text-white dark:focus:bg-purple-500/20">
+                <SelectItem key={year.value} value={year.value} className="dark:text-foreground dark:focus:bg-primary/20">
                   {year.label}
                 </SelectItem>
               ))}
@@ -317,19 +316,19 @@ export function AddItemForm({
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="condition" className="text-sm font-medium dark:text-white">Condition</Label>
+        <Label htmlFor="condition" className="text-sm font-medium dark:text-foreground">Condition</Label>
         <Select
           value={newItem.condition}
           onValueChange={handleConditionChange}
         >
-          <SelectTrigger className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500">
+          <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary">
             <SelectValue placeholder="Select condition" />
           </SelectTrigger>
-          <SelectContent className="dark:bg-gray-900/80 dark:border-gray-800">
+          <SelectContent className="dark:bg-black/90 dark:border-border">
             <SelectGroup>
-              <SelectLabel className="dark:text-gray-300">Condition</SelectLabel>
+              <SelectLabel className="dark:text-muted-foreground">Condition</SelectLabel>
               {CONDITION_OPTIONS.map((condition) => (
-                <SelectItem key={condition} value={condition} className="dark:text-white dark:focus:bg-purple-500/20">
+                <SelectItem key={condition} value={condition} className="dark:text-foreground dark:focus:bg-primary/20">
                   {condition}
                 </SelectItem>
               ))}
@@ -339,7 +338,7 @@ export function AddItemForm({
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="acquired" className="text-sm font-medium dark:text-white">Date Acquired</Label>
+        <Label htmlFor="acquired" className="text-sm font-medium dark:text-foreground">Date Acquired</Label>
         <Input
           id="acquired"
           name="acquired"
@@ -347,12 +346,12 @@ export function AddItemForm({
           value={newItem.acquired}
           onChange={handleInputChange}
           required
-          className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
+          className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary"
         />
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="cost" className="text-sm font-medium dark:text-white">Cost</Label>
+        <Label htmlFor="cost" className="text-sm font-medium dark:text-foreground">Cost</Label>
         <Input
           id="cost"
           name="cost"
@@ -360,12 +359,12 @@ export function AddItemForm({
           value={newItem.cost}
           onChange={handleInputChange}
           required
-          className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
+          className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary"
         />
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="value" className="text-sm font-medium dark:text-white">Estimated Value</Label>
+        <Label htmlFor="value" className="text-sm font-medium dark:text-foreground">Estimated Value</Label>
         <Input
           id="value"
           name="value"
@@ -373,23 +372,23 @@ export function AddItemForm({
           value={newItem.value}
           onChange={handleInputChange}
           required
-          className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
+          className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary"
         />
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="notes" className="text-sm font-medium dark:text-white">Notes</Label>
+        <Label htmlFor="notes" className="text-sm font-medium dark:text-foreground">Notes</Label>
         <Textarea
           id="notes"
           name="notes"
           value={newItem.notes}
           onChange={handleInputChange}
-          className="min-h-[100px] dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
+          className="min-h-[100px] dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary"
         />
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="image" className="text-sm font-medium dark:text-white">Images</Label>
+        <Label htmlFor="image" className="text-sm font-medium dark:text-foreground">Images</Label>
         <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
         <div className="grid grid-cols-3 gap-2 mt-2">
           {newItemImages.map((image, index) => (
@@ -399,7 +398,7 @@ export function AddItemForm({
                 type="button"
                 variant="destructive"
                 size="icon"
-                className="absolute top-0 right-0 h-6 w-6 dark:bg-red-600/80 dark:hover:bg-red-600"
+                className="absolute top-0 right-0 h-6 w-6 dark:bg-destructive dark:hover:bg-destructive/80"
                 onClick={() => handleRemoveImage(index)}
               >
                 <X className="h-4 w-4" />
@@ -412,7 +411,7 @@ export function AddItemForm({
       {!hideSubmitButton && (
         <Button 
           type="submit" 
-          className="w-full dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700"
+          className="w-full dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
           disabled={isLoading}
         >
           {isLoading ? 'Adding...' : 'Add Item'}

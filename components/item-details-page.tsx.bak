@@ -315,7 +315,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-purple-400 mx-auto" />
+          <Loader2 className="h-12 w-12 animate-spin text-primary/70 mx-auto" />
           <p className="mt-4 text-lg text-foreground">Loading item details...</p>
         </div>
       </div>
@@ -333,8 +333,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black/30">
       <main className="container mx-auto px-4 py-12">
-        <Link href="/my-collection" className="inline-flex items-center text-purple-400 hover:text-primary/50 mb-8">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+        <Link href="/my-collection" className="inline-flex items-center text-primary/70 hover:text-primary/50 mb-8">
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Collection
         </Link>
 
@@ -427,7 +427,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             )}
           </div>
           <div className="space-y-6">
-            <h1 className="text-2xl font-bold font-serif mb-4 dark:text-foreground">Item Details <span className="text-purple-400">({isSold ? 'Sold' : 'In Collection'})</span></h1>
+            <h1 className="text-4xl font-serif text-foreground">{item.name}</h1>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border-primary/20 shadow-sm">
@@ -442,7 +442,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         className="p-0 h-auto font-normal group"
                         onClick={() => handleEditStart('value')}
                       >
-                        <span className="text-4xl font-bold text-purple-400">
+                        <span className="text-4xl font-bold text-primary/70">
                           ${typeof item.value === 'number' ? item.value.toFixed(2) : parseFloat(item.value).toFixed(2)}
                         </span>
                         <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -571,9 +571,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 dark:bg-black/90 dark:border-primary/20">
-                          <h4 className="font-semibold text-sm text-purple-400">Edit Brand</h4>
+                          <h4 className="font-semibold text-sm text-primary/70">Edit Brand</h4>
                           <div className="space-y-2 mt-2">
-                            <Label htmlFor="brand" className="text-sm font-medium text-purple-400">Brand</Label>
+                            <Label htmlFor="brand" className="text-sm font-medium text-primary/70">Brand</Label>
                             <Select
                               value={item.brand || ""}
                               onValueChange={(value) => {
@@ -634,9 +634,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         </PopoverTrigger>
                         <PopoverContent className="w-80 dark:bg-black/90 dark:border-primary/20">
                           <div className="space-y-4">
-                            <h4 className="font-semibold text-sm text-purple-400">Edit Year</h4>
+                            <h4 className="font-semibold text-sm text-primary/70">Edit Year</h4>
                             <div className="space-y-2">
-                              <Label htmlFor="year" className="text-sm font-medium text-purple-400">Year</Label>
+                              <Label htmlFor="year" className="text-sm font-medium text-primary/70">Year</Label>
                               <Select
                                 value={item.year?.toString() || ""}
                                 onValueChange={(value) => {
@@ -688,9 +688,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         </PopoverTrigger>
                         <PopoverContent className="w-80 dark:bg-black/90 dark:border-primary/20">
                           <div className="space-y-4">
-                            <h4 className="font-semibold text-sm text-purple-400">Edit Condition</h4>
+                            <h4 className="font-semibold text-sm text-primary/70">Edit Condition</h4>
                             <div className="space-y-2">
-                              <Label htmlFor="condition" className="text-sm font-medium text-purple-400">Condition</Label>
+                              <Label htmlFor="condition" className="text-sm font-medium text-primary/70">Condition</Label>
                               <Select
                                 value={item.condition}
                                 onValueChange={(value: ItemCondition) => {
@@ -767,11 +767,11 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground">Sold Price</Label>
-                        <p className="font-semibold text-purple-400">${item.soldPrice.toFixed(2)}</p>
+                        <p className="font-semibold text-primary/70">${item.soldPrice.toFixed(2)}</p>
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground">Sold Date</Label>
-                        <p className="font-semibold text-purple-400">{new Date(item.soldDate).toLocaleDateString()}</p>
+                        <p className="font-semibold text-primary/70">{new Date(item.soldDate).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </div>
@@ -826,7 +826,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                       </div>
                       <div className="flex justify-end space-x-2">
                         <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
-                        <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                        <Button onClick={handleEditSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
                       </div>
                     </div>
                   </PopoverContent>

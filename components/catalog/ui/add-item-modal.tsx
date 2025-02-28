@@ -52,17 +52,17 @@ export function AddItemModal({
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button className="dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700">
+        <Button className="dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90">
           <PlusCircle className="mr-2 h-4 w-4" /> Add Item
         </Button>
       </SheetTrigger>
       <SheetContent 
-        className="w-full sm:max-w-xl overflow-y-auto dark:bg-[#0A0118] dark:border-gray-800 dark:border-l-purple-500/20 flex flex-col"
+        className="w-full sm:max-w-xl overflow-y-auto dark:bg-black/95 dark:border-border dark:border-l-border flex flex-col"
         side="right"
       >
         <SheetHeader className="pb-4 text-left">
-          <SheetTitle className="text-2xl dark:text-white">Add New Item</SheetTitle>
-          <SheetDescription className="dark:text-gray-300">
+          <SheetTitle className="text-2xl dark:text-foreground">Add New Item</SheetTitle>
+          <SheetDescription className="dark:text-muted-foreground">
             Add the details for your new collection item and click &quot;Add Item&quot; when you&apos;re done.
           </SheetDescription>
         </SheetHeader>

@@ -27,23 +27,23 @@ export default function Sidebar() {
   const SidebarContent = () => (
     <>
       <nav className="space-y-1 flex-grow">
-        <button onClick={() => handleNavClick('/my-collection')} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-900 w-full text-left text-gray-100 hover:text-purple-400 transition-colors">
+        <button onClick={() => handleNavClick('/my-collection')} className="flex items-center space-x-2 p-2 rounded hover:bg-muted w-full text-left text-foreground hover:text-purple-400 transition-colors">
           <Package className="h-4 w-4" />
           <span>My Collection</span>
         </button>
-        <button onClick={() => handleNavClick('/settings')} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-900 w-full text-left text-gray-100 hover:text-purple-400 transition-colors">
+        <button onClick={() => handleNavClick('/settings')} className="flex items-center space-x-2 p-2 rounded hover:bg-muted w-full text-left text-foreground hover:text-purple-400 transition-colors">
           <Settings className="h-4 w-4" />
           <span>Settings</span>
         </button>
       </nav>
       
       <div className="mt-auto space-y-2">
-        <Separator className="my-2 bg-gray-800" />
+        <Separator className="my-2 bg-border" />
         <SignedIn>
           <div className="flex items-center space-x-2 p-2">
             <UserButton afterSignOutUrl="/" />
             {user && user.emailAddresses && (
-              <span className="text-xs text-gray-400 truncate">
+              <span className="text-xs text-muted-foreground truncate">
                 {user.emailAddresses[0].emailAddress}
               </span>
             )}
@@ -54,7 +54,7 @@ export default function Sidebar() {
             <SignInButton mode="modal">
               <Button 
                 variant="outline" 
-                className="w-full border-purple-400 text-purple-400 hover:bg-gray-900 hover:text-purple-300"
+                className="w-full border-primary/70 text-purple-400 hover:bg-muted hover:text-primary/50"
               >
                 <LogIn className="mr-2 h-4 w-4" /> Sign In
               </Button>
@@ -63,7 +63,7 @@ export default function Sidebar() {
               <Link href="/signup" className="block md:hidden">
                 <Button
                   variant="default"
-                  className="w-full bg-purple-600 text-white hover:bg-purple-700"
+                  className="w-full bg-primary/70 text-primary-foreground hover:bg-primary/50"
                   onClick={() => setIsOpen(false)}
                 >
                   Sign Up
@@ -81,14 +81,14 @@ export default function Sidebar() {
       {isMobile ? (
         <>
           {/* Mobile Header */}
-          <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-gray-950 shadow-sm border-b border-gray-800 flex items-center justify-between px-4">
+          <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-card shadow-sm border-b border-border flex items-center justify-between px-4">
             <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
-              <Package className="h-6 w-6 text-purple-500" />
-              <span className="text-lg font-bold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
+              <Package className="h-6 w-6 text-purple-400" />
+              <span className="text-lg font-bold ml-3 text-purple-400">Collectopedia</span>
             </Link>
             <button
               onClick={toggleSidebar}
-              className="p-2 text-gray-100 rounded-md hover:bg-gray-900"
+              className="p-2 text-foreground rounded-md hover:bg-muted"
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -99,7 +99,7 @@ export default function Sidebar() {
             className={`
               fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out transform
               ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-              w-64 bg-gray-950 text-gray-100 p-4 flex flex-col h-screen text-sm border-r border-gray-800
+              w-64 bg-card text-foreground p-4 flex flex-col h-screen text-sm border-r border-border
             `}
           >
             <div className="mt-16">
@@ -109,10 +109,10 @@ export default function Sidebar() {
         </>
       ) : (
         // Desktop Sidebar
-        <aside className="hidden md:flex flex-col w-64 bg-gray-950 text-gray-100 p-4 h-screen text-sm border-r border-gray-800">
+        <aside className="hidden md:flex flex-col w-64 bg-card text-foreground p-4 h-screen text-sm border-r border-border">
           <Link href="/" className="flex items-center mb-8">
-            <Package className="h-6 w-6 text-purple-500" />
-            <span className="text-lg font-bold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
+            <Package className="h-6 w-6 text-purple-400" />
+            <span className="text-lg font-bold ml-3 text-purple-400">Collectopedia</span>
           </Link>
           <SidebarContent />
         </aside>

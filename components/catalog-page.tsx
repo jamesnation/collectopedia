@@ -31,8 +31,8 @@ export default function CatalogPage({
   }
 
   return (
-    <div className="min-h-screen transition-colors duration-200 dark:bg-[#0A0118]">
-      <div className="dark:bg-gradient-to-b dark:from-[#0A0118] dark:via-purple-900/20 dark:to-[#0A0118]">
+    <div className="min-h-screen transition-colors duration-200 dark:bg-card">
+      <div className="dark:bg-card">
         <Catalog
           initialItems={initialItems}
           initialTypes={initialTypes}

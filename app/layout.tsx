@@ -50,7 +50,7 @@ export default async function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <div className="flex h-screen bg-gray-900">
+            <div className="flex h-screen dark:bg-black/30">
               <Sidebar />
               <main className="flex-1 overflow-auto pt-16 md:pt-0">
                 {children}

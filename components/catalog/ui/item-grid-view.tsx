@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, Eye } from 'lucide-react';
+import { Loader2, Eye, ImageOff } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,71 +35,85 @@ export function ItemGridView({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
       {isLoading ? (
-        // Show skeleton cards when loading
-        Array(8).fill(0).map((_, index) => (
-          <Card key={index} className="overflow-hidden bg-card dark:bg-gray-900/50 dark:border-gray-800">
-            <div className="relative h-52 w-full bg-muted dark:bg-gray-900/80">
-              <Skeleton className="h-full w-full dark:bg-gray-800/50" />
-            </div>
-            <CardContent className="p-4 space-y-3">
-              <Skeleton className="h-5 w-3/4 dark:bg-gray-800/50" />
-              <div className="flex justify-between mt-2">
-                <Skeleton className="h-6 w-1/4 dark:bg-gray-800/50" />
-                <Skeleton className="h-6 w-1/4 dark:bg-gray-800/50" />
+        Array(10)
+          .fill(0)
+          .map((_, index) => (
+            <Card key={index} className="bg-card border-border dark:bg-card/60 dark:border-border relative flex flex-col overflow-hidden">
+              <div className="relative">
+                <Skeleton className="h-40 w-full dark:bg-card/60" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ))
+              <CardContent className="p-4">
+                <Skeleton className="h-5 w-40 mb-3 dark:bg-card/60" />
+                <div className="flex justify-between mt-2">
+                  <div>
+                    <Skeleton className="h-3 w-10 mb-1 dark:bg-card/60" />
+                    <Skeleton className="h-4 w-16 dark:bg-card/60" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-3 w-10 mb-1 dark:bg-card/60" />
+                    <Skeleton className="h-4 w-16 dark:bg-card/60" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
       ) : (
-        // Show actual items
         items.map((item) => (
-          <Card 
-            key={item.id} 
-            className="group overflow-hidden bg-card dark:bg-gray-900/50 dark:border-gray-800 hover:shadow-lg transition-all duration-300 border border-border hover:border-primary/20 dark:hover:border-purple-500/40 hover:-translate-y-1"
-          >
-            <div className="relative h-52 w-full overflow-hidden bg-muted dark:bg-gray-900/80">
-              <Link href={`/item/${item.id}`} className="block h-full">
-                {!loadedImages[item.id] && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-muted dark:bg-gray-900/80">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-purple-400" />
+          <Card key={item.id} className="bg-card border-border dark:bg-card/60 dark:border-border relative flex flex-col overflow-hidden">
+            <div className="relative">
+              <Link href={`/item/${item.id}`}>
+                {item.image ? (
+                  <div className="relative h-40 w-full overflow-hidden">
+                    {!loadedImages[item.id] && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-muted dark:bg-card/30">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
+                      </div>
+                    )}
+                    <Image
+                      src={item.image || placeholderImage}
+                      alt={item.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      style={{ objectFit: 'cover' }}
+                      className={`transition-all duration-300 group-hover:scale-110 ${loadedImages[item.id] ? 'opacity-100' : 'opacity-0'}`}
+                      onLoadingComplete={() => handleImageLoad(item.id)}
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <Button variant="secondary" size="sm" className="gap-1 dark:bg-primary dark:text-foreground dark:hover:bg-primary/80">
+                        <Eye className="h-4 w-4" /> View Details
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-40 w-full bg-muted dark:bg-card/40">
+                    <ImageOff className="h-8 w-8 text-muted-foreground dark:text-muted-foreground" />
                   </div>
                 )}
-                <Image
-                  src={item.image || placeholderImage}
-                  alt={item.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  style={{ objectFit: 'cover' }}
-                  className={`transition-all duration-300 group-hover:scale-110 ${loadedImages[item.id] ? 'opacity-100' : 'opacity-0'}`}
-                  onLoadingComplete={() => handleImageLoad(item.id)}
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <Button variant="secondary" size="sm" className="gap-1 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700">
-                    <Eye className="h-4 w-4" /> View Details
-                  </Button>
-                </div>
+                {item.isSold && (
+                  <Badge className="absolute top-2 right-2 bg-destructive text-destructive-foreground dark:bg-destructive dark:text-destructive-foreground z-10">
+                    SOLD
+                  </Badge>
+                )}
               </Link>
-              {item.isSold && (
-                <Badge className="absolute top-2 right-2 bg-destructive text-destructive-foreground dark:bg-red-600/80 dark:text-white z-10">
-                  SOLD
-                </Badge>
-              )}
             </div>
             <CardContent className="p-4">
-              <Link href={`/item/${item.id}`} className="block mb-3 font-medium text-primary dark:text-white hover:text-primary/80 dark:hover:text-purple-400 transition-colors">
+              <Link href={`/item/${item.id}`} className="block mb-3 font-medium text-primary dark:text-foreground hover:text-primary/80 dark:hover:text-primary transition-colors">
                 {item.name}
               </Link>
               
               <div className="flex justify-between mt-2">
                 <div>
-                  <div className="text-xs text-muted-foreground dark:text-gray-400">Cost</div>
-                  <div className="text-sm font-medium dark:text-gray-300">£{item.cost.toFixed(2)}</div>
+                  <div className="text-xs text-muted-foreground dark:text-muted-foreground">Cost</div>
+                  <div className="text-sm font-medium dark:text-foreground">£{item.cost.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground dark:text-gray-400">{showSold ? 'Sold For' : 'Value'}</div>
-                  <div className="text-sm font-bold text-primary dark:text-purple-400">
+                  <div className="text-xs text-muted-foreground dark:text-muted-foreground">{showSold ? 'Sold For' : 'Value'}</div>
+                  <div className="text-sm font-bold text-primary dark:text-primary">
                     £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
                   </div>
                 </div>

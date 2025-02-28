@@ -199,17 +199,17 @@ export default function Catalog({
 
   return (
     <div className="min-h-screen text-foreground transition-colors duration-200 
-      bg-slate-50 dark:bg-[#0A0118] dark:text-white">
+      bg-slate-50 dark:bg-black/30">
       <main className="container mx-auto px-4 py-12">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
-          <h1 className="text-4xl font-serif text-primary dark:text-white">Your Collection <span className="dark:text-purple-400">Catalog</span></h1>
+          <h1 className="text-4xl font-serif text-purple-400 dark:text-foreground">Your Collection <span className="dark:text-purple-400">Catalog</span></h1>
           <div className="flex items-center space-x-2">
             <Button
               variant="outline" 
               size="icon"
               onClick={toggleTheme}
-              className="rounded-full w-10 h-10 dark:bg-gray-900/50 dark:text-white dark:border-purple-500/20 dark:hover:bg-gray-800 dark:hover:border-purple-500/40 mr-2"
+              className="rounded-full w-10 h-10 dark:bg-card/50 dark:text-foreground dark:border-primary/20 dark:hover:bg-card dark:hover:border-primary/40 mr-2"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
@@ -294,9 +294,9 @@ export default function Catalog({
 
         {/* Empty state */}
         {!isLoading && filteredAndSortedItems.length === 0 && (
-          <div className="bg-card dark:bg-gray-900/50 dark:border-gray-800 dark:border-l-purple-400/50 dark:border-l-4 p-8 rounded-lg border border-border mt-6 text-center">
-            <h3 className="text-lg font-medium mb-2 dark:text-white">No items found</h3>
-            <p className="text-muted-foreground dark:text-gray-300 mb-4">
+          <div className="bg-card dark:bg-card/60 dark:border-border dark:border-l-primary/30 dark:border-l-4 p-8 rounded-lg border border-border mt-6 text-center">
+            <h3 className="text-lg font-medium mb-2 dark:text-foreground">No items found</h3>
+            <p className="text-muted-foreground dark:text-muted-foreground mb-4">
               {showSold 
                 ? "You don't have any sold items matching your filters." 
                 : "Your collection is empty or no items match your current filters."}
@@ -315,13 +315,13 @@ export default function Catalog({
         )}
 
         {/* Items count footer */}
-        <div className="mt-6 text-sm text-muted-foreground dark:text-gray-400 text-center">
+        <div className="mt-6 text-sm text-muted-foreground dark:text-muted-foreground text-center">
           {isLoading ? 'Loading items...' : `Showing ${totalCount} ${totalCount === 1 ? 'item' : 'items'}`}
         </div>
       </main>
 
-      <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border dark:border-purple-500/10">
-        <div className="text-center text-sm text-muted-foreground dark:text-gray-400">
+      <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border dark:border-primary/10">
+        <div className="text-center text-sm text-muted-foreground dark:text-muted-foreground">
           © 2024 <span className="dark:text-purple-400">Collectopedia</span>. All rights reserved.
         </div>
       </footer>

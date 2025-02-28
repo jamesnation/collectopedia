@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
-import { Package, Loader2, Download, FileWarning, CheckCircle2, AlertCircle } from "lucide-react"
+import { Package, Loader2, Download, FileWarning, CheckCircle2, AlertCircle, Upload, FileUp } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +13,8 @@ import Papa from 'papaparse'
 import { CatalogItem } from '@/components/catalog/utils/schema-adapter'
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 // Define the CSV item structure
 type CSVItem = {
@@ -612,54 +614,48 @@ export function CSVImport({
   }, [importErrors])
 
   return (
-    <Card className="border shadow-sm dark:bg-gray-900/50 dark:border-gray-800 dark:border-l-purple-500/20">
+    <Card className="border shadow-sm dark:bg-card/50 dark:border-primary/20">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 dark:text-white">
-          <Package className="h-5 w-5" />
-          CSV Import
+        <CardTitle className="flex items-center gap-2 dark:text-foreground">
+          <Upload className="h-5 w-5 text-purple-400" />
+          Import Collection Data
         </CardTitle>
-        <CardDescription className="dark:text-gray-300">
-          Import your collection items from a CSV file
+        <CardDescription className="dark:text-muted-foreground">
+          Import your collection data from a CSV file
         </CardDescription>
       </CardHeader>
-      
-      <CardContent className="space-y-4">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={downloadTemplate}
-              variant="outline"
-              className="flex items-center gap-2 dark:bg-transparent dark:border-purple-500/20 dark:text-white dark:hover:bg-gray-900/80"
-            >
-              <Download className="h-4 w-4" />
-              Download Template
-            </Button>
-            
-            <Button
-              onClick={() => csvInputRef.current?.click()}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700"
-              disabled={isImporting}
-            >
-              {isImporting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Package className="mr-2 h-4 w-4" /> Import CSV
-                </>
-              )}
-            </Button>
-            
-            <input
-              type="file"
-              ref={csvInputRef}
-              className="hidden"
-              accept=".csv"
-              onChange={handleCSVImport}
-              disabled={isImporting}
-            />
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex flex-col space-y-2">
+            <Label htmlFor="csv-file" className="dark:text-foreground">
+              Select CSV File
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="csv-file"
+                type="file"
+                accept=".csv"
+                onChange={handleCSVImport}
+                className="dark:bg-card dark:text-foreground dark:border-primary/20"
+              />
+              <Button
+                onClick={() => csvInputRef.current?.click()}
+                disabled={isImporting}
+                className="flex items-center gap-1 dark:bg-primary/70 dark:text-white dark:hover:bg-primary/60"
+              >
+                <FileUp className="h-4 w-4" />
+                {isImporting ? "Importing..." : "Import"}
+              </Button>
+            </div>
+          </div>
+          
+          <div className="text-sm text-muted-foreground dark:text-muted-foreground">
+            <p className="font-medium mb-2">CSV Format Requirements:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>First row must contain column headers</li>
+              <li>Required columns: name, type, franchise, brand, cost, value</li>
+              <li>Optional columns: description, condition, purchaseDate, soldDate, soldPrice</li>
+            </ul>
           </div>
           
           {/* Progress indicator */}
@@ -777,7 +773,7 @@ export function CSVImport({
                     variant="outline" 
                     size="sm" 
                     onClick={downloadErrorReport}
-                    className="w-full dark:bg-transparent dark:border-purple-500/20 dark:text-white dark:hover:bg-gray-900/80"
+                    className="w-full dark:bg-transparent dark:border-purple-500/20 dark:text-purple-400 dark:hover:bg-gray-900/80"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download Error Report

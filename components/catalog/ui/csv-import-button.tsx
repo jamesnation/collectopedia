@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Button } from "@/components/ui/button"
-import { Package, Loader2, FileUp } from "lucide-react"
+import { Package, Loader2, FileUp, Upload } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import Papa from 'papaparse'
 import { CatalogItem } from '../utils/schema-adapter'
@@ -211,29 +211,32 @@ export function CSVImportButton({
     <Dialog>
       <DialogTrigger asChild>
         <Button
+          onClick={handleImport}
+          className="flex items-center gap-2 dark:bg-card/50 dark:text-foreground dark:border-primary/20 dark:hover:bg-card/80"
           variant="outline"
-          className="gap-2 dark:bg-gray-900/50 dark:border-purple-500/20 dark:text-white dark:hover:border-purple-500/40"
+          size="sm"
         >
-          <FileUp className="h-4 w-4" /> Import CSV
+          <Upload className="h-4 w-4" />
+          Import CSV
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] dark:bg-gray-900/80 dark:border-gray-800">
+      <DialogContent className="dark:bg-card dark:text-foreground dark:border-primary/20">
         <DialogHeader>
-          <DialogTitle className="dark:text-white">Import Items from CSV</DialogTitle>
-          <DialogDescription className="dark:text-gray-300">
-            Upload a CSV file to import multiple items at once.
+          <DialogTitle className="dark:text-foreground">Import Collection Items</DialogTitle>
+          <DialogDescription className="dark:text-muted-foreground">
+            Upload a CSV file to import your collection items
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="csv-file" className="dark:text-gray-300">CSV File</Label>
+        <div className="grid gap-4 py-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="csv-file" className="dark:text-foreground">CSV File</Label>
             <Input
               id="csv-file"
               type="file"
               accept=".csv"
               onChange={handleFileChange}
-              className="dark:bg-white/5 dark:border-purple-500/20 dark:text-white dark:focus:border-purple-500"
+              className="dark:bg-card/50 dark:text-foreground dark:border-primary/20"
             />
           </div>
           
@@ -265,12 +268,26 @@ export function CSVImportButton({
         </div>
         
         <DialogFooter>
-          <Button 
-            disabled={isImporting || !file} 
-            onClick={handleImport}
-            className="dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700"
+          <Button
+            variant="outline"
+            onClick={() => setIsImporting(false)}
+            className="dark:bg-card/50 dark:text-foreground dark:border-primary/20"
           >
-            {isImporting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Importing...</> : 'Import'}
+            Cancel
+          </Button>
+          <Button
+            onClick={handleImport}
+            disabled={!file || isImporting}
+            className="dark:bg-primary dark:text-white dark:hover:bg-primary/80"
+          >
+            {isImporting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Importing...
+              </>
+            ) : (
+              "Import"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

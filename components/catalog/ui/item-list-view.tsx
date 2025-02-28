@@ -53,15 +53,15 @@ export function ItemListView({
   const router = useRouter();
 
   return (
-    <div className="bg-card rounded-lg overflow-hidden border border-border dark:bg-gray-900/50 dark:border-gray-800">
+    <div className="bg-card rounded-lg overflow-hidden border border-border dark:bg-card/60 dark:border-border">
       <Table>
         <TableHeader>
-          <TableRow className="border-b dark:border-purple-500/20">
+          <TableRow className="border-b dark:border-border">
             <TableHead className="w-24">Image</TableHead>
             <TableHead className="w-52">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-white dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
                 onClick={() => onSort('name')}
               >
                 Name <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'name' ? 'opacity-100' : 'opacity-50'}`} />
@@ -70,7 +70,7 @@ export function ItemListView({
             <TableHead className="w-32">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-white dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
                 onClick={() => onSort('acquired')}
               >
                 Acquired <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'acquired' ? 'opacity-100' : 'opacity-50'}`} />
@@ -79,7 +79,7 @@ export function ItemListView({
             <TableHead className="w-24">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-white dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
                 onClick={() => onSort('cost')}
               >
                 Cost <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'cost' ? 'opacity-100' : 'opacity-50'}`} />
@@ -88,7 +88,7 @@ export function ItemListView({
             <TableHead className="w-24">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-white dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
                 onClick={() => onSort(showSold ? 'soldPrice' : 'value')}
               >
                 {showSold ? 'Sold For' : 'Value'} <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === (showSold ? 'soldPrice' : 'value') ? 'opacity-100' : 'opacity-50'}`} />
@@ -97,7 +97,7 @@ export function ItemListView({
             <TableHead className="w-32">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-white dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
                 onClick={() => onSort('ebaySold')}
               >
                 eBay Sold <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebaySold' ? 'opacity-100' : 'opacity-50'}`} />
@@ -106,7 +106,7 @@ export function ItemListView({
             <TableHead className="w-32">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-white dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
                 onClick={() => onSort('ebayListed')}
               >
                 eBay Listed <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebayListed' ? 'opacity-100' : 'opacity-50'}`} />
@@ -116,7 +116,7 @@ export function ItemListView({
               <TableHead className="w-32">
                 <Button 
                   variant="ghost" 
-                  className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-white dark:hover:text-purple-400"
+                  className="font-bold text-primary hover:bg-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-primary"
                   onClick={() => onSort('soldDate')}
                 >
                   Sold Date <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'soldDate' ? 'opacity-100' : 'opacity-50'}`} />
@@ -129,21 +129,21 @@ export function ItemListView({
         <TableBody>
           {isLoading ? (
             Array(5).fill(0).map((_, index) => (
-              <TableRow key={index} className="bg-white hover:bg-purple-50 dark:bg-gray-900/30 dark:hover:bg-gray-900/50 transition-colors">
-                <TableCell className="p-2"><Skeleton className="h-20 w-20 dark:bg-gray-800/50" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-32 dark:bg-gray-800/50" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-36 dark:bg-gray-800/50" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24 dark:bg-gray-800/50" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24 dark:bg-gray-800/50" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-16 dark:bg-gray-800/50" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-16 dark:bg-gray-800/50" /></TableCell>
-                {showSold && <TableCell><Skeleton className="h-4 w-24 dark:bg-gray-800/50" /></TableCell>}
-                <TableCell><Skeleton className="h-8 w-8 dark:bg-gray-800/50" /></TableCell>
+              <TableRow key={index} className="bg-white hover:bg-purple-50 dark:bg-card/40 dark:hover:bg-card/60 transition-colors">
+                <TableCell className="p-2"><Skeleton className="h-20 w-20 dark:bg-card/60" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-32 dark:bg-card/60" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-36 dark:bg-card/60" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16 dark:bg-card/60" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16 dark:bg-card/60" /></TableCell>
+                {showSold && <TableCell><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>}
+                <TableCell><Skeleton className="h-8 w-8 dark:bg-card/60" /></TableCell>
               </TableRow>
             ))
           ) : (
             items.map((item) => (
-              <TableRow key={item.id} className="bg-card hover:bg-muted/50 dark:bg-gray-900/30 dark:hover:bg-gray-900/50 dark:border-purple-500/10 transition-colors">
+              <TableRow key={item.id} className="bg-card hover:bg-muted/50 dark:bg-card/40 dark:hover:bg-card/60 dark:border-border transition-colors">
                 <TableCell className="p-2">
                   <Link href={`/item/${item.id}`}>
                     <Image
@@ -158,38 +158,38 @@ export function ItemListView({
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
-                    <Link href={`/item/${item.id}`} className="text-sm font-medium hover:text-primary dark:text-white dark:hover:text-purple-400 transition-colors">
+                    <Link href={`/item/${item.id}`} className="text-sm font-medium hover:text-primary dark:text-foreground dark:hover:text-primary transition-colors">
                       {item.name}
                     </Link>
-                    <div className="text-sm text-muted-foreground dark:text-gray-400">
+                    <div className="text-sm text-muted-foreground dark:text-muted-foreground">
                       {item.type}
                     </div>
-                    <div className="text-sm text-muted-foreground dark:text-gray-400">
+                    <div className="text-sm text-muted-foreground dark:text-muted-foreground">
                       {item.franchise}
                     </div>
                     {item.brand && (
-                      <div className="text-sm text-muted-foreground dark:text-gray-400">
+                      <div className="text-sm text-muted-foreground dark:text-muted-foreground">
                         {item.brand}
                       </div>
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="dark:text-gray-300">
+                <TableCell className="dark:text-foreground">
                   {formatDate(item.acquired)}
                 </TableCell>
-                <TableCell className="text-right dark:text-gray-300">£{item.cost.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-bold text-primary dark:text-purple-400">
+                <TableCell className="text-right dark:text-foreground">£{item.cost.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-bold text-primary dark:text-primary">
                   £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end space-x-2">
-                    <span className="whitespace-nowrap dark:text-gray-300">£{item.ebaySold?.toFixed(2) || 'N/A'}</span>
+                    <span className="whitespace-nowrap dark:text-foreground">£{item.ebaySold?.toFixed(2) || 'N/A'}</span>
                     {onEbayRefresh && (
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onEbayRefresh(item.id, item.name, 'sold')}
-                        className="h-8 w-8 p-0 dark:text-gray-400 dark:hover:text-purple-400"
+                        className="h-8 w-8 p-0 dark:text-muted-foreground dark:hover:text-primary"
                         disabled={loadingSoldItemId === item.id}
                       >
                         {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -199,13 +199,13 @@ export function ItemListView({
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end space-x-2">
-                    <span className="whitespace-nowrap dark:text-gray-300">£{item.ebayListed?.toFixed(2) || 'N/A'}</span>
+                    <span className="whitespace-nowrap dark:text-foreground">£{item.ebayListed?.toFixed(2) || 'N/A'}</span>
                     {onEbayRefresh && (
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onEbayRefresh(item.id, item.name, 'listed')}
-                        className="h-8 w-8 p-0 dark:text-gray-400 dark:hover:text-purple-400"
+                        className="h-8 w-8 p-0 dark:text-muted-foreground dark:hover:text-primary"
                         disabled={loadingListedItemId === item.id}
                       >
                         {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -214,7 +214,7 @@ export function ItemListView({
                   </div>
                 </TableCell>
                 {showSold && (
-                  <TableCell className="dark:text-gray-300">{item.soldDate ? formatDate(item.soldDate) : 'N/A'}</TableCell>
+                  <TableCell className="dark:text-foreground">{item.soldDate ? formatDate(item.soldDate) : 'N/A'}</TableCell>
                 )}
                 <TableCell>
                   <AlertDialog>
@@ -222,22 +222,22 @@ export function ItemListView({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20 dark:text-red-400 dark:hover:text-white dark:hover:bg-red-500/20"
+                        className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20 dark:text-destructive dark:hover:text-destructive-foreground dark:hover:bg-destructive/20"
                         disabled={loadingItemId === item.id}
                       >
                         {loadingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="dark:bg-gray-900/80 dark:border-gray-800">
+                    <AlertDialogContent className="dark:bg-card dark:border-border">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="dark:text-white">Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription className="dark:text-gray-300">
+                        <AlertDialogTitle className="dark:text-foreground">Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="dark:text-muted-foreground">
                           This action cannot be undone. This will permanently delete the item from your collection.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:border-purple-500/20">Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDelete(item.id)} className="dark:bg-purple-600 dark:hover:bg-purple-700">Delete</AlertDialogAction>
+                        <AlertDialogCancel className="dark:bg-card/50 dark:text-foreground dark:hover:bg-card/80 dark:border-border">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDelete(item.id)} className="dark:bg-primary dark:hover:bg-primary/80">Delete</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>

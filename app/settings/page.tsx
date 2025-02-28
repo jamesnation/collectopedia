@@ -18,6 +18,9 @@ import { DEFAULT_BRANDS } from '@/components/catalog/utils/schema-adapter';
 import { useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { CustomizationTab } from "@/components/settings/customization-tab";
+import { PreferencesTab } from "@/components/settings/preferences-tab";
+import { CollectionsTab } from "@/components/settings/collections-tab";
 
 // Custom UUID generation function that works in browser
 function generateUUID() {
@@ -270,14 +273,14 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen flex-1 flex flex-col gap-4 p-4 md:gap-8 md:p-6 
-      bg-white dark:bg-[#0A0118] dark:text-white transition-colors duration-200">
+      bg-white dark:bg-black/30 dark:text-foreground transition-colors duration-200">
       <div className="flex items-center justify-between">
-        <h1 className="font-semibold text-lg md:text-2xl dark:text-white">Settings</h1>
+        <h1 className="font-semibold text-lg md:text-2xl dark:text-foreground">Settings</h1>
         <Button
           variant="outline" 
           size="icon"
           onClick={toggleTheme}
-          className="rounded-full w-10 h-10 dark:bg-gray-900/50 dark:text-white dark:border-purple-500/20 dark:hover:bg-gray-800 dark:hover:border-purple-500/40"
+          className="rounded-full w-10 h-10 dark:bg-card/50 dark:text-foreground dark:border-primary/20 dark:hover:bg-card/80 dark:hover:border-primary/40"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? (
@@ -288,100 +291,71 @@ export default function SettingsPage() {
         </Button>
       </div>
       
-      <Tabs defaultValue="customization" className="h-full space-y-6">
-        <div className="space-y-4">
-          <TabsList className="inline-flex h-9 items-center justify-center rounded-lg bg-gray-100/80 dark:bg-gray-800/30 p-1 text-muted-foreground dark:text-gray-300 w-full sm:w-auto">
-            <TabsTrigger value="customization" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-primary data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900/50 data-[state=active]:text-foreground dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
+      <Tabs defaultValue="customization" className="flex-1 h-full">
+        <div className="flex justify-center mb-6">
+          <TabsList className="grid grid-cols-3 w-full max-w-md bg-muted dark:bg-background/30 rounded-lg p-1">
+            <TabsTrigger value="customization" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-purple-400 data-[state=active]:bg-white dark:data-[state=active]:bg-card/50 data-[state=active]:text-foreground dark:data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               <Tags className="h-4 w-4" />
               Customization
             </TabsTrigger>
-            <TabsTrigger value="preferences" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-primary data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900/50 data-[state=active]:text-foreground dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
+            <TabsTrigger value="preferences" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-purple-400 data-[state=active]:bg-white dark:data-[state=active]:bg-card/50 data-[state=active]:text-foreground dark:data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               <Settings className="h-4 w-4" />
               Preferences
             </TabsTrigger>
-            <TabsTrigger value="collections" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-primary data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900/50 data-[state=active]:text-foreground dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
+            <TabsTrigger value="collections" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all hover:text-purple-400 data-[state=active]:bg-white dark:data-[state=active]:bg-card/50 data-[state=active]:text-foreground dark:data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               <BookmarkIcon className="h-4 w-4" />
               Collections
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="customization" className="h-full flex-1 space-y-6">
-          <div className="grid gap-6">
-            <Card className="border shadow-sm dark:bg-gray-900/50 dark:border-gray-800 dark:border-l-purple-500/20">
-              <CardHeader>
-                <CardTitle className="dark:text-white">Manage Types, Franchises & Brands</CardTitle>
-                <CardDescription className="dark:text-gray-300">
-                  Customize the types, franchises, and brands for your collection items
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="types" className="w-full">
-                  <TabsList className="mb-4 dark:bg-gray-800/30 dark:text-gray-300">
-                    <TabsTrigger value="types" className="dark:data-[state=active]:bg-gray-900/50 dark:data-[state=active]:text-white">Types</TabsTrigger>
-                    <TabsTrigger value="franchises" className="dark:data-[state=active]:bg-gray-900/50 dark:data-[state=active]:text-white">Franchises</TabsTrigger>
-                    <TabsTrigger value="brands" className="dark:data-[state=active]:bg-gray-900/50 dark:data-[state=active]:text-white">Brands</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="types">
-                    <CustomTypesList />
-                  </TabsContent>
-                  <TabsContent value="franchises">
-                    <CustomFranchisesList />
-                  </TabsContent>
-                  <TabsContent value="brands">
-                    <CustomBrandsList />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+        <TabsContent value="customization" className="h-full flex-1">
+          <div className="rounded-lg border dark:border-primary/20 bg-card/50 dark:bg-card/60 p-6 shadow-sm">
+            <div className="flex flex-col space-y-8">
+              <div className="space-y-2">
+                <h1 className="text-xl font-semibold">Customization</h1>
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+                  Manage your custom content types, franchises, and brands.
+                </p>
+              </div>
+              <CustomizationTab
+                onSave={() => {
+                  //toast({
+                  //  title: "Success",
+                  //  description: "Your preferences have been saved successfully.",
+                  //})
+                }}
+              />
+            </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="preferences" className="h-full flex-1 space-y-6">
-          <Card className="border shadow-sm dark:bg-gray-900/50 dark:border-gray-800 dark:border-l-purple-500/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 dark:text-white">
-                <Settings className="h-5 w-5" />
-                Display Preferences
-              </CardTitle>
-              <CardDescription className="dark:text-gray-300">
-                Customize how your collection is displayed
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground dark:text-gray-400">Display preferences will be added in a future update.</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="preferences" className="h-full flex-1">
+          <div className="rounded-lg border dark:border-primary/20 bg-card/50 dark:bg-card/60 p-6 shadow-sm">
+            <div className="flex flex-col space-y-8">
+              <div className="space-y-2">
+                <h1 className="text-xl font-semibold">Preferences</h1>
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+                  Manage your account and application preferences.
+                </p>
+              </div>
+              <PreferencesTab />
+            </div>
+          </div>
         </TabsContent>
 
-        <TabsContent value="collections" className="h-full flex-1 space-y-6">
-          <CSVImport
-            onAddItem={handleAddItem}
-            onCreateCustomType={handleCreateCustomType}
-            onCreateCustomFranchise={handleCreateCustomFranchise}
-            onCreateCustomBrand={handleCreateCustomBrand}
-            onLoadCustomTypes={loadCustomTypes}
-            onLoadCustomFranchises={loadCustomFranchises}
-            onLoadCustomBrands={loadCustomBrands}
-            defaultTypeOptions={itemTypeEnum.enumValues}
-            defaultFranchiseOptions={franchiseEnum.enumValues}
-            defaultBrandOptions={DEFAULT_BRANDS}
-          />
-          
-          <Card className="border shadow-sm dark:bg-gray-900/50 dark:border-gray-800 dark:border-l-purple-500/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive dark:text-red-400">
-                <AlertTriangle className="h-5 w-5" />
-                Danger Zone
-              </CardTitle>
-              <CardDescription className="dark:text-gray-300">
-                Actions that will permanently affect your data
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DeleteUserData />
-            </CardContent>
-          </Card>
+        <TabsContent value="collections" className="h-full flex-1">
+          <div className="rounded-lg border dark:border-primary/20 bg-card/50 dark:bg-card/60 p-6 shadow-sm">
+            <div className="flex flex-col space-y-8">
+              <div className="space-y-2">
+                <h1 className="text-xl font-semibold">Collections</h1>
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+                  Manage your collections and sub-collections.
+                </p>
+              </div>
+              <CollectionsTab />
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
