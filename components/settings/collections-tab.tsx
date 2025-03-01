@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CSVImport } from "@/components/settings/csv-import"
 import { DeleteUserData } from "@/components/settings/delete-user-data"
 import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema"
+import { useCatalogItems } from "@/components/catalog/hooks/use-catalog-items"
+import { CatalogItem } from "@/components/catalog/utils/schema-adapter"
 
 // Define default brands (assuming this is what was in constants)
 const DEFAULT_BRANDS = [
@@ -22,9 +24,20 @@ const DEFAULT_BRANDS = [
 ]
 
 export function CollectionsTab() {
-  const handleAddItem = async () => {
-    console.log("Adding item from CSV")
-    return true
+  // Initialize the catalog items hook to get access to addItem
+  const { addItem } = useCatalogItems();
+
+  const handleAddItem = async (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+    console.log("Adding item from CSV", item.name);
+    try {
+      // Actually call the hook method to save to database
+      const result = await addItem(item);
+      console.log("Database save result:", result);
+      return result;
+    } catch (error) {
+      console.error("Error saving item to database:", error);
+      return false;
+    }
   }
 
   const handleCreateCustomType = async () => {

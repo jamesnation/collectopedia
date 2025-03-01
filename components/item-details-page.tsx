@@ -426,7 +426,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             )}
           </div>
           <div className="space-y-6">
-            <h1 className="text-2xl font-bold font-serif mb-4 dark:text-foreground">Item Details <span className="text-purple-400">({isSold ? 'Sold' : 'In Collection'})</span></h1>
+            <h1 className="text-2xl font-bold font-serif mb-4 dark:text-foreground">{item.name}</h1>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border dark:border-border shadow-sm">

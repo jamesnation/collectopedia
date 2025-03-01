@@ -463,23 +463,33 @@ export function CSVImport({
                 
                 setCurrentStatus(`Saving item: ${newItem.name}...`);
                 
-                // Call the handler to add the item
-                const addResult = await onAddItem(newItem);
+                // Enhanced logging before, during, and after the onAddItem call
+                console.log('❗️ CSV IMPORT CRITICAL - BEFORE onAddItem call for:', newItem.name);
                 
-                if (addResult) {
-                  console.log(`CSV IMPORT DEBUG - Successfully imported row ${i+1}: ${newItem.name}`);
-                  successCount++;
-                } else {
-                  console.error(`CSV IMPORT DEBUG - Failed to import row ${i+1}: ${newItem.name}`);
-                  errors.push({
-                    rowIndex,
-                    rowData: item,
-                    error: 'Failed to save item to database'
-                  });
-                  setImportSummary(prev => ({
-                    ...prev,
-                    errorCount: prev.errorCount + 1
-                  }));
+                try {
+                  // Call the handler to add the item
+                  const addResult = await onAddItem(newItem);
+                  
+                  console.log(`❗️ CSV IMPORT CRITICAL - AFTER onAddItem call for ${newItem.name}, result:`, addResult);
+                  
+                  if (addResult) {
+                    console.log(`✅ CSV IMPORT SUCCESS - Successfully imported row ${i+1}: ${newItem.name}`);
+                    successCount++;
+                  } else {
+                    console.error(`❌ CSV IMPORT ERROR - Failed to import row ${i+1}: ${newItem.name}, result was:`, addResult);
+                    errors.push({
+                      rowIndex,
+                      rowData: item,
+                      error: 'Failed to save item to database'
+                    });
+                    setImportSummary(prev => ({
+                      ...prev,
+                      errorCount: prev.errorCount + 1
+                    }));
+                  }
+                } catch (error) {
+                  console.error(`❌ CSV IMPORT ERROR - Exception during onAddItem for ${newItem.name}:`, error);
+                  throw error; // Re-throw to be caught by the outer catch block
                 }
               } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';

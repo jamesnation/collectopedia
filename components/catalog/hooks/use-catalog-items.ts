@@ -53,6 +53,8 @@ export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}
     
     setIsLoading(true);
     try {
+      console.log('🔄 USE_CATALOG_ITEMS - Adding item:', item.name);
+      
       const newItem = {
         ...item,
         id: crypto.randomUUID(),
@@ -65,14 +67,20 @@ export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}
       
       const schemaItem = mapCatalogItemToSchemaItem(newItem);
       
-      // Debug logging
-      console.log('Original item soldPrice type:', item.soldPrice === null ? 'null' : typeof item.soldPrice);
-      console.log('New item soldPrice type:', newItem.soldPrice === null ? 'null' : typeof newItem.soldPrice);
-      console.log('Schema item soldPrice type:', schemaItem.soldPrice === undefined ? 'undefined' : typeof schemaItem.soldPrice);
+      // Enhanced debug logging
+      console.log('🔄 USE_CATALOG_ITEMS - Mapped item to schema:', {
+        id: schemaItem.id,
+        name: schemaItem.name,
+        userId: schemaItem.userId,
+        // Include more properties as needed for debugging
+      });
       
+      console.log('🔄 USE_CATALOG_ITEMS - Calling createItemAction...');
       const result = await createItemAction(schemaItem);
+      console.log('🔄 USE_CATALOG_ITEMS - createItemAction result:', result);
       
       if (result.isSuccess) {
+        console.log('✅ USE_CATALOG_ITEMS - Item added successfully, fetching items...');
         await fetchItems();
         toast({
           title: "Success",
@@ -80,10 +88,11 @@ export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}
         });
         return true;
       } else {
+        console.error('❌ USE_CATALOG_ITEMS - Error from createItemAction:', result.error);
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Error adding item:', error);
+      console.error('❌ USE_CATALOG_ITEMS - Error adding item:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to add item",

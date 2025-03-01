@@ -57,7 +57,18 @@ export const createItemAction = async (item: {
   images?: string[];
 }) => {
   try {
-    console.log('Attempting to create item:', JSON.stringify(item, null, 2));
+    console.log('🚀 SERVER ACTION - Received item data for creation:', {
+      id: item.id,
+      name: item.name,
+      userId: item.userId,
+      type: item.type,
+      franchise: item.franchise,
+      // Log more critical fields
+      acquired: item.acquired instanceof Date ? item.acquired.toISOString() : 'Not a date object',
+      cost: item.cost,
+      value: item.value,
+      hasNotes: !!item.notes
+    });
 
     // Remove the enum validation since we now support custom types and franchises
     const insertData = {
@@ -70,25 +81,72 @@ export const createItemAction = async (item: {
       image: item.image || item.images?.[0], // Use the first image as the main image
     };
 
-    console.log('Data to be inserted:', JSON.stringify(insertData, null, 2));
-
-    const result = await db.insert(itemsTable).values(insertData).returning();
-
-    // Insert additional images
-    if (item.images && item.images.length > 0) {
-      const imageInserts = item.images.map(url => ({
-        id: crypto.randomUUID(),
-        itemId: result[0].id,
-        userId: item.userId,
-        url,
-      }));
-      await db.insert(imagesTable).values(imageInserts);
+    // Diagnostic check for critically required fields
+    const missingFields = [];
+    if (!insertData.id) missingFields.push('id');
+    if (!insertData.userId) missingFields.push('userId');
+    if (!insertData.name) missingFields.push('name');
+    if (!insertData.type) missingFields.push('type');
+    if (!insertData.franchise) missingFields.push('franchise');
+    if (!(insertData.acquired instanceof Date)) missingFields.push('acquired (not a Date object)');
+    
+    if (missingFields.length > 0) {
+      console.error('❌ SERVER ACTION - Critical fields missing:', missingFields);
+      return { 
+        isSuccess: false, 
+        error: `Missing required fields: ${missingFields.join(', ')}` 
+      };
     }
 
-    console.log('Item created successfully:', JSON.stringify(result[0], null, 2));
-    return { isSuccess: true, data: result[0] };
+    console.log('🚀 SERVER ACTION - Prepared data for insertion:', {
+      id: insertData.id,
+      name: insertData.name,
+      userId: insertData.userId,
+      type: insertData.type,
+      franchise: insertData.franchise,
+      cost: insertData.cost,
+      value: insertData.value
+    });
+
+    try {
+      console.log('🚀 SERVER ACTION - Executing database insert operation...');
+      const result = await db.insert(itemsTable).values(insertData).returning();
+      console.log('🚀 SERVER ACTION - Database insert operation completed with result:', result);
+
+      // Insert additional images
+      if (item.images && item.images.length > 0) {
+        console.log('🚀 SERVER ACTION - Inserting additional images...');
+        const imageInserts = item.images.map(url => ({
+          id: crypto.randomUUID(),
+          itemId: result[0].id,
+          userId: item.userId,
+          url,
+        }));
+        await db.insert(imagesTable).values(imageInserts);
+        console.log('🚀 SERVER ACTION - Images inserted successfully');
+      }
+
+      console.log('✅ SERVER ACTION - Item created successfully:', {
+        id: result[0].id,
+        name: result[0].name
+      });
+      return { isSuccess: true, data: result[0] };
+    } catch (dbError) {
+      console.error('❌ SERVER ACTION - Database operation error:', dbError);
+      // Extract and log more specific database error information
+      const errorDetails = {
+        message: dbError instanceof Error ? dbError.message : 'No error message',
+        code: (dbError as any)?.code || 'No error code',
+        constraint: (dbError as any)?.constraint || 'No constraint information',
+        detail: (dbError as any)?.detail || 'No detail provided',
+        table: (dbError as any)?.table || 'No table information',
+        column: (dbError as any)?.column || 'No column information'
+      };
+      console.error('❌ SERVER ACTION - Detailed database error:', errorDetails);
+      throw dbError; // Re-throw to be caught by the outer catch
+    }
   } catch (error: unknown) {
-    console.error('Detailed error creating item:', error);
+    console.error('❌ SERVER ACTION - Detailed error creating item:', error);
     if (error instanceof Error) {
       return { isSuccess: false, error: `Failed to create item: ${error.message}` };
     } else {
