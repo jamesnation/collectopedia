@@ -178,7 +178,7 @@ export function ItemListView({
                   {formatDate(item.acquired)}
                 </TableCell>
                 <TableCell className="text-right dark:text-foreground">£{item.cost.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-bold text-primary dark:text-primary">
+                <TableCell className="text-right font-bold text-purple-400 dark:text-purple-400">
                   £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
                 </TableCell>
                 <TableCell className="text-right">
