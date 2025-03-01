@@ -426,7 +426,38 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             )}
           </div>
           <div className="space-y-6">
-            <h1 className="text-2xl font-bold font-serif mb-4 dark:text-foreground">{item.name}</h1>
+            <Popover open={editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="p-0 h-auto font-normal text-2xl font-bold font-serif mb-4 dark:text-foreground group"
+                  onClick={() => handleEditStart('name')}
+                >
+                  <span>{item.name}</span>
+                  <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm text-purple-400">Edit Item Name</h4>
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium text-purple-400">Name</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      value={item.name}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                    <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border dark:border-border shadow-sm">
