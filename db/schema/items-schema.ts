@@ -29,8 +29,7 @@ export const franchiseEnum = pgEnum("franchise", [
 
 export const conditionEnum = pgEnum("condition", [
   "New",
-  "Used - complete",
-  "Used - item only"
+  "Used"
 ]);
 
 export const itemsTable = pgTable("items", {
@@ -41,7 +40,7 @@ export const itemsTable = pgTable("items", {
   franchise: text("franchise").notNull(),
   brand: text("brand"),
   year: integer("year"),
-  condition: conditionEnum("condition").notNull().default("Used - complete"),
+  condition: conditionEnum("condition").notNull().default("Used"),
   acquired: timestamp("acquired").notNull(),
   cost: integer("cost").notNull(),
   value: integer("value").notNull(),

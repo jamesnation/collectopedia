@@ -9,7 +9,7 @@ export interface CatalogItem {
   franchise: string;
   brand: string | null;
   year: number | null;
-  condition: "New" | "Used - complete" | "Used - item only";
+  condition: "New" | "Used";
   acquired: Date | string;
   cost: number;
   value: number;
@@ -67,7 +67,7 @@ export const mapCatalogItemToSchemaItem = (item: CatalogItem) => {
 };
 
 // Constants for hard-coded options
-export const CONDITION_OPTIONS = ["New", "Used - complete", "Used - item only"];
+export const CONDITION_OPTIONS = ["New", "Used"];
 
 // These could be fetched from an API or config file instead of hardcoded
 export const DEFAULT_BRANDS = [

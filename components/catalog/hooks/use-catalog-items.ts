@@ -60,7 +60,7 @@ export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}
         createdAt: new Date(),
         updatedAt: new Date(),
         notes: item.notes || '',
-        condition: item.condition || "Used - complete",
+        condition: item.condition || "Used",
       } as CatalogItem;
       
       const schemaItem = mapCatalogItemToSchemaItem(newItem);
@@ -116,7 +116,7 @@ export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}
         ...currentItem,
         ...itemUpdate,
         notes: (itemUpdate.notes !== undefined ? itemUpdate.notes : currentItem.notes) || '',
-        condition: (itemUpdate.condition || currentItem.condition) as "New" | "Used - complete" | "Used - item only",
+        condition: (itemUpdate.condition || currentItem.condition) as "New" | "Used",
         updatedAt: new Date()
       };
       

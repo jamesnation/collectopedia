@@ -386,7 +386,7 @@ export function CSVImport({
                   franchise: finalFranchise,
                   brand: finalBrand || null,
                   year: (item.year || item.Year) ? parseInt(String(item.year || item.Year)) : null,
-                  condition: (item.condition || item.Condition || 'Used - complete') as "New" | "Used - complete" | "Used - item only",
+                  condition: (item.condition || item.Condition || 'Used') as "New" | "Used",
                   acquired: (item.acquired || item.Acquired) ? new Date(String(item.acquired || item.Acquired)) : new Date(),
                   cost: (item.cost || item.Cost) ? parseFloat(String(item.cost || item.Cost)) : 0,
                   value: (item.value || item.Value) ? parseFloat(String(item.value || item.Value)) : 0,
@@ -635,6 +635,7 @@ export function CSVImport({
                 id="csv-file"
                 type="file"
                 accept=".csv"
+                ref={csvInputRef}
                 onChange={handleCSVImport}
                 className="dark:bg-card dark:text-foreground dark:border-border"
               />
@@ -645,6 +646,15 @@ export function CSVImport({
               >
                 <FileUp className="h-4 w-4" />
                 {isImporting ? "Importing..." : "Import"}
+              </Button>
+              <Button
+                onClick={downloadTemplate}
+                variant="outline"
+                disabled={isImporting}
+                className="flex items-center gap-1 dark:bg-transparent dark:text-foreground dark:border-border dark:hover:bg-card/80"
+              >
+                <Download className="h-4 w-4" />
+                Template
               </Button>
             </div>
           </div>

@@ -11,6 +11,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+// Debug utility function
+const debugCSV = (message: string, data?: any) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`📋 CSV IMPORT: ${message}`, data || '');
+  }
+};
+
 // Define the CSV item structure
 type CSVItem = {
   name: string
@@ -59,10 +66,17 @@ export function CSVImportButton({
   const [file, setFile] = useState<File | null>(null)
   const [hasHeaderRow, setHasHeaderRow] = useState(true)
   const { toast } = useToast()
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0])
+      const selectedFile = e.target.files[0];
+      debugCSV(`File selected:`, {
+        name: selectedFile.name,
+        type: selectedFile.type,
+        size: `${(selectedFile.size / 1024).toFixed(1)} KB`
+      });
+      setFile(selectedFile)
     }
   }
 
@@ -76,13 +90,35 @@ export function CSVImportButton({
       return
     }
 
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      toast({
+        title: "Invalid file format",
+        description: "Please select a file with .csv extension",
+        variant: "destructive"
+      })
+      return
+    }
+
+    debugCSV(`Starting import process for ${file.name}`);
     setIsImporting(true)
 
     try {
+      debugCSV(`Reading file contents`);
       const text = await file.text()
       
+      // Simple validation of CSV content
+      if (!text.trim()) {
+        throw new Error("The CSV file is empty")
+      }
+      
+      // Check if file appears to be CSV format
+      if (!text.includes(',')) {
+        throw new Error("The file doesn't appear to be in CSV format (no commas found)")
+      }
+      
       Papa.parse<CSVItem>(text, {
-        header: true,
+        header: hasHeaderRow,
         complete: async (results) => {
           console.log('Parsed CSV data:', results.data)
           const csvData = results.data
@@ -147,7 +183,7 @@ export function CSVImportButton({
                 franchise: finalFranchise,
                 brand: finalBrand,
                 year: item.year ? parseInt(item.year) : null,
-                condition: (item.condition || 'Used - complete') as "New" | "Used - complete" | "Used - item only",
+                condition: (item.condition || 'Used') as "New" | "Used",
                 acquired: item.acquired ? new Date(item.acquired) : new Date(),
                 cost: item.cost ? parseFloat(item.cost) : 0,
                 value: item.value ? parseFloat(item.value) : 0,
@@ -185,6 +221,7 @@ export function CSVImportButton({
           // Reset the file input
           setFile(null)
           setIsImporting(false)
+          setIsDialogOpen(false)
         },
         error: (error: Error) => {
           console.error('CSV Parse Error:', error)
@@ -208,10 +245,9 @@ export function CSVImportButton({
   }
 
   return (
-    <Dialog>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <Button
-          onClick={handleImport}
           className="flex items-center gap-2 dark:bg-card/50 dark:text-foreground dark:border-border dark:hover:bg-card/80"
           variant="outline"
           size="sm"
@@ -270,7 +306,7 @@ export function CSVImportButton({
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => setIsImporting(false)}
+            onClick={() => setIsDialogOpen(false)}
             className="dark:bg-card/50 dark:text-foreground dark:border-border"
           >
             Cancel

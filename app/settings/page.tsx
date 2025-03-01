@@ -70,7 +70,7 @@ export default function SettingsPage() {
       franchise: "Transformers",
       brand: "Tomy",
       year: 1987,
-      condition: "Used - complete" as "New" | "Used - complete" | "Used - item only",
+      condition: "Used" as "New" | "Used",
       acquired: new Date('2024-01-01'),
       cost: 100,
       value: 150,

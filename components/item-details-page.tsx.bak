@@ -41,7 +41,7 @@ const valueData = [
 ]
 
 // Add type definition at the top
-type ItemCondition = "New" | "Used - complete" | "Used - item only";
+type ItemCondition = "New" | "Used";
 
 interface ItemDetailsPageProps {
   id: string
@@ -86,8 +86,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   // Update conditionOptions definition
   const conditionOptions: ItemCondition[] = [
     "New",
-    "Used - complete",
-    "Used - item only"
+    "Used"
   ];
 
   useEffect(() => {

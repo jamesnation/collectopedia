@@ -58,7 +58,7 @@ export function AddItemForm({
     franchise: string
     brand: string
     year: number | null
-    condition: "New" | "Used - complete" | "Used - item only"
+    condition: "New" | "Used"
     acquired: string
     cost: string
     value: string
@@ -70,7 +70,7 @@ export function AddItemForm({
     franchise: "",
     brand: "",
     year: null,
-    condition: "Used - complete",
+    condition: "New",
     acquired: new Date().toISOString().split('T')[0],
     cost: "",
     value: "",
@@ -117,7 +117,7 @@ export function AddItemForm({
   const handleConditionChange = (value: string) => {
     setNewItem(prev => ({
       ...prev,
-      condition: value as "New" | "Used - complete" | "Used - item only"
+      condition: value as "New" | "Used"
     }))
   }
 
@@ -168,7 +168,7 @@ export function AddItemForm({
         franchise: "",
         brand: "",
         year: null,
-        condition: "Used - complete",
+        condition: "New",
         acquired: new Date().toISOString().split('T')[0],
         cost: "",
         value: "",
