@@ -6,26 +6,42 @@ import { updateAllEbayListedValues } from '@/actions/ebay-actions';
 // only authorized cron jobs can trigger this endpoint
 const CRON_SECRET = process.env.CRON_SECRET;
 
+// IMPORTANT: Set this to false in production!
+// This is just for initial setup and debugging
+const ALLOW_UNAUTHENTICATED_FOR_TESTING = true; 
+
 export async function GET(req: NextRequest) {
-  // For Vercel Cron Jobs, we'll add a special bypass when running from Vercel's cron system
-  const isVercelCron = req.headers.get('x-vercel-cron') === '1';
+  console.log("Cron job API called with headers:", JSON.stringify(Object.fromEntries([...req.headers])));
+  console.log("Query params:", req.nextUrl.searchParams.toString());
   
-  // If not from Vercel cron, check for our secret
-  if (!isVercelCron) {
-    // Check for secret in header or query param
-    const authHeader = req.headers.get('authorization');
-    const secretParam = req.nextUrl.searchParams.get('cron_secret');
-    
-    const isAuthorized = 
-      (authHeader === `Bearer ${CRON_SECRET}`) || 
-      (secretParam === CRON_SECRET);
-    
-    if (!CRON_SECRET || !isAuthorized) {
-      console.error('Unauthorized cron job request. Not from Vercel and no valid auth.');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  // Bypass auth for initial testing when flag is enabled
+  if (ALLOW_UNAUTHENTICATED_FOR_TESTING) {
+    console.log("⚠️ RUNNING IN TEST MODE: Authentication bypassed");
   } else {
-    console.log('Request from Vercel Cron system detected, bypassing auth check');
+    // For Vercel Cron Jobs, we'll add a special bypass when running from Vercel's cron system
+    const isVercelCron = req.headers.get('x-vercel-cron') === '1';
+    console.log("Is Vercel cron?", isVercelCron);
+    
+    // If not from Vercel cron, check for our secret
+    if (!isVercelCron) {
+      // Check for secret in header or query param
+      const authHeader = req.headers.get('authorization');
+      const secretParam = req.nextUrl.searchParams.get('cron_secret');
+      
+      console.log("Has auth header?", !!authHeader);
+      console.log("Has secret param?", !!secretParam);
+      
+      const isAuthorized = 
+        (authHeader === `Bearer ${CRON_SECRET}`) || 
+        (secretParam === CRON_SECRET);
+      
+      if (!CRON_SECRET || !isAuthorized) {
+        console.error('Unauthorized cron job request. Not from Vercel and no valid auth.');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    } else {
+      console.log('Request from Vercel Cron system detected, bypassing auth check');
+    }
   }
 
   try {
