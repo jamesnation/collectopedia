@@ -41,6 +41,29 @@ export const recordEbayHistoryAction = async (totalValue: number): Promise<Actio
   }
 };
 
+// Special version for cron jobs that accepts a userId directly
+// This bypasses the auth() requirement for automated processes
+export const recordEbayHistoryForUserAction = async (totalValue: number, userId: string): Promise<ActionResult<null>> => {
+  try {
+    if (!userId) {
+      return { isSuccess: false, error: 'User ID is required' };
+    }
+
+    await db.insert(ebayHistoryTable).values({
+      id: nanoid(),
+      userId: userId,
+      totalValue: Math.round(totalValue),
+      recordedAt: new Date(),
+      createdAt: new Date(),
+    });
+
+    return { isSuccess: true, data: null };
+  } catch (error) {
+    console.error(`Error recording eBay history for user ${userId}:`, error);
+    return { isSuccess: false, error: 'Failed to record eBay history' };
+  }
+};
+
 // Get eBay history for a user
 export const getEbayHistoryAction = async (): Promise<ActionResult<any[]>> => {
   try {
