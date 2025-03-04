@@ -25,15 +25,14 @@ const DEFAULT_BRANDS = [
 
 export function CollectionsTab() {
   // Initialize the catalog items hook to get access to addItem
-  const { addItem } = useCatalogItems();
+  const { addItem } = useCatalogItems({ initialItems: [] });
 
-  const handleAddItem = async (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleAddItem = async (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
     console.log("Adding item from CSV", item.name);
     try {
       // Actually call the hook method to save to database
-      const result = await addItem(item);
-      console.log("Database save result:", result);
-      return result;
+      await addItem(item);
+      return true;
     } catch (error) {
       console.error("Error saving item to database:", error);
       return false;
