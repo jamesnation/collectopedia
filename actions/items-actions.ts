@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getItemsByUserId, getItemById, insertItem, updateItem, deleteItem } from "@/db/queries/items-queries";
 import { itemsTable, SelectItem } from "@/db/schema/items-schema";
 import { imagesTable } from "@/db/schema/images-schema"; // Add this line
-import { eq, ne, and, or } from 'drizzle-orm';
+import { eq, ne, and, or, asc } from 'drizzle-orm';
 import { db } from '@/db/db'; // Updated import
 import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema";
 import crypto from 'crypto'; // Added import for crypto
@@ -208,5 +208,25 @@ export const getRelatedItemsAction = async (franchise: string, currentItemId: st
   } catch (error) {
     console.error("Failed to fetch related items:", error);
     return { isSuccess: false, error: "Failed to fetch related items" };
+  }
+};
+
+/**
+ * Get items due for eBay value updates.
+ * Returns items sorted by last updated time, oldest first.
+ */
+export const getItemsDueForUpdateAction = async (): Promise<ActionResult<any[]>> => {
+  try {
+    // Implement database query 
+    // This is just a placeholder, you'll need to adapt this to your actual schema
+    const items = await db.select()
+      .from(itemsTable)
+      .where(eq(itemsTable.isSold, false))
+      .orderBy(asc(itemsTable.updatedAt)); // Assuming your schema has updatedAt field
+
+    return { isSuccess: true, data: items };
+  } catch (error) {
+    console.error('Error getting items due for update:', error);
+    return { isSuccess: false, error: 'Failed to get items due for update' };
   }
 };
