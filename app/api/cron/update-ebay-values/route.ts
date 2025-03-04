@@ -6,7 +6,7 @@ import { updateAllEbayListedValues } from '@/actions/ebay-actions';
 // only authorized cron jobs can trigger this endpoint.
 const CRON_SECRET = process.env.CRON_SECRET;
 
-// IMPORTANT: Set this to false in production!
+// IMPORTANT: After confirming everything works, set this to false!
 // This is just for initial setup and debugging
 const ALLOW_UNAUTHENTICATED_FOR_TESTING = true; 
 
@@ -18,62 +18,51 @@ export async function GET(req: NextRequest) {
   if (ALLOW_UNAUTHENTICATED_FOR_TESTING) {
     console.log("⚠️ RUNNING IN TEST MODE: Authentication bypassed");
   } else {
-    // For Vercel Cron Jobs, we'll add a special bypass when running from Vercel's cron system
-    const isVercelCron = req.headers.get('x-vercel-cron') === '1';
-    console.log("Is Vercel cron?", isVercelCron);
+    // Check for Vercel cron job based on user-agent header
+    const isVercelCron = req.headers.get('user-agent') === 'vercel-cron/1.0';
+    const vercelProxySignature = req.headers.get('x-vercel-proxy-signature');
     
-    // If not from Vercel cron, check for our secret
-    if (!isVercelCron) {
-      // Check for secret in header or query param
+    console.log("Is Vercel cron job?", isVercelCron);
+    console.log("Has Vercel proxy signature?", !!vercelProxySignature);
+    
+    // If not from Vercel cron or missing Vercel signature, check for our secret
+    if (!isVercelCron || !vercelProxySignature) {
+      // Check for authorization header
       const authHeader = req.headers.get('authorization');
-      const secretParam = req.nextUrl.searchParams.get('cron_secret');
+      const cronSecretFromQuery = req.nextUrl.searchParams.get('cron_secret');
       
-      console.log("Has auth header?", !!authHeader);
-      console.log("Has secret param?", !!secretParam);
+      console.log("Auth header exists?", !!authHeader);
+      console.log("Query param exists?", !!cronSecretFromQuery);
       
-      const isAuthorized = 
-        (authHeader === `Bearer ${CRON_SECRET}`) || 
-        (secretParam === CRON_SECRET);
-      
-      if (!CRON_SECRET || !isAuthorized) {
-        console.error('Unauthorized cron job request. Not from Vercel and no valid auth.');
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      // Validate the secret (either from header or query param)
+      if ((!authHeader || !authHeader.startsWith('Bearer ') || authHeader.slice(7) !== CRON_SECRET) && 
+          (cronSecretFromQuery !== CRON_SECRET)) {
+        console.log("Unauthorized cron job request - failed authentication check");
+        return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
       }
     } else {
-      console.log('Request from Vercel Cron system detected, bypassing auth check');
+      console.log("Authorized Vercel cron job request detected");
     }
   }
 
   try {
-    // Get all users from Clerk
+    // Get all users to process their collections
     const { data: users } = await clerkClient.users.getUserList();
-
     console.log(`Found ${users.length} users to process`);
     
-    // Process each user
-    const results = [];
+    // Process users: update ebay listed values for each user
+    const results = await updateAllEbayListedValues();
     
-    for (const user of users) {
-      try {
-        // Set the user context for the server action
-        const result = await updateAllEbayListedValues();
-        results.push({ userId: user.id, result });
-      } catch (userError) {
-        console.error(`Error processing user ${user.id}:`, userError);
-        results.push({ userId: user.id, error: 'Failed to update values' });
-      }
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      message: `Processed ${users.length} users`,
+    return NextResponse.json({
+      success: true,
+      message: `Updated eBay listed values successfully.`,
       results
     });
   } catch (error) {
     console.error('Error in cron job:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'An unknown error occurred' 
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to process cron job' }, { status: 500 });
   }
 } 
