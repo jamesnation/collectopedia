@@ -1,27 +1,18 @@
 import { useState, useCallback } from 'react';
-import { useAuth } from '@clerk/nextjs';
-import { CatalogItem, mapSchemaItemToCatalogItem, mapCatalogItemToSchemaItem } from '../utils/schema-adapter';
+import { CatalogItem } from '../utils/schema-adapter';
 import { SelectItem } from '@/db/schema/items-schema';
-import { useToast } from '@/components/ui/use-toast';
-import { 
-  getItemsByUserIdAction, 
-  createItemAction, 
-  updateItemAction, 
-  deleteItemAction 
-} from '@/actions/items-actions';
+import { getItemsByUserIdAction, getItemByIdAction, createItemAction, updateItemAction, deleteItemAction } from '@/actions/items-actions';
+import { useAuth } from '@clerk/nextjs';
 
 interface UseCatalogItemsProps {
-  initialItems?: SelectItem[];
+  initialItems: SelectItem[];
 }
 
-export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}) {
-  const [items, setItems] = useState<CatalogItem[]>(
-    initialItems.map(mapSchemaItemToCatalogItem)
-  );
+export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps) {
+  const [items, setItems] = useState<CatalogItem[]>(initialItems);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingItemId, setLoadingItemId] = useState<string | null>(null);
   const { userId } = useAuth();
-  const { toast } = useToast();
 
   const fetchItems = useCallback(async () => {
     if (!userId) return;
@@ -30,177 +21,99 @@ export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}
     try {
       const result = await getItemsByUserIdAction(userId);
       if (result.isSuccess && result.data) {
-        const catalogItems = result.data.map(mapSchemaItemToCatalogItem);
-        setItems(catalogItems);
-        return catalogItems;
-      } else {
-        throw new Error(result.error);
+        setItems(result.data);
       }
     } catch (error) {
-      console.error('Failed to fetch items:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load your items. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Error fetching items:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [userId, toast]);
+  }, [userId]);
 
-  const addItem = useCallback(async (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
-    if (!userId) return false;
+  const addItem = useCallback(async (newItem: Omit<CatalogItem, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!userId) return;
     
     setIsLoading(true);
     try {
-      console.log('🔄 USE_CATALOG_ITEMS - Adding item:', item.name);
-      
-      const newItem = {
-        ...item,
+      const itemToCreate = {
+        ...newItem,
         id: crypto.randomUUID(),
         userId,
         createdAt: new Date(),
         updatedAt: new Date(),
-        notes: item.notes || '',
-        condition: item.condition || "Used",
-      } as CatalogItem;
+        acquired: newItem.acquired instanceof Date ? newItem.acquired : new Date(newItem.acquired),
+        notes: newItem.notes || '',
+        isSold: newItem.isSold || false,
+        soldDate: newItem.soldDate || undefined,
+        soldPrice: newItem.soldPrice || undefined,
+        image: newItem.image || newItem.images?.[0],
+        images: newItem.images || []
+      };
+
+      const result = await createItemAction(itemToCreate);
       
-      const schemaItem = mapCatalogItemToSchemaItem(newItem);
-      
-      // Enhanced debug logging
-      console.log('🔄 USE_CATALOG_ITEMS - Mapped item to schema:', {
-        id: schemaItem.id,
-        name: schemaItem.name,
-        userId: schemaItem.userId,
-        // Include more properties as needed for debugging
-      });
-      
-      console.log('🔄 USE_CATALOG_ITEMS - Calling createItemAction...');
-      const result = await createItemAction(schemaItem);
-      console.log('🔄 USE_CATALOG_ITEMS - createItemAction result:', result);
-      
-      if (result.isSuccess) {
-        console.log('✅ USE_CATALOG_ITEMS - Item added successfully, fetching items...');
-        await fetchItems();
-        toast({
-          title: "Success",
-          description: "Item added successfully to your collection.",
-        });
-        return true;
-      } else {
-        console.error('❌ USE_CATALOG_ITEMS - Error from createItemAction:', result.error);
-        throw new Error(result.error);
+      if (result.isSuccess && result.data) {
+        setItems(prev => [...prev, result.data]);
       }
     } catch (error) {
-      console.error('❌ USE_CATALOG_ITEMS - Error adding item:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add item",
-        variant: "destructive",
-      });
-      return false;
+      console.error('Error adding item:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [userId, fetchItems, toast]);
+  }, [userId]);
 
   const updateItem = useCallback(async (id: string, itemUpdate: Partial<CatalogItem>) => {
+    if (!userId) return;
+    
     setLoadingItemId(id);
     try {
+      // Get current item for comparison
       const currentItem = items.find(item => item.id === id);
-      if (!currentItem) throw new Error("Item not found");
-      
-      // Debug logging for eBay values
-      if ('ebayListed' in itemUpdate) {
-        console.log('updateItem - ebayListed before:', currentItem.ebayListed, 'type:', typeof currentItem.ebayListed);
-        console.log('updateItem - ebayListed update:', itemUpdate.ebayListed, 'type:', typeof itemUpdate.ebayListed);
+      if (!currentItem) {
+        throw new Error('Item not found');
       }
-      
-      if ('ebaySold' in itemUpdate) {
-        console.log('updateItem - ebaySold before:', currentItem.ebaySold, 'type:', typeof currentItem.ebaySold);
-        console.log('updateItem - ebaySold update:', itemUpdate.ebaySold, 'type:', typeof itemUpdate.ebaySold);
-      }
-      
-      const updatedItem = {
-        ...currentItem,
+
+      // Convert acquired date if it's a string
+      const processedUpdate = {
         ...itemUpdate,
-        notes: (itemUpdate.notes !== undefined ? itemUpdate.notes : currentItem.notes) || '',
-        condition: (itemUpdate.condition || currentItem.condition) as "New" | "Used",
-        updatedAt: new Date()
+        acquired: itemUpdate.acquired ? 
+          (itemUpdate.acquired instanceof Date ? itemUpdate.acquired : new Date(itemUpdate.acquired)) 
+          : undefined
       };
+
+      const result = await updateItemAction(id, processedUpdate);
       
-      const schemaItem = mapCatalogItemToSchemaItem(updatedItem);
-      
-      // Debug logging
-      console.log('Current item soldPrice type:', currentItem.soldPrice === null ? 'null' : typeof currentItem.soldPrice);
-      console.log('Updated item soldPrice type:', updatedItem.soldPrice === null ? 'null' : typeof updatedItem.soldPrice);
-      console.log('Schema item soldPrice type:', schemaItem.soldPrice === undefined ? 'undefined' : typeof schemaItem.soldPrice);
-      
-      if ('ebayListed' in itemUpdate || 'ebaySold' in itemUpdate) {
-        console.log('Updating eBay values in schema item:', {
-          ebayListed: schemaItem.ebayListed,
-          ebaySold: schemaItem.ebaySold
-        });
-      }
-      
-      const result = await updateItemAction(id, schemaItem);
-      
-      if (result.isSuccess) {
-        setItems(prevItems => 
-          prevItems.map(item => item.id === id ? updatedItem : item)
-        );
-        
-        toast({
-          title: "Success",
-          description: "Item updated successfully.",
-        });
-        
-        return true;
-      } else {
-        throw new Error(result.error);
+      if (result.isSuccess && result.data) {
+        const updatedItem = result.data[0];
+        if (updatedItem) {
+          setItems(prev => prev.map(item => 
+            item.id === id ? updatedItem : item
+          ));
+        }
       }
     } catch (error) {
       console.error('Error updating item:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update item",
-        variant: "destructive",
-      });
-      return false;
     } finally {
       setLoadingItemId(null);
     }
-  }, [items, toast]);
+  }, [userId, items]);
 
   const deleteItem = useCallback(async (id: string) => {
+    if (!userId) return;
+    
     setLoadingItemId(id);
     try {
       const result = await deleteItemAction(id);
       
       if (result.isSuccess) {
-        setItems(prevItems => prevItems.filter(item => item.id !== id));
-        
-        toast({
-          title: "Item deleted",
-          description: "The item has been removed from your collection.",
-        });
-        
-        return true;
-      } else {
-        throw new Error(result.error);
+        setItems(prev => prev.filter(item => item.id !== id));
       }
     } catch (error) {
       console.error('Error deleting item:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete item. Please try again.",
-        variant: "destructive",
-      });
-      return false;
     } finally {
       setLoadingItemId(null);
     }
-  }, [toast]);
+  }, [userId]);
 
   return {
     items,
@@ -210,6 +123,6 @@ export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}
     addItem,
     updateItem,
     deleteItem,
-    setItems,
+    setItems
   };
 } 
