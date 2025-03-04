@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X } from "lucide-react"
-import { getItemByIdAction, updateItemAction } from "@/actions/items-actions"
+import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X, Trash2 } from "lucide-react"
+import { getItemByIdAction, updateItemAction, deleteItemAction } from "@/actions/items-actions"
 import { createSoldItemAction, getSoldItemByItemIdAction, updateSoldItemAction } from "@/actions/sold-items-actions"
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
 import { SelectSoldItem } from "@/db/schema/sold-items-schema"
@@ -27,6 +27,7 @@ import DynamicImageUpload from "@/components/image-upload"
 import { generateYearOptions } from "@/lib/utils"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getCustomBrandsAction } from "@/actions/custom-brands-actions"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 
 const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
 
@@ -310,6 +311,32 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     }
   };
 
+  const handleDeleteItem = async () => {
+    if (!item) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await deleteItemAction(item.id);
+      if (result.isSuccess) {
+        toast({
+          title: "Item deleted",
+          description: "The item has been successfully deleted.",
+        });
+        router.push('/my-collection');
+      } else {
+        throw new Error(result.error || 'Failed to delete item');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete the item. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -332,10 +359,42 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black/30">
       <main className="container mx-auto px-4 py-12">
-        <Link href="/my-collection" className="inline-flex items-center text-purple-400 hover:text-primary/50 mb-8">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Collection
-        </Link>
+        <div className="flex justify-between mb-6">
+          <Button variant="ghost" onClick={() => router.back()} className="flex items-center">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Collection
+          </Button>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="flex items-center">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Item
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete this item and remove it from your collection.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
 
         <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-4">
