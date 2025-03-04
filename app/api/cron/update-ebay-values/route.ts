@@ -9,8 +9,14 @@ const CRON_SECRET = process.env.CRON_SECRET;
 export async function GET(req: NextRequest) {
   // Verify the request is from our cron job service
   const authHeader = req.headers.get('authorization');
+  const secretParam = req.nextUrl.searchParams.get('cron_secret');
   
-  if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
+  // Check if either the header or query param matches
+  const isAuthorized = 
+    (authHeader === `Bearer ${CRON_SECRET}`) || 
+    (secretParam === CRON_SECRET);
+  
+  if (!CRON_SECRET || !isAuthorized) {
     console.error('Unauthorized cron job request');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
