@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
 import Catalog from './catalog'
 import { useTheme } from 'next-themes'
+import { useBackgroundUpdates } from '@/hooks/use-background-updates'
 
 interface CatalogPageProps {
   initialBrands: { id: string; name: string }[];
@@ -20,6 +21,9 @@ export default function CatalogPage({
 }: CatalogPageProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+
+  // Trigger background eBay price updates once per day
+  useBackgroundUpdates();
 
   // After mounting, we can safely show the UI that depends on the theme
   useEffect(() => {
