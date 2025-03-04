@@ -3,7 +3,7 @@ import { clerkClient } from '@clerk/nextjs/server';
 import { updateAllEbayListedValues } from '@/actions/ebay-actions';
 
 // We will use an API key for authentication to make sure
-// only authorized cron jobs can trigger this endpoint
+// only authorized cron jobs can trigger this endpoint.
 const CRON_SECRET = process.env.CRON_SECRET;
 
 // IMPORTANT: Set this to false in production!
