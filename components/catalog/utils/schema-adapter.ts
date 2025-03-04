@@ -21,6 +21,8 @@ export interface CatalogItem {
   soldPrice: number | null;
   soldDate: Date | null;
   images?: string[];
+  ebayListed?: number | null;
+  ebaySold?: number | null;
 }
 
 export interface CustomEntity {
