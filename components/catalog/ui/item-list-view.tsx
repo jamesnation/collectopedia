@@ -109,7 +109,7 @@ export function ItemListView({
                 className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
                 onClick={() => onSort('ebayListed')}
               >
-                eBay Listed <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebayListed' ? 'opacity-100' : 'opacity-50'}`} />
+                AI Estimate <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebayListed' ? 'opacity-100' : 'opacity-50'}`} />
               </Button>
             </TableHead>
             {showSold && (
@@ -198,19 +198,8 @@ export function ItemListView({
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end space-x-2">
+                  <div className="flex items-center justify-end">
                     <span className="whitespace-nowrap dark:text-foreground">£{item.ebayListed?.toFixed(2) || 'N/A'}</span>
-                    {onEbayRefresh && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEbayRefresh(item.id, item.name, 'listed')}
-                        className="h-8 w-8 p-0 dark:text-muted-foreground dark:hover:text-primary"
-                        disabled={loadingListedItemId === item.id}
-                      >
-                        {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      </Button>
-                    )}
                   </div>
                 </TableCell>
                 {showSold && (

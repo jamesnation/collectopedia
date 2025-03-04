@@ -2,6 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { updateItemAction } from './items-actions' // Import your database update function
+import { getItemsByUserIdAction } from './items-actions' // Import for bulk updates
+import { recordEbayHistoryAction } from './ebay-history-actions' // Import for recording history
+import { auth } from "@clerk/nextjs/server";
 
 // Remove the API_BASE_URL constant and use absolute URL instead
 const API_URL = '/api/ebay';
@@ -70,5 +73,67 @@ export async function updateEbayPrices(id: string, name: string, type: 'listed' 
   } catch (error) {
     console.error('Error updating eBay prices:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Failed to update eBay prices' };
+  }
+}
+
+/**
+ * Updates all items' eBay listed values for a user and records the total
+ * This should be called from the cron job
+ */
+export async function updateAllEbayListedValues() {
+  try {
+    // Get current user
+    const { userId } = auth();
+    
+    if (!userId) {
+      return { success: false, error: 'User not authenticated' };
+    }
+    
+    // Get all items for the user
+    const itemsResult = await getItemsByUserIdAction(userId);
+    
+    if (!itemsResult.isSuccess || !itemsResult.data) {
+      return { success: false, error: 'Failed to fetch items' };
+    }
+    
+    const items = itemsResult.data.filter(item => !item.isSold); // Only update items that aren't sold
+    
+    console.log(`Updating eBay listed values for ${items.length} items`);
+    
+    // Update each item's eBay listed price
+    let totalListedValue = 0;
+    let updatedCount = 0;
+    
+    for (const item of items) {
+      try {
+        // Skip items without a name
+        if (!item.name) continue;
+        
+        // Update the eBay listed price
+        const result = await updateEbayPrices(item.id, item.name, 'listed');
+        
+        if (result.success && result.prices && result.prices.median) {
+          totalListedValue += result.prices.median;
+          updatedCount++;
+        }
+      } catch (itemError) {
+        console.error(`Failed to update item ${item.id}:`, itemError);
+        // Continue with the next item
+      }
+    }
+    
+    // Record the total value for historical tracking
+    if (updatedCount > 0) {
+      await recordEbayHistoryAction(totalListedValue);
+    }
+    
+    // Return success
+    return { 
+      success: true, 
+      message: `Updated ${updatedCount} of ${items.length} items with a total value of £${totalListedValue.toFixed(2)}` 
+    };
+  } catch (error) {
+    console.error('Error updating all eBay prices:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to update all eBay prices' };
   }
 }

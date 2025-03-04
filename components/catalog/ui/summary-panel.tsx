@@ -1,4 +1,4 @@
-import { DollarSign, ShoppingCart, BarChart4, Percent } from "lucide-react";
+import { DollarSign, ShoppingCart, BarChart4, Percent, Brain } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface SummaryPanelProps {
@@ -36,7 +36,7 @@ export default function SummaryPanel({
   const profitMargin = totalCost > 0 ? (profit / totalCost) * 100 : 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
       <Card className="dark:bg-card/60 dark:border-border">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
@@ -85,6 +85,18 @@ export default function SummaryPanel({
               </p>
             </div>
             <Percent className="h-6 w-6 text-purple-400 dark:text-purple-400" aria-label="Profit Margin" />
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card className="dark:bg-card/60 dark:border-border">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">AI Estimate</p>
+              <p className="text-2xl font-bold dark:text-foreground">{formatCurrency(ebayListedValue)}</p>
+            </div>
+            <Brain className="h-6 w-6 text-purple-400 dark:text-purple-400" aria-label="AI Estimate" />
           </div>
         </CardContent>
       </Card>
