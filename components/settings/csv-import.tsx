@@ -729,9 +729,21 @@ export function CSVImport({
                 <Alert variant="destructive" className="dark:bg-red-900/20 dark:border-red-800 dark:text-red-200">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Import completed with errors</AlertTitle>
-                  <AlertDescription>
-                    {importSummary.successCount} items were imported successfully. 
-                    {importSummary.errorCount} items failed to import.
+                  <AlertDescription className="space-y-2">
+                    <div>
+                      {importSummary.successCount} items were imported successfully.
+                      {importSummary.errorCount} items failed to import.
+                    </div>
+                    <div className="text-sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setShowErrors(!showErrors)}
+                        className="mt-2 dark:bg-transparent dark:border-red-500/20 dark:text-red-400 dark:hover:bg-red-900/30"
+                      >
+                        {showErrors ? 'Hide' : 'Show'} Failed Items
+                      </Button>
+                    </div>
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -747,29 +759,30 @@ export function CSVImport({
           )}
           
           {/* Error details */}
-          {importErrors.length > 0 && (
-            <Collapsible
-              open={showErrors}
-              onOpenChange={setShowErrors}
-              className="mt-4 border rounded-md overflow-hidden dark:border-gray-800"
-            >
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="flex w-full justify-between p-4 dark:text-white dark:hover:bg-gray-900/50">
+          {importErrors.length > 0 && showErrors && (
+            <div className="mt-4 border rounded-md overflow-hidden dark:border-gray-800">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center">
                     <FileWarning className="h-4 w-4 mr-2 text-red-500 dark:text-red-400" />
-                    <span>Show {importErrors.length} error{importErrors.length > 1 ? 's' : ''}</span>
+                    <span className="font-medium dark:text-red-200">Failed Items ({importErrors.length})</span>
                   </div>
-                  <span>{showErrors ? '▲' : '▼'}</span>
-                </Button>
-              </CollapsibleTrigger>
-              
-              <CollapsibleContent>
-                <ScrollArea className="h-[200px] p-4 border-t dark:border-gray-800 dark:bg-gray-900/30">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={downloadErrorReport}
+                    className="dark:bg-transparent dark:border-red-500/20 dark:text-red-400 dark:hover:bg-red-900/30"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Error Report
+                  </Button>
+                </div>
+                <ScrollArea className="h-[300px]">
                   <div className="space-y-2">
                     {importErrors.map((error, index) => (
-                      <div key={index} className="p-2 border rounded-md bg-red-50 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200">
-                        <div className="flex justify-between">
-                          <span className="font-medium">
+                      <div key={index} className="p-3 border rounded-md bg-white dark:bg-red-900/10 dark:border-red-800">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-medium dark:text-red-200">
                             {error.rowIndex > 0 ? `Row ${error.rowIndex}` : 'File Error'}
                           </span>
                           {error.rowData.name && (
@@ -777,24 +790,20 @@ export function CSVImport({
                           )}
                         </div>
                         <p className="text-sm text-red-600 dark:text-red-300">{error.error}</p>
+                        {error.rowData && Object.keys(error.rowData).length > 0 && (
+                          <div className="mt-2 text-xs text-gray-500 dark:text-red-300/70">
+                            <p className="font-medium mb-1">Item Data:</p>
+                            <pre className="whitespace-pre-wrap">
+                              {JSON.stringify(error.rowData, null, 2)}
+                            </pre>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
-                
-                <div className="p-4 border-t bg-gray-50 dark:bg-gray-900/50 dark:border-gray-800">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={downloadErrorReport}
-                    className="w-full dark:bg-transparent dark:border-purple-500/20 dark:text-purple-400 dark:hover:bg-gray-900/80"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Error Report
-                  </Button>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+              </div>
+            </div>
           )}
         </div>
       </CardContent>
