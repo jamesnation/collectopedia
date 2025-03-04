@@ -14,19 +14,37 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/use-toast";
+import { deleteUserDataAction } from "@/actions/delete-user-data";
+import { useRouter } from "next/navigation";
 
 export function DeleteUserData() {
   const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
 
   const handleDeleteData = async () => {
     try {
       setIsDeleting(true);
-      // This would be replaced with an actual API call
-      console.log("Deleting user data...");
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log("User data deleted successfully");
+      const result = await deleteUserDataAction();
+      
+      if (result.isSuccess) {
+        toast({
+          title: "Data deleted successfully",
+          description: "All your collection data has been permanently deleted.",
+        });
+        // Refresh the page to show empty state
+        router.refresh();
+      } else {
+        throw new Error(result.error || "Failed to delete data");
+      }
     } catch (error) {
       console.error("Error deleting user data:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete data. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -65,8 +83,9 @@ export function DeleteUserData() {
             <AlertDialogAction 
               onClick={handleDeleteData}
               className="dark:bg-red-500/80 dark:hover:bg-red-500 dark:text-white"
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

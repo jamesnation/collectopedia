@@ -44,10 +44,6 @@ type CSVItem = {
   SoldDate?: string
   soldPrice?: string
   SoldPrice?: string
-  ebayListed?: string
-  EbayListed?: string
-  ebaySold?: string
-  EbaySold?: string
 }
 
 // Define the import error type
@@ -394,8 +390,6 @@ export function CSVImport({
                   isSold: (item.isSold?.toLowerCase() === 'true' || item.IsSold?.toLowerCase() === 'true') ? true : false,
                   soldDate: (item.soldDate || item.SoldDate) ? new Date(String(item.soldDate || item.SoldDate)) : null,
                   soldPrice: (item.soldPrice || item.SoldPrice) ? parseFloat(String(item.soldPrice || item.SoldPrice)) : null,
-                  ebayListed: (item.ebayListed || item.EbayListed) ? parseFloat(String(item.ebayListed || item.EbayListed)) : null,
-                  ebaySold: (item.ebaySold || item.EbaySold) ? parseFloat(String(item.ebaySold || item.EbaySold)) : null,
                   image: null,
                   images: []
                 };

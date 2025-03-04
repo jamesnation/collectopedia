@@ -32,8 +32,6 @@ type CSVItem = {
   isSold: string
   soldDate: string
   soldPrice: string
-  ebayListed: string
-  ebaySold: string
   condition: string
 }
 
@@ -191,8 +189,6 @@ export function CSVImportButton({
                 isSold: item.isSold?.toLowerCase() === 'true',
                 soldDate: item.soldDate ? new Date(item.soldDate) : null,
                 soldPrice: item.soldPrice ? parseFloat(item.soldPrice) : null,
-                ebayListed: item.ebayListed ? parseFloat(item.ebayListed) : null,
-                ebaySold: item.ebaySold ? parseFloat(item.ebaySold) : null,
                 image: null,
                 images: []
               }

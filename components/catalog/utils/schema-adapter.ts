@@ -13,8 +13,6 @@ export interface CatalogItem {
   acquired: Date | string;
   cost: number;
   value: number;
-  ebaySold: number | null;
-  ebayListed: number | null;
   image: string | null;
   notes: string | null;
   createdAt: Date;
@@ -45,11 +43,7 @@ export const mapSchemaItemToCatalogItem = (item: SelectItem): CatalogItem => {
 // Transform from component type to schema type for sending to the server
 export const mapCatalogItemToSchemaItem = (item: CatalogItem) => {
   // Create a new object with all properties except those that need special handling
-  const { notes, soldDate, soldPrice, ebayListed, ebaySold, image, ...rest } = item;
-  
-  // Debug logging for eBay values
-  console.log('mapCatalogItemToSchemaItem - ebayListed:', ebayListed, 'type:', typeof ebayListed);
-  console.log('mapCatalogItemToSchemaItem - ebaySold:', ebaySold, 'type:', typeof ebaySold);
+  const { notes, soldDate, soldPrice, image, ...rest } = item;
   
   return {
     ...rest,
@@ -58,8 +52,6 @@ export const mapCatalogItemToSchemaItem = (item: CatalogItem) => {
     // Convert null values to undefined for the schema
     soldDate: soldDate || undefined,
     soldPrice: soldPrice || undefined,
-    ebayListed: ebayListed || undefined,
-    ebaySold: ebaySold || undefined,
     image: image || undefined,
     // Ensure notes is always a string
     notes: notes || '',
