@@ -32,6 +32,12 @@ export const conditionEnum = pgEnum("condition", [
   "Used"
 ]);
 
+export const confidenceEnum = pgEnum("confidence", [
+  "High",
+  "Medium",
+  "Low"
+]);
+
 export const itemsTable = pgTable("items", {
   id: text("id").primaryKey().notNull(),
   userId: text("user_id").notNull(),
@@ -46,6 +52,11 @@ export const itemsTable = pgTable("items", {
   value: integer("value").notNull(),
   ebaySold: integer("ebay_sold"),
   ebayListed: integer("ebay_listed"),
+  aiEstimateLow: integer("ai_estimate_low"),
+  aiEstimateMedium: integer("ai_estimate_medium"),
+  aiEstimateHigh: integer("ai_estimate_high"),
+  aiConfidence: confidenceEnum("ai_confidence"),
+  aiLastUpdated: timestamp("ai_last_updated"),
   image: text("image"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

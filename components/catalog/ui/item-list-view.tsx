@@ -11,18 +11,14 @@ import { SortDescriptor } from '../hooks/use-catalog-filters';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
+import { ImageOff } from 'lucide-react';
 
 interface ItemListViewProps {
   items: CatalogItem[];
   isLoading: boolean;
   sortDescriptor: SortDescriptor;
   onSort: (column: string) => void;
-  onDelete: (id: string) => void;
-  onEbayRefresh?: (id: string, name: string, type: 'sold' | 'listed') => void;
   showSold: boolean;
-  loadingItemId?: string | null;
-  loadingListedItemId?: string | null;
-  loadingSoldItemId?: string | null;
 }
 
 // Helper function to format dates consistently
@@ -43,12 +39,7 @@ export function ItemListView({
   isLoading,
   sortDescriptor,
   onSort,
-  onDelete,
-  onEbayRefresh,
-  showSold,
-  loadingItemId,
-  loadingListedItemId,
-  loadingSoldItemId
+  showSold
 }: ItemListViewProps) {
   const router = useRouter();
 
@@ -98,18 +89,18 @@ export function ItemListView({
               <Button 
                 variant="ghost" 
                 className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
-                onClick={() => onSort('ebaySold')}
+                onClick={() => onSort('aiEstimateLow')}
               >
-                eBay Sold <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebaySold' ? 'opacity-100' : 'opacity-50'}`} />
+                AI Low <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'aiEstimateLow' ? 'opacity-100' : 'opacity-50'}`} />
               </Button>
             </TableHead>
             <TableHead className="w-32">
               <Button 
                 variant="ghost" 
                 className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
-                onClick={() => onSort('ebayListed')}
+                onClick={() => onSort('aiEstimateHigh')}
               >
-                eBay Listed <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebayListed' ? 'opacity-100' : 'opacity-50'}`} />
+                AI High <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'aiEstimateHigh' ? 'opacity-100' : 'opacity-50'}`} />
               </Button>
             </TableHead>
             {showSold && (
@@ -123,7 +114,6 @@ export function ItemListView({
                 </Button>
               </TableHead>
             )}
-            <TableHead className="w-24">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -138,7 +128,6 @@ export function ItemListView({
                 <TableCell><Skeleton className="h-4 w-16 dark:bg-card/60" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-16 dark:bg-card/60" /></TableCell>
                 {showSold && <TableCell><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>}
-                <TableCell><Skeleton className="h-8 w-8 dark:bg-card/60" /></TableCell>
               </TableRow>
             ))
           ) : (
@@ -182,66 +171,24 @@ export function ItemListView({
                   £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end space-x-2">
-                    <span className="whitespace-nowrap dark:text-foreground">£{item.ebaySold?.toFixed(2) || 'N/A'}</span>
-                    {onEbayRefresh && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEbayRefresh(item.id, item.name, 'sold')}
-                        className="h-8 w-8 p-0 dark:text-muted-foreground dark:hover:text-primary"
-                        disabled={loadingSoldItemId === item.id}
-                      >
-                        {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end space-x-2">
-                    <span className="whitespace-nowrap dark:text-foreground">£{item.ebayListed?.toFixed(2) || 'N/A'}</span>
-                    {onEbayRefresh && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEbayRefresh(item.id, item.name, 'listed')}
-                        className="h-8 w-8 p-0 dark:text-muted-foreground dark:hover:text-primary"
-                        disabled={loadingListedItemId === item.id}
-                      >
-                        {loadingListedItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      </Button>
+                  <div className="flex flex-col items-end space-y-1">
+                    {item.aiEstimateLow && item.aiEstimateHigh ? (
+                      <>
+                        <div className="text-sm">
+                          £{item.aiEstimateLow.toFixed(2)} - £{item.aiEstimateHigh.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {item.aiConfidence} confidence
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">No estimate</div>
                     )}
                   </div>
                 </TableCell>
                 {showSold && (
                   <TableCell className="dark:text-foreground">{item.soldDate ? formatDate(item.soldDate) : 'N/A'}</TableCell>
                 )}
-                <TableCell>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20 dark:text-destructive dark:hover:text-destructive-foreground dark:hover:bg-destructive/20"
-                        disabled={loadingItemId === item.id}
-                      >
-                        {loadingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="dark:bg-card dark:border-border">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="dark:text-foreground">Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription className="dark:text-muted-foreground">
-                          This action cannot be undone. This will permanently delete the item from your collection.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="dark:bg-card/50 dark:text-foreground dark:hover:bg-card/80 dark:border-border">Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDelete(item.id)} className="dark:bg-primary dark:hover:bg-primary/80">Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </TableCell>
               </TableRow>
             ))
           )}

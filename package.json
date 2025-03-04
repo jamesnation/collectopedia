@@ -9,7 +9,8 @@
     "lint": "next lint",
     "db:generate": "npx drizzle-kit generate:pg",
     "db:push": "npx drizzle-kit push:pg",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "update-ai-estimates": "tsx scripts/update-ai-estimates.ts"
   },
   "dependencies": {
     "@clerk/backend": "^1.9.0",

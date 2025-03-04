@@ -21,8 +21,11 @@ export interface CatalogItem {
   soldPrice: number | null;
   soldDate: Date | null;
   images?: string[];
-  ebayListed?: number | null;
-  ebaySold?: number | null;
+  aiEstimateLow?: number | null;
+  aiEstimateMedium?: number | null;
+  aiEstimateHigh?: number | null;
+  aiConfidence?: "High" | "Medium" | "Low" | null;
+  aiLastUpdated?: Date | null;
 }
 
 export interface CustomEntity {
@@ -45,7 +48,7 @@ export const mapSchemaItemToCatalogItem = (item: SelectItem): CatalogItem => {
 // Transform from component type to schema type for sending to the server
 export const mapCatalogItemToSchemaItem = (item: CatalogItem) => {
   // Create a new object with all properties except those that need special handling
-  const { notes, soldDate, soldPrice, image, ebayListed, ebaySold, ...rest } = item;
+  const { notes, soldDate, soldPrice, image, aiEstimateLow, aiEstimateMedium, aiEstimateHigh, aiConfidence, aiLastUpdated, ...rest } = item;
   
   return {
     ...rest,
@@ -55,8 +58,11 @@ export const mapCatalogItemToSchemaItem = (item: CatalogItem) => {
     soldDate: soldDate || undefined,
     soldPrice: soldPrice || undefined,
     image: image || undefined,
-    ebayListed: ebayListed || undefined,
-    ebaySold: ebaySold || undefined,
+    aiEstimateLow: aiEstimateLow || undefined,
+    aiEstimateMedium: aiEstimateMedium || undefined,
+    aiEstimateHigh: aiEstimateHigh || undefined,
+    aiConfidence: aiConfidence || undefined,
+    aiLastUpdated: aiLastUpdated || undefined,
     // Ensure notes is always a string
     notes: notes || '',
   };

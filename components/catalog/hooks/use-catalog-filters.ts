@@ -130,6 +130,12 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
             comparison = -1;
           }
           break;
+        case 'aiEstimateLow':
+          comparison = (a.aiEstimateLow ?? 0) - (b.aiEstimateLow ?? 0);
+          break;
+        case 'aiEstimateHigh':
+          comparison = (a.aiEstimateHigh ?? 0) - (b.aiEstimateHigh ?? 0);
+          break;
       }
 
       return direction === 'ascending' ? comparison : -comparison;
@@ -152,14 +158,14 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     return filteredAndSortedItems.reduce((acc, item) => {
       acc.totalValue += showSold ? (item.soldPrice ?? 0) : item.value;
       acc.totalCost += item.cost;
-      acc.ebayListedValue += showSold ? 0 : (item.ebayListed ?? 0);
-      acc.ebaySoldValue += showSold ? 0 : (item.ebaySold ?? 0);
+      acc.aiEstimateLow += showSold ? 0 : (item.aiEstimateLow ?? 0);
+      acc.aiEstimateHigh += showSold ? 0 : (item.aiEstimateHigh ?? 0);
       return acc;
     }, {
       totalValue: 0,
       totalCost: 0,
-      ebayListedValue: 0,
-      ebaySoldValue: 0
+      aiEstimateLow: 0,
+      aiEstimateHigh: 0
     });
   }, [filteredAndSortedItems, showSold]);
 

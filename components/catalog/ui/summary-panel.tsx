@@ -1,12 +1,12 @@
-import { DollarSign, ShoppingCart, BarChart4, Percent } from "lucide-react";
+import { DollarSign, ShoppingCart, BarChart4, Percent, Brain } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface SummaryPanelProps {
   totalValue?: number;
   totalCost?: number;
   totalItems?: number;
-  ebayListedValue?: number;
-  ebaySoldValue?: number;
+  aiEstimateLow?: number;
+  aiEstimateHigh?: number;
   showSold: boolean;
 }
 
@@ -28,8 +28,8 @@ export default function SummaryPanel({
   totalValue = 0,
   totalCost = 0,
   totalItems = 0,
-  ebayListedValue = 0,
-  ebaySoldValue = 0,
+  aiEstimateLow = 0,
+  aiEstimateHigh = 0,
   showSold = false
 }: SummaryPanelProps) {
   const profit = totalValue - totalCost;
@@ -79,12 +79,12 @@ export default function SummaryPanel({
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Profit Margin</p>
-              <p className={`text-2xl font-bold ${profitMargin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {profitMargin.toFixed(2)}%
+              <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">AI Value Range</p>
+              <p className="text-2xl font-bold dark:text-foreground">
+                {formatCurrency(aiEstimateLow)} - {formatCurrency(aiEstimateHigh)}
               </p>
             </div>
-            <Percent className="h-6 w-6 text-purple-400 dark:text-purple-400" aria-label="Profit Margin" />
+            <Brain className="h-6 w-6 text-purple-400 dark:text-purple-400" aria-label="AI Value Range" />
           </div>
         </CardContent>
       </Card>

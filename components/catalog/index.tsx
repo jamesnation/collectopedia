@@ -237,8 +237,8 @@ export default function Catalog({
           totalValue={summaryValues.totalValue}
           totalCost={summaryValues.totalCost}
           totalItems={filteredAndSortedItems.length}
-          ebayListedValue={summaryValues.ebayListedValue}
-          ebaySoldValue={summaryValues.ebaySoldValue}
+          aiEstimateLow={summaryValues.aiEstimateLow}
+          aiEstimateHigh={summaryValues.aiEstimateHigh}
           showSold={showSold}
         />
 
