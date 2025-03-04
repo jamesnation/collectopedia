@@ -11,7 +11,7 @@ const CRON_SECRET = process.env.CRON_SECRET;
 
 // IMPORTANT: After confirming everything works, set this to false!
 // This is just for initial setup and debugging
-const ALLOW_UNAUTHENTICATED_FOR_TESTING = true; 
+const ALLOW_UNAUTHENTICATED_FOR_TESTING = false; 
 
 // Define interfaces for our batch processing
 interface ItemUpdate {
