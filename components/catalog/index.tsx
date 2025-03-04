@@ -10,7 +10,7 @@ import SummaryPanel from './ui/summary-panel';
 import { ItemListView } from './ui/item-list-view';
 import { ItemGridView } from './ui/item-grid-view';
 import { AddItemModal } from './ui/add-item-modal';
-import { DEFAULT_BRANDS } from './utils/schema-adapter';
+import { DEFAULT_BRANDS, CatalogItem } from './utils/schema-adapter';
 import { toast } from "@/components/ui/use-toast";
 
 // Import custom hooks
@@ -84,10 +84,6 @@ export default function Catalog({
     handleSort
   } = useCatalogFilters({ items });
 
-  // State for eBay refresh loading states
-  const [loadingListedItemId, setLoadingListedItemId] = useState<string | null>(null);
-  const [loadingSoldItemId, setLoadingSoldItemId] = useState<string | null>(null);
-
   // Load data on component mount
   useEffect(() => {
     fetchItems();
@@ -95,63 +91,6 @@ export default function Catalog({
     loadCustomFranchises();
     loadCustomBrands();
   }, [fetchItems, loadCustomTypes, loadCustomFranchises, loadCustomBrands]);
-
-  // Handle eBay refresh
-  const handleEbayRefresh = async (id: string, name: string, type: 'sold' | 'listed') => {
-    if (type === 'sold') {
-      setLoadingSoldItemId(id);
-    } else {
-      setLoadingListedItemId(id);
-    }
-
-    try {
-      // Call the real eBay API through our server action
-      const { updateEbayPrices } = await import('@/actions/ebay-actions');
-      const result = await updateEbayPrices(id, name, type);
-      
-      if (result.success) {
-        console.log('eBay update result:', result);
-        
-        // Update the local state with the new value
-        const updatedItems = items.map(item => {
-          if (item.id === id) {
-            return {
-              ...item,
-              ebayListed: type === 'listed' ? result.prices.median : item.ebayListed,
-              ebaySold: type === 'sold' ? result.prices.median : item.ebaySold
-            };
-          }
-          return item;
-        });
-        
-        // Update the items state with the new values
-        setItems(updatedItems);
-        
-        // No need to call updateItem since the server action already updated the database
-        
-        // Toast notification for success
-        toast({
-          title: "eBay prices updated",
-          description: `Successfully updated ${type} prices for ${name}.`,
-        });
-      } else {
-        throw new Error(result.error || `Failed to update ${type} value`);
-      }
-    } catch (error) {
-      console.error(`Error refreshing eBay ${type} value for ${name}:`, error);
-      toast({
-        title: "Error",
-        description: `Failed to update ${type} prices. Please try again.`,
-        variant: "destructive",
-      });
-    } finally {
-      if (type === 'sold') {
-        setLoadingSoldItemId(null);
-      } else {
-        setLoadingListedItemId(null);
-      }
-    }
-  };
 
   // Create custom entity handlers
   const createCustomType = useCallback(async (name: string): Promise<boolean> => {
@@ -197,6 +136,17 @@ export default function Catalog({
     }
   };
 
+  // Wrap addItem to return a boolean
+  const handleAddItem = async (newItem: Omit<CatalogItem, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
+    try {
+      await addItem(newItem);
+      return true;
+    } catch (error) {
+      console.error('Error adding item:', error);
+      return false;
+    }
+  };
+
   return (
     <div className="min-h-screen text-foreground transition-colors duration-200 
       bg-slate-50 dark:bg-black/30">
@@ -220,7 +170,7 @@ export default function Catalog({
             </Button>
             
             <AddItemModal
-              onAddItem={addItem}
+              onAddItem={handleAddItem}
               customTypes={customTypes}
               customFranchises={customFranchises}
               customBrands={customBrands}
@@ -266,65 +216,23 @@ export default function Catalog({
           customFranchises={customFranchises}
         />
 
-        {/* Main Content - Conditional rendering based on view type */}
-        <div className="mt-6">
-          {view === 'list' ? (
-            <ItemListView
-              items={filteredAndSortedItems}
-              isLoading={isLoading}
-              onDelete={deleteItem}
-              onEbayRefresh={handleEbayRefresh}
-              loadingListedItemId={loadingListedItemId}
-              loadingSoldItemId={loadingSoldItemId}
-              loadingItemId={loadingItemId}
-              onSort={handleSort}
-              sortDescriptor={sortDescriptor}
-              showSold={showSold}
-            />
-          ) : (
-            <ItemGridView
-              items={filteredAndSortedItems}
-              isLoading={isLoading}
-              onDelete={deleteItem}
-              showSold={showSold}
-              loadingItemId={loadingItemId}
-            />
-          )}
-        </div>
-
-        {/* Empty state */}
-        {!isLoading && filteredAndSortedItems.length === 0 && (
-          <div className="bg-card dark:bg-card/60 dark:border-border dark:border-l-primary/30 dark:border-l-4 p-8 rounded-lg border border-border mt-6 text-center">
-            <h3 className="text-lg font-medium mb-2 dark:text-foreground">No items found</h3>
-            <p className="text-muted-foreground dark:text-muted-foreground mb-4">
-              {showSold 
-                ? "You don't have any sold items matching your filters." 
-                : "Your collection is empty or no items match your current filters."}
-            </p>
-            <AddItemModal
-              onAddItem={addItem}
-              customTypes={customTypes}
-              customFranchises={customFranchises}
-              customBrands={customBrands}
-              onLoadCustomTypes={loadCustomTypes}
-              onLoadCustomFranchises={loadCustomFranchises}
-              onLoadCustomBrands={loadCustomBrands}
-              isLoading={isLoading}
-            />
-          </div>
+        {/* Item List/Grid View */}
+        {view === 'list' ? (
+          <ItemListView
+            items={filteredAndSortedItems}
+            isLoading={isLoading}
+            sortDescriptor={sortDescriptor}
+            onSort={handleSort}
+            showSold={showSold}
+          />
+        ) : (
+          <ItemGridView
+            items={filteredAndSortedItems}
+            isLoading={isLoading}
+            showSold={showSold}
+          />
         )}
-
-        {/* Items count footer */}
-        <div className="mt-6 text-sm text-muted-foreground dark:text-muted-foreground text-center">
-          {isLoading ? 'Loading items...' : `Showing ${totalCount} ${totalCount === 1 ? 'item' : 'items'}`}
-        </div>
       </main>
-
-      <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border dark:border-border">
-        <div className="text-center text-sm text-muted-foreground dark:text-muted-foreground">
-          © 2024 <span className="dark:text-purple-400">Collectopedia</span>. All rights reserved.
-        </div>
-      </footer>
     </div>
   );
 } 
