@@ -521,6 +521,9 @@ export function CSVImport({
               // Set final progress
               updateProgress(100);
               
+              // Update the importErrors state with all collected errors
+              setImportErrors(errors);
+              
               setCurrentStatus('Import completed');
               // Only set isImporting to false AFTER we've completed everything
               setTimeout(() => {
@@ -616,6 +619,12 @@ export function CSVImport({
     link.click()
     document.body.removeChild(link)
   }, [importErrors])
+
+  // Add debug logging for showErrors state changes
+  useEffect(() => {
+    console.log('🔍 showErrors state changed:', showErrors);
+    console.log('🔍 importErrors length:', importErrors.length);
+  }, [showErrors, importErrors]);
 
   return (
     <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
@@ -738,10 +747,16 @@ export function CSVImport({
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => setShowErrors(!showErrors)}
+                        onClick={() => {
+                          console.log('🔍 Button clicked, current showErrors:', showErrors);
+                          setShowErrors(prev => {
+                            console.log('🔍 Setting showErrors from:', prev, 'to:', !prev);
+                            return !prev;
+                          });
+                        }}
                         className="mt-2 dark:bg-transparent dark:border-red-500/20 dark:text-red-400 dark:hover:bg-red-900/30"
                       >
-                        {showErrors ? 'Hide' : 'Show'} Failed Items
+                        {showErrors ? 'Hide' : 'Show'} Failed Items ({importErrors.length})
                       </Button>
                     </div>
                   </AlertDescription>
@@ -759,52 +774,60 @@ export function CSVImport({
           )}
           
           {/* Error details */}
-          {importErrors.length > 0 && showErrors && (
-            <div className="mt-4 border rounded-md overflow-hidden dark:border-gray-800">
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <FileWarning className="h-4 w-4 mr-2 text-red-500 dark:text-red-400" />
-                    <span className="font-medium dark:text-red-200">Failed Items ({importErrors.length})</span>
+          {(() => {
+            console.log('🔍 Error section render check:', {
+              hasErrors: importErrors.length > 0,
+              showErrors,
+              errorCount: importErrors.length
+            });
+            if (!importErrors.length || !showErrors) return null;
+            return (
+              <div className="mt-4 border rounded-md overflow-hidden dark:border-gray-800">
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <FileWarning className="h-4 w-4 mr-2 text-red-500 dark:text-red-400" />
+                      <span className="font-medium dark:text-red-200">Failed Items ({importErrors.length})</span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={downloadErrorReport}
+                      className="dark:bg-transparent dark:border-red-500/20 dark:text-red-400 dark:hover:bg-red-900/30"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Error Report
+                    </Button>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={downloadErrorReport}
-                    className="dark:bg-transparent dark:border-red-500/20 dark:text-red-400 dark:hover:bg-red-900/30"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Error Report
-                  </Button>
-                </div>
-                <ScrollArea className="h-[300px]">
-                  <div className="space-y-2">
-                    {importErrors.map((error, index) => (
-                      <div key={index} className="p-3 border rounded-md bg-white dark:bg-red-900/10 dark:border-red-800">
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="font-medium dark:text-red-200">
-                            {error.rowIndex > 0 ? `Row ${error.rowIndex}` : 'File Error'}
-                          </span>
-                          {error.rowData.name && (
-                            <span className="text-sm text-gray-500 dark:text-red-300/70">Item: {error.rowData.name}</span>
+                  <ScrollArea className="h-[300px]">
+                    <div className="space-y-2">
+                      {importErrors.map((error, index) => (
+                        <div key={index} className="p-3 border rounded-md bg-white dark:bg-red-900/10 dark:border-red-800">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-medium dark:text-red-200">
+                              {error.rowIndex > 0 ? `Row ${error.rowIndex}` : 'File Error'}
+                            </span>
+                            {error.rowData.name && (
+                              <span className="text-sm text-gray-500 dark:text-red-300/70">Item: {error.rowData.name}</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-red-600 dark:text-red-300">{error.error}</p>
+                          {error.rowData && Object.keys(error.rowData).length > 0 && (
+                            <div className="mt-2 text-xs text-gray-500 dark:text-red-300/70">
+                              <p className="font-medium mb-1">Item Data:</p>
+                              <pre className="whitespace-pre-wrap">
+                                {JSON.stringify(error.rowData, null, 2)}
+                              </pre>
+                            </div>
                           )}
                         </div>
-                        <p className="text-sm text-red-600 dark:text-red-300">{error.error}</p>
-                        {error.rowData && Object.keys(error.rowData).length > 0 && (
-                          <div className="mt-2 text-xs text-gray-500 dark:text-red-300/70">
-                            <p className="font-medium mb-1">Item Data:</p>
-                            <pre className="whitespace-pre-wrap">
-                              {JSON.stringify(error.rowData, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </CardContent>
     </Card>
