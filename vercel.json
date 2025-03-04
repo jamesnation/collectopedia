@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/update-ebay-values",
+      "schedule": "0 0 * * *"
+    }
+  ]
+} 
