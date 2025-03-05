@@ -22,7 +22,7 @@ export function NoteCard({ note, onUpdate }: NoteCardProps) {
     setRefreshingType(type)
     try {
       const result = await updateEbayPrices(note.id, note.title, type)
-      if (result.success) {
+      if (result.success && result.prices) {
         const updatedNote = {
           ...note,
           [type === 'listed' ? 'ebayListedValue' : 'ebaySoldValue']: result.prices.median
