@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { getImagesByItemIdAction } from '@/actions/images-actions';
 import { SelectImage } from '@/db/schema/images-schema';
 import { useImageCache } from '../context/image-cache-context';
+import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image';
 
 interface ItemGridViewProps {
   items: CatalogItem[];
@@ -19,8 +20,8 @@ interface ItemGridViewProps {
   loadingItemId?: string | null;
 }
 
-// Placeholder image for items without images
-const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`;
+// Replace the old placeholder with the new constant
+const placeholderImage = PLACEHOLDER_IMAGE_PATH;
 
 export function ItemGridView({
   items,
@@ -29,7 +30,13 @@ export function ItemGridView({
 }: ItemGridViewProps) {
   // State to track image loading status
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
-  const { imageCache, isLoading: isLoadingImages, loadImages } = useImageCache();
+  const { 
+    imageCache, 
+    isLoading: isLoadingImages, 
+    loadImages,
+    hasCompletedLoading,
+    hasImages
+  } = useImageCache();
 
   // Load images when items change
   useEffect(() => {
@@ -58,10 +65,93 @@ export function ItemGridView({
   }, [imageCache, items]);
 
   const handleImageLoad = (id: string) => {
+    console.log(`[GRID] Image loaded for item ${id}`);
     setLoadedImages(prev => ({
       ...prev,
       [id]: true
     }));
+  };
+
+  // Add diagnostic effects
+  useEffect(() => {
+    if (items.length > 0) {
+      console.log('[GRID] Items changed, count:', items.length);
+    }
+  }, [items]);
+
+  useEffect(() => {
+    console.log('[GRID] LoadedImages state updated:', Object.keys(loadedImages).length, 'items loaded');
+  }, [loadedImages]);
+
+  // Add rendering diagnostics
+  const renderImage = (item: CatalogItem) => {
+    const itemId = item.id;
+    // Use the new hasImages helper from context
+    const hasActualImage = hasImages(itemId) || (item.image !== null && item.image !== undefined);
+    const isItemLoading = isLoadingImages[itemId];
+    const isCompleted = hasCompletedLoading[itemId];
+    const isImageLoaded = loadedImages[itemId];
+
+    console.log(`[GRID] Rendering image for ${itemId}:`, { 
+      hasActualImage, 
+      isItemLoading, 
+      isImageLoaded,
+      isCompleted,
+      imageSource: hasActualImage ? 'actual' : 'placeholder'
+    });
+
+    // Still loading and not yet determined if has images
+    if (isItemLoading || (!isCompleted && !hasActualImage)) {
+      return (
+        <div className="flex items-center justify-center h-40 w-full bg-muted dark:bg-card/40">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
+        </div>
+      );
+    }
+
+    // Loading completed and we know we have an actual image
+    if (hasActualImage) {
+      return (
+        <div className="relative h-40 w-full overflow-hidden">
+          {/* Stable placeholder background during loading to prevent layout shift */}
+          <div className="absolute inset-0 bg-muted dark:bg-gray-800"></div>
+          
+          {/* Loading spinner on top while image is still loading */}
+          {!isImageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted/70 dark:bg-card/50 z-10">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
+            </div>
+          )}
+          
+          {/* The actual image with smoother transitions */}
+          <Image
+            src={getItemPrimaryImage(itemId)}
+            alt={item.name}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            style={{ objectFit: 'cover' }}
+            className={`transition-all duration-500 ${isImageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.97]'}`}
+            onLoadingComplete={() => handleImageLoad(itemId)}
+          />
+          
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 z-20">
+            <Button variant="secondary" size="sm" className="gap-1 dark:bg-primary dark:text-foreground dark:hover:bg-primary/80">
+              <Eye className="h-4 w-4" /> View Details
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // Loading completed and we know we don't have an image - show placeholder with consistent size
+    return (
+      <div className="rounded-md overflow-hidden w-full h-40">
+        <PlaceholderImage 
+          className="w-full h-full" 
+        />
+      </div>
+    );
   };
 
   return (
@@ -87,33 +177,7 @@ export function ItemGridView({
           <Card key={item.id} className="bg-card border-border dark:bg-card/60 dark:border-border relative flex flex-col overflow-hidden">
             <div className="relative">
               <Link href={`/item/${item.id}`}>
-                {isLoadingImages[item.id] ? (
-                  <div className="flex items-center justify-center h-40 w-full bg-muted dark:bg-card/40">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
-                  </div>
-                ) : (
-                  <div className="relative h-40 w-full overflow-hidden">
-                    {!loadedImages[item.id] && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-muted dark:bg-card/30">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
-                      </div>
-                    )}
-                    <Image
-                      src={getItemPrimaryImage(item.id)}
-                      alt={item.name}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      style={{ objectFit: 'cover' }}
-                      className={`transition-all duration-300 group-hover:scale-110 ${loadedImages[item.id] ? 'opacity-100' : 'opacity-0'}`}
-                      onLoadingComplete={() => handleImageLoad(item.id)}
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <Button variant="secondary" size="sm" className="gap-1 dark:bg-primary dark:text-foreground dark:hover:bg-primary/80">
-                        <Eye className="h-4 w-4" /> View Details
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                {renderImage(item)}
               </Link>
             </div>
 

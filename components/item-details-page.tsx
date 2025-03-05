@@ -27,8 +27,9 @@ import DynamicImageUpload from "@/components/image-upload"
 import { generateYearOptions } from "@/lib/utils"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getCustomBrandsAction } from "@/actions/custom-brands-actions"
+import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image'
 
-const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23CCCCCC'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%23666666'%3ENo Image%3C/text%3E%3C/svg%3E`
+const placeholderImage = PLACEHOLDER_IMAGE_PATH;
 
 // Mock data for value over time (replace with real data later)
 const valueData = [
@@ -388,6 +389,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 layout="fill"
                 objectFit="cover"
                 className="rounded-lg shadow-lg"
+                priority={true}
               />
               {images.length > 1 && (
                 <>
@@ -459,6 +461,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         alt={`${item?.name} - Thumbnail ${index + 1}`}
                         layout="fill"
                         objectFit="cover"
+                        loading="lazy"
                       />
                     </button>
                   ))}
@@ -996,6 +999,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                       height={200}
                       layout="responsive"
                       className="object-cover"
+                      loading="lazy"
                     />
                   </CardHeader>
                   <CardContent className="p-4">
