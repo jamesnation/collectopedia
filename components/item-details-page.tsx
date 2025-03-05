@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X, RefreshCw, BarChart4, Percent } from "lucide-react"
 import { getItemByIdAction, updateItemAction } from "@/actions/items-actions"
 import { createSoldItemAction, getSoldItemByItemIdAction, updateSoldItemAction } from "@/actions/sold-items-actions"
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
@@ -63,6 +63,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [customBrands, setCustomBrands] = useState<{ id: string; name: string }[]>([])
   const yearOptions = generateYearOptions()
+  const [loadingAiPrice, setLoadingAiPrice] = useState(false)
 
   const defaultBrands = [
     'DC',
@@ -310,6 +311,42 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     }
   };
 
+  const handleAiPriceRefresh = async () => {
+    if (item) {
+      try {
+        setLoadingAiPrice(true);
+        
+        // Import the action dynamically to avoid SSR issues
+        const { updateEbayPrices } = await import('@/actions/ebay-actions');
+        const result = await updateEbayPrices(item.id, item.name, 'listed');
+        
+        if (result.success) {
+          // Update the local state with the new value
+          setItem({
+            ...item,
+            ebayListed: result.prices.median
+          });
+          
+          toast({
+            title: "AI Price updated",
+            description: `Successfully updated AI price for ${item.name}.`,
+          });
+        } else {
+          throw new Error(result.error || 'Failed to update AI price');
+        }
+      } catch (error) {
+        console.error(`Error refreshing AI price for ${item.name}:`, error);
+        toast({
+          title: "Error",
+          description: "Failed to update AI price. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingAiPrice(false);
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -459,12 +496,12 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               </PopoverContent>
             </Popover>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="border dark:border-border shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Estimated Value</CardTitle>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
+              <Card className="border dark:border-border shadow-sm h-full overflow-hidden">
+                <CardHeader className="pb-1 md:pb-2">
+                  <CardTitle className="text-base md:text-lg">Estimated Value</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0 pb-3">
                   <Popover open={editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
                     <PopoverTrigger asChild>
                       <Button
@@ -472,7 +509,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         className="p-0 h-auto font-normal group"
                         onClick={() => handleEditStart('value')}
                       >
-                        <span className="text-4xl font-bold text-purple-400">
+                        <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-purple-400 truncate max-w-[95%]">
                           ${typeof item.value === 'number' ? item.value.toFixed(2) : parseFloat(item.value).toFixed(2)}
                         </span>
                         <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -501,11 +538,35 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </Popover>
                 </CardContent>
               </Card>
-              <Card className="border dark:border-border shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Purchase Cost</CardTitle>
+              <Card className="border dark:border-border shadow-sm h-full overflow-hidden">
+                <CardHeader className="pb-1 md:pb-2">
+                  <CardTitle className="text-base md:text-lg">AI Price Estimate</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0 pb-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-purple-400 truncate max-w-[95%]">
+                      ${item.ebayListed ? item.ebayListed.toFixed(2) : 'N/A'}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleAiPriceRefresh}
+                      className="flex-shrink-0 h-6 w-6 md:h-8 md:w-8 p-0 text-muted-foreground hover:text-primary"
+                      disabled={loadingAiPrice}
+                    >
+                      {loadingAiPrice ? 
+                        <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : 
+                        <RefreshCw className="h-4 w-4 md:h-5 md:w-5" />
+                      }
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border dark:border-border shadow-sm h-full overflow-hidden sm:col-span-2 lg:col-span-1">
+                <CardHeader className="pb-1 md:pb-2">
+                  <CardTitle className="text-base md:text-lg">Purchase Cost</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 pb-3">
                   <Popover open={editingField === 'cost'} onOpenChange={(open) => !open && handleEditCancel()}>
                     <PopoverTrigger asChild>
                       <Button
@@ -513,7 +574,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         className="p-0 h-auto font-normal group"
                         onClick={() => handleEditStart('cost')}
                       >
-                        <span className="text-4xl font-bold">
+                        <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold truncate max-w-[95%]">
                           ${typeof item.cost === 'number' ? item.cost.toFixed(2) : parseFloat(item.cost).toFixed(2)}
                         </span>
                         <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -543,6 +604,38 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 </CardContent>
               </Card>
             </div>
+            
+            {/* Add the new Profit Metrics card */}
+            <Card className="border dark:border-border shadow-sm mt-3 md:mt-4 lg:mt-6 overflow-hidden">
+              <CardHeader className="pb-1 md:pb-2">
+                <CardTitle className="text-base md:text-lg">Profit Metrics</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 pb-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                  {/* Total Profit */}
+                  <div className="space-y-1">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Profit</p>
+                    <div className="flex items-center">
+                      <p className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold truncate max-w-[90%] ${(item.value - item.cost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        ${(item.value - item.cost).toFixed(2)}
+                      </p>
+                      <BarChart4 className="flex-shrink-0 ml-1 sm:ml-2 h-4 w-4 md:h-5 md:w-5 text-purple-400" aria-label="Total Profit" />
+                    </div>
+                  </div>
+                  
+                  {/* Profit Margin */}
+                  <div className="space-y-1">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Profit Margin</p>
+                    <div className="flex items-center">
+                      <p className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold truncate max-w-[90%] ${(item.cost > 0 ? ((item.value - item.cost) / item.cost * 100) : 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {item.cost > 0 ? ((item.value - item.cost) / item.cost * 100).toFixed(2) : '0.00'}%
+                      </p>
+                      <Percent className="flex-shrink-0 ml-1 sm:ml-2 h-4 w-4 md:h-5 md:w-5 text-purple-400" aria-label="Profit Margin" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             
             <Card className="border dark:border-border shadow-sm dark:bg-card/60">
               <CardHeader>
