@@ -456,7 +456,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             {debugData.imageMatches && debugData.imageMatches.length > 0 ? (
               <div>
                 <h4 className="text-xs font-semibold mb-2 text-blue-700 dark:text-blue-400">
-                  Image-based Matches ({debugData.imageMatches.length})
+                  Image + Title-based Matches ({debugData.imageMatches.length})
                 </h4>
                 
                 {/* Debug output to see the raw data */}
@@ -464,6 +464,19 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   <pre>
                     {JSON.stringify(debugData.imageMatches[0], null, 2)}
                   </pre>
+                  <div className="mt-2 text-yellow-400">^ First match of {debugData.imageMatches.length} total matches</div>
+                  <div className="mt-1 text-blue-400">Searches now use both image and title for more accurate results</div>
+                  <div className="mt-1 text-pink-400 font-semibold">Image-based results are now exclusively used when available</div>
+                  {debugData.imageSearchDetails?.titleFilterWords && (
+                    <div className="mt-1 text-green-400">
+                      Title filtering applied with words: {debugData.imageSearchDetails.titleFilterWords.join(', ')}
+                    </div>
+                  )}
+                  {debugData.imageSearchDetails?.originalResultCount && debugData.imageSearchDetails?.filteredResultCount && (
+                    <div className="mt-1 text-purple-400">
+                      Filtered from {debugData.imageSearchDetails.originalResultCount} to {debugData.imageSearchDetails.filteredResultCount} results
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
@@ -664,7 +677,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   {debugData.imageSearchDetails.originalResults && 
                    debugData.imageSearchDetails.originalResults.length > 0 && (
                     <div className="mt-2">
-                      <h5 className="font-semibold text-xs mb-1">Raw Image Matches from eBay:</h5>
+                      <h5 className="font-semibold text-xs mb-1">Original Unfiltered Matches (before title word filtering):</h5>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                         {debugData.imageSearchDetails.originalResults.map((match: any, idx: number) => (
                           <a 

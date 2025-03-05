@@ -101,11 +101,13 @@ export async function POST(request: Request) {
       image: string;
       limit: number;
       filter?: string;
+      q?: string;  // Add search query parameter
     }
     
     const payload: EbayImageSearchPayload = {
       image: imageBase64,
-      limit: 100 // Increased from 50 to get more potential matches
+      limit: 100, // Increased from 50 to get more potential matches
+      q: title    // Include the item title as a search query
     };
     
     if (filterString) {
@@ -113,6 +115,7 @@ export async function POST(request: Request) {
     }
     
     console.log(`[eBay API Route] Making request to eBay API with payload size ~${JSON.stringify(payload).length / 1024}KB`);
+    console.log(`[eBay API Route] Including title in search: "${title}"`);
     
     // DETAILED LOGGING: Add request information
     console.log(`[eBay API Route] eBay request details: ${JSON.stringify({
@@ -123,6 +126,7 @@ export async function POST(request: Request) {
       },
       payloadSize: JSON.stringify(payload).length,
       filter: filterString || 'None',
+      searchQuery: title || 'None',
       imageDataFirstChars: payload.image.substring(0, 50) + '...'
     })}`);
     
@@ -234,8 +238,27 @@ export async function POST(request: Request) {
     // Store original results for debugging
     const originalResults = ebayData.itemSummaries;
     
-    // Extract prices from the results
-    const prices = originalResults
+    // Apply strict title word filtering - keep only items containing ALL words from the search title
+    const titleWords = title.toLowerCase().split(/\s+/).filter((word: string) => 
+      word.length > 2 && !['the', 'and', 'for', 'with'].includes(word)
+    );
+    
+    console.log(`[eBay API Route] Filtering results to contain all title words: ${titleWords.join(', ')}`);
+    
+    // Filter the results to only include items that contain all the words from the title
+    const filteredResults = originalResults.filter((item: any) => {
+      if (!item.title) return false;
+      
+      const itemTitleLower = item.title.toLowerCase();
+      // Check if each word from the original title is in the item title
+      return titleWords.every((word: string) => itemTitleLower.includes(word));
+    });
+    
+    console.log(`[eBay API Route] Filtered from ${originalResults.length} to ${filteredResults.length} results`);
+    
+    // Use the filtered results for price calculations
+    // Extract prices from the filtered results
+    const prices = filteredResults
       .filter((item: any) => item.price && parseFloat(item.price.value))
       .map((item: any) => parseFloat(item.price.value));
     
@@ -258,7 +281,7 @@ export async function POST(request: Request) {
         : prices[mid];
     }
     
-    // Return the processed data
+    // Update the response to include both original and filtered results
     return NextResponse.json({
       success: true,
       prices: {
@@ -266,13 +289,22 @@ export async function POST(request: Request) {
         median: medianPrice,
         highest: highestPrice
       },
-      itemSummaries: originalResults.slice(0, 20), // Renamed from items to itemSummaries to match client expectations
+      itemSummaries: filteredResults.slice(0, 20), // Renamed from items to itemSummaries to match client expectations
       debugData: {
         imageSearchDetails: {
-          originalResultCount: ebayData.itemSummaries.length,
+          originalResultCount: originalResults.length,
+          filteredResultCount: filteredResults.length,
           imageSearchSuccess: true,
+          apiResponse: {
+            status: response.status,
+            total: ebayData.total || 0
+          },
+          filterString: filterString,
+          titleFilterWords: titleWords,
           timestamp: new Date().toISOString(),
-          filterString: filterString
+          // Include both original and filtered results for debug
+          originalResults: originalResults.slice(0, 10),
+          filteredResults: filteredResults.slice(0, 10)
         }
       }
     });

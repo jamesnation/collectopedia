@@ -736,7 +736,7 @@ export async function getEnhancedEbayPrices(
 
 /**
  * Calculate a combined price from text-based and image-based searches
- * Weighted more heavily toward image-based results when available
+ * Now completely prioritizes image-based results when available
  */
 function calculateCombinedPrice(
   textBased?: { lowest: number; median: number; highest: number } | null,
@@ -760,37 +760,18 @@ function calculateCombinedPrice(
     return textBased;
   }
 
-  // Determine if either data source has zero values
-  const textHasZeros = textBased.lowest === 0 && textBased.median === 0 && textBased.highest === 0;
+  // Determine if image-based data has zero values
   const imageHasZeros = imageBased.lowest === 0 && imageBased.median === 0 && imageBased.highest === 0;
   
-  // If one source has all zeros, use the other source exclusively
-  if (textHasZeros && !imageHasZeros) {
-    console.log('Text-based prices are all zeros, using image-based prices only');
+  // If image-based results are available and not all zeros, use them exclusively
+  if (!imageHasZeros) {
+    console.log('Image-based prices available, prioritizing them completely');
     return imageBased;
   }
   
-  if (imageHasZeros && !textHasZeros) {
-    console.log('Image-based prices are all zeros, using text-based prices only');
-    return textBased;
-  }
-  
-  // If both sources have all zeros, return zeros
-  if (textHasZeros && imageHasZeros) {
-    console.log('Both price sources have all zeros, returning zeros');
-    return { lowest: 0, median: 0, highest: 0 };
-  }
-
-  // Weight image results more heavily (70% image, 30% text)
-  // Adjust these weights as needed based on result quality
-  const combined = {
-    lowest: Math.round((imageBased.lowest * 0.7) + (textBased.lowest * 0.3)),
-    median: Math.round((imageBased.median * 0.7) + (textBased.median * 0.3)),
-    highest: Math.round((imageBased.highest * 0.7) + (textBased.highest * 0.3))
-  };
-  
-  console.log('Calculated weighted combined prices:', combined);
-  return combined;
+  // If image-based results are all zeros, fall back to text-based
+  console.log('Image-based prices are all zeros, falling back to text-based prices');
+  return textBased;
 }
 
 /**
