@@ -496,23 +496,23 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               </PopoverContent>
             </Popover>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
-              <Card className="border dark:border-border shadow-sm h-full overflow-hidden">
-                <CardHeader className="pb-1 md:pb-2">
-                  <CardTitle className="text-base md:text-lg">Estimated Value</CardTitle>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
+              <Card className="border dark:border-border shadow-sm h-full overflow-hidden text-left">
+                <CardHeader className="pb-1 md:pb-2 text-left">
+                  <CardTitle className="text-base md:text-lg text-left">Estimated Value</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 pb-3">
+                <CardContent className="pt-0 pb-3 flex flex-col items-start justify-start w-full text-left">
                   <Popover open={editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="p-0 h-auto font-normal group"
+                        className="p-0 h-auto font-normal group w-full text-left justify-start !items-start"
                         onClick={() => handleEditStart('value')}
                       >
-                        <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-purple-400 truncate max-w-[95%]">
+                        <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-purple-400 break-words text-left">
                           ${typeof item.value === 'number' ? item.value.toFixed(2) : parseFloat(item.value).toFixed(2)}
                         </span>
-                        <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity inline-flex" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
@@ -538,20 +538,20 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </Popover>
                 </CardContent>
               </Card>
-              <Card className="border dark:border-border shadow-sm h-full overflow-hidden">
-                <CardHeader className="pb-1 md:pb-2">
-                  <CardTitle className="text-base md:text-lg">AI Price Estimate</CardTitle>
+              <Card className="border dark:border-border shadow-sm h-full overflow-hidden text-left">
+                <CardHeader className="pb-1 md:pb-2 text-left">
+                  <CardTitle className="text-base md:text-lg text-left">AI Price Estimate</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 pb-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-purple-400 truncate max-w-[95%]">
+                <CardContent className="pt-0 pb-3 flex flex-col items-start justify-start w-full text-left">
+                  <div className="flex items-center gap-1 justify-start w-full text-left">
+                    <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-purple-400 break-words text-left">
                       ${item.ebayListed ? item.ebayListed.toFixed(2) : 'N/A'}
                     </span>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handleAiPriceRefresh}
-                      className="flex-shrink-0 h-6 w-6 md:h-8 md:w-8 p-0 text-muted-foreground hover:text-primary"
+                      className="flex-shrink-0 h-6 w-6 md:h-7 md:w-7 p-0 text-muted-foreground hover:text-primary ml-auto"
                       disabled={loadingAiPrice}
                     >
                       {loadingAiPrice ? 
@@ -562,22 +562,22 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border dark:border-border shadow-sm h-full overflow-hidden sm:col-span-2 lg:col-span-1">
-                <CardHeader className="pb-1 md:pb-2">
-                  <CardTitle className="text-base md:text-lg">Purchase Cost</CardTitle>
+              <Card className="border dark:border-border shadow-sm h-full overflow-hidden text-left sm:col-span-2 lg:col-span-1">
+                <CardHeader className="pb-1 md:pb-2 text-left">
+                  <CardTitle className="text-base md:text-lg text-left">Purchase Cost</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 pb-3">
+                <CardContent className="pt-0 pb-3 flex flex-col items-start justify-start w-full text-left">
                   <Popover open={editingField === 'cost'} onOpenChange={(open) => !open && handleEditCancel()}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="p-0 h-auto font-normal group"
+                        className="p-0 h-auto font-normal group w-full text-left justify-start !items-start"
                         onClick={() => handleEditStart('cost')}
                       >
-                        <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold truncate max-w-[95%]">
+                        <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold break-words text-left">
                           ${typeof item.cost === 'number' ? item.cost.toFixed(2) : parseFloat(item.cost).toFixed(2)}
                         </span>
-                        <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity inline-flex" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
@@ -605,32 +605,31 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               </Card>
             </div>
             
-            {/* Add the new Profit Metrics card */}
-            <Card className="border dark:border-border shadow-sm mt-3 md:mt-4 lg:mt-6 overflow-hidden">
-              <CardHeader className="pb-1 md:pb-2">
-                <CardTitle className="text-base md:text-lg">Profit Metrics</CardTitle>
+            <Card className="border dark:border-border shadow-sm mt-3 md:mt-4 lg:mt-6 overflow-hidden text-left">
+              <CardHeader className="pb-1 md:pb-2 text-left">
+                <CardTitle className="text-base md:text-lg text-left">Profit Metrics</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0 pb-3">
-                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+              <CardContent className="pt-0 pb-3 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
                   {/* Total Profit */}
-                  <div className="space-y-1">
-                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Profit</p>
-                    <div className="flex items-center">
-                      <p className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold truncate max-w-[90%] ${(item.value - item.cost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <div className="space-y-1 flex flex-col items-start text-left">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground text-left">Total Profit</p>
+                    <div className="flex items-center gap-1 justify-start text-left">
+                      <p className={`text-sm sm:text-base md:text-lg lg:text-xl font-bold break-words text-left ${(item.value - item.cost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                         ${(item.value - item.cost).toFixed(2)}
                       </p>
-                      <BarChart4 className="flex-shrink-0 ml-1 sm:ml-2 h-4 w-4 md:h-5 md:w-5 text-purple-400" aria-label="Total Profit" />
+                      <BarChart4 className="flex-shrink-0 h-4 w-4 md:h-5 md:w-5 text-purple-400" aria-label="Total Profit" />
                     </div>
                   </div>
                   
                   {/* Profit Margin */}
-                  <div className="space-y-1">
-                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Profit Margin</p>
-                    <div className="flex items-center">
-                      <p className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold truncate max-w-[90%] ${(item.cost > 0 ? ((item.value - item.cost) / item.cost * 100) : 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <div className="space-y-1 flex flex-col items-start text-left">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground text-left">Profit Margin</p>
+                    <div className="flex items-center gap-1 justify-start text-left">
+                      <p className={`text-sm sm:text-base md:text-lg lg:text-xl font-bold break-words text-left ${(item.cost > 0 ? ((item.value - item.cost) / item.cost * 100) : 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                         {item.cost > 0 ? ((item.value - item.cost) / item.cost * 100).toFixed(2) : '0.00'}%
                       </p>
-                      <Percent className="flex-shrink-0 ml-1 sm:ml-2 h-4 w-4 md:h-5 md:w-5 text-purple-400" aria-label="Profit Margin" />
+                      <Percent className="flex-shrink-0 h-4 w-4 md:h-5 md:w-5 text-purple-400" aria-label="Profit Margin" />
                     </div>
                   </div>
                 </div>
