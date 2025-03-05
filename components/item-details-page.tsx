@@ -28,6 +28,7 @@ import { generateYearOptions } from "@/lib/utils"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getCustomBrandsAction } from "@/actions/custom-brands-actions"
 import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image'
+import { useEbayDebugMode } from "@/hooks/use-ebay-debug-mode"
 
 const placeholderImage = PLACEHOLDER_IMAGE_PATH;
 
@@ -65,6 +66,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [customBrands, setCustomBrands] = useState<{ id: string; name: string }[]>([])
   const yearOptions = generateYearOptions()
   const [loadingAiPrice, setLoadingAiPrice] = useState(false)
+  const [debugData, setDebugData] = useState<any>(null);
+  const { isDebugMode, isInitialized } = useEbayDebugMode();
 
   const defaultBrands = [
     'DC',
@@ -109,6 +112,10 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
+
+  useEffect(() => {
+    console.log('ItemDetailsPage - Debug mode status:', { isDebugMode, isInitialized, itemId: id });
+  }, [isDebugMode, isInitialized, id]);
 
   const fetchItem = async (itemId: string) => {
     setIsLoading(true)
@@ -321,24 +328,77 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     if (item) {
       try {
         setLoadingAiPrice(true);
+        setDebugData(null); // Clear previous debug data
+        
+        // Get the current primary image URL
+        const primaryImage = images.length > 0 ? images[0].url : undefined;
+        
+        // Log that we're refreshing with debug mode
+        console.log('Refreshing AI price with debug mode:', { isDebugMode, isInitialized });
         
         // Import the action dynamically to avoid SSR issues
-        const { updateEbayPrices } = await import('@/actions/ebay-actions');
-        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition);
+        const { getEnhancedEbayPrices } = await import('@/actions/ebay-actions');
         
-        if (result.success) {
-          // Update the local state with the new value
-          setItem({
-            ...item,
-            ebayListed: result.prices.median
-          });
+        // Only proceed with debug mode if it's both enabled and initialized
+        const shouldUseDebugMode = isDebugMode && isInitialized;
+        
+        // Use the enhanced pricing function that combines text and image search
+        // Pass isDebugMode to include debug data when enabled
+        const result = await getEnhancedEbayPrices(
+          {
+            title: item.name,
+            image: primaryImage,
+            condition: item.condition
+          }, 
+          shouldUseDebugMode // Explicitly pass the debug mode
+        );
+        
+        console.log('AI price refresh result:', { 
+          hasTextBased: !!result.textBased,
+          hasImageBased: !!result.imageBased,
+          hasCombined: !!result.combined,
+          hasDebugData: !!result.debugData,
+          debugModeStatus: { isDebugMode, isInitialized, shouldUseDebugMode }
+        });
+        
+        // Store debug data if available
+        if (shouldUseDebugMode && result.debugData) {
+          console.log('Setting debug data', result.debugData);
+          setDebugData(result.debugData);
+        }
+        
+        // Check if we got pricing results
+        if (result.combined || result.textBased || result.imageBased) {
+          // Prioritize combined results, then image-based, then text-based
+          const bestPrice = result.combined?.median || 
+                           result.imageBased?.median || 
+                           result.textBased?.median;
           
-          toast({
-            title: "AI Price updated",
-            description: `Successfully updated AI price for ${item.name}.`,
-          });
+          if (bestPrice) {
+            // Update the local state with the new value
+            setItem({
+              ...item,
+              ebayListed: bestPrice
+            });
+            
+            // Also update in the database
+            const { updateItemAction } = await import('@/actions/items-actions');
+            await updateItemAction(item.id, {
+              ebayListed: bestPrice
+            });
+            
+            const method = result.combined ? 'combined text+image search' : 
+                         result.imageBased ? 'image search' : 'text search';
+            
+            toast({
+              title: "AI Price updated",
+              description: `Updated price for ${item.name} using ${method}.`,
+            });
+          } else {
+            throw new Error('No valid price found');
+          }
         } else {
-          throw new Error(result.error || 'Failed to update AI price');
+          throw new Error('Failed to retrieve prices');
         }
       } catch (error) {
         console.error(`Error refreshing AI price for ${item.name}:`, error);
@@ -351,6 +411,310 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
         setLoadingAiPrice(false);
       }
     }
+  };
+
+  const renderDebugInfo = () => {
+    // Add console log to check debug status
+    console.log('Debug Mode Status:', { 
+      isDebugMode, 
+      isInitialized,
+      hasDebugData: !!debugData,
+      shouldShowDebugPanel: isDebugMode && isInitialized 
+    });
+    
+    // Only show debug panel if debug mode is enabled and initialized
+    if (!isDebugMode || !isInitialized) return null;
+    
+    if (!debugData) {
+      return (
+        <Card className="mt-4 border border-dashed border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+              eBay Image Search Debug Mode
+            </CardTitle>
+            <CardDescription className="text-xs text-yellow-600 dark:text-yellow-500">
+              No debug data available. Try clicking Refresh on the AI Price card.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      );
+    }
+    
+    return (
+      <Card className="mt-4 border border-dashed border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+            eBay Image Search Debug Mode
+          </CardTitle>
+          <CardDescription className="text-xs text-yellow-600 dark:text-yellow-500">
+            Showing matches used for AI price estimation
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Image-based matches */}
+            {debugData.imageMatches && debugData.imageMatches.length > 0 ? (
+              <div>
+                <h4 className="text-xs font-semibold mb-2 text-blue-700 dark:text-blue-400">
+                  Image-based Matches ({debugData.imageMatches.length})
+                </h4>
+                
+                {/* Debug output to see the raw data */}
+                <div className="mb-2 p-2 bg-black text-white text-xs rounded overflow-auto max-h-40">
+                  <pre>
+                    {JSON.stringify(debugData.imageMatches[0], null, 2)}
+                  </pre>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                  {debugData.imageMatches.map((match: any) => (
+                    <a 
+                      key={match.id} 
+                      href={match.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
+                    >
+                      <div className="aspect-square relative mb-1 bg-gray-100 dark:bg-gray-800 rounded overflow-hidden">
+                        {match.image?.imageUrl ? (
+                          <Image 
+                            src={match.image.imageUrl} 
+                            alt={match.title || 'Item image'} 
+                            fill
+                            className="object-contain"
+                          />
+                        ) : typeof match.image === 'string' ? (
+                          <Image 
+                            src={match.image} 
+                            alt={match.title || 'Item image'} 
+                            fill
+                            className="object-contain"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <PlaceholderImage width={80} height={80} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xs truncate" title={match.title}>
+                        {match.title}
+                      </div>
+                      <div className="text-xs font-semibold text-green-600 dark:text-green-400">
+                        {typeof match.price === 'object' 
+                          ? `${match.price?.currency || 'GBP'} ${match.price?.value || 'N/A'}`
+                          : `GBP ${match.price || 'N/A'}`}
+                      </div>
+                      {match.relevanceScore && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Match: {Math.round(match.relevanceScore * 100)}%
+                        </div>
+                      )}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-yellow-600">No image-based matches found</p>
+            )}
+            
+            {/* Text-based matches */}
+            {debugData.textMatches && debugData.textMatches.length > 0 ? (
+              <div>
+                <h4 className="text-xs font-semibold mb-2 text-yellow-700 dark:text-yellow-400">
+                  Text-based Matches ({debugData.textMatches.length})
+                </h4>
+                
+                {/* Debug output to see the raw data */}
+                <div className="mb-2 p-2 bg-black text-white text-xs rounded overflow-auto max-h-40">
+                  <pre>
+                    {JSON.stringify(debugData.textMatches[0], null, 2)}
+                  </pre>
+                  <div className="mt-2 text-yellow-400">^ First match of {debugData.textMatches.length} total matches</div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                  {debugData.textMatches.map((match: any) => (
+                    <a 
+                      key={match.id} 
+                      href={match.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
+                    >
+                      <div className="aspect-square relative mb-1 bg-gray-100 dark:bg-gray-800 rounded overflow-hidden">
+                        {match.image?.imageUrl ? (
+                          <Image 
+                            src={match.image.imageUrl} 
+                            alt={match.title} 
+                            fill
+                            className="object-contain"
+                          />
+                        ) : typeof match.image === 'string' ? (
+                          <Image 
+                            src={match.image} 
+                            alt={match.title} 
+                            fill
+                            className="object-contain"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <PlaceholderImage width={80} height={80} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xs truncate" title={match.title}>
+                        {match.title}
+                      </div>
+                      <div className="text-xs font-semibold text-green-600 dark:text-green-400">
+                        {typeof match.price === 'object' 
+                          ? `${match.price?.currency || 'GBP'} ${match.price?.value || 'N/A'}`
+                          : `GBP ${match.price || 'N/A'}`}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-yellow-600">No text-based matches found</p>
+            )}
+            
+            {/* Add debug info about what was passed to the API */}
+            <div className="mt-4 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+              <h4 className="font-semibold mb-1">Request Details:</h4>
+              <p>Title: {item?.name}</p>
+              <p>Condition: {item?.condition}</p>
+              <p>Primary Image: {images.length > 0 ? (
+                <>
+                  ✅ Available <br />
+                  <span className="text-xs text-gray-500 break-all">{images[0]?.url}</span>
+                </>
+              ) : "❌ Not available"}</p>
+              
+              {/* Special section for image URL errors */}
+              {debugData.imageSearchDetails?.error === 'Image processing error' && (
+                <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/30 rounded">
+                  <p className="text-red-800 dark:text-red-200 font-semibold">❌ Image URL Error</p>
+                  <p className="text-red-700 dark:text-red-300 break-all">{debugData.imageSearchDetails.message}</p>
+                  {debugData.imageSearchDetails.imageUrl && (
+                    <div className="mt-1">
+                      <p className="text-xs font-semibold">Image URL (partial):</p>
+                      <p className="text-xs text-red-600 dark:text-red-300 break-all">{debugData.imageSearchDetails.imageUrl}</p>
+                    </div>
+                  )}
+                  <div className="mt-2">
+                    <p className="text-xs font-semibold">Troubleshooting steps:</p>
+                    <ol className="list-decimal pl-5 text-xs text-red-700 dark:text-red-300">
+                      <li>Check if the image URL is accessible in a browser</li>
+                      <li>Verify that the image is not too large (should be under 5MB)</li>
+                      <li>Try a different image for this item</li>
+                      <li>Check browser console for more detailed error messages</li>
+                    </ol>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show image search status and errors for non-URL-related issues */}
+              {debugData.imageSearchDetails && debugData.imageSearchDetails.error !== 'Image processing error' && (
+                <div className="mt-2 border-t pt-2 border-gray-200 dark:border-gray-700">
+                  <h4 className="font-semibold mb-1">Image Search Status:</h4>
+                  
+                  {debugData.imageSearchDetails.error ? (
+                    <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded">
+                      <p className="text-red-800 dark:text-red-200 font-semibold">❌ Error: {debugData.imageSearchDetails.error}</p>
+                      {debugData.imageSearchDetails.message && (
+                        <p className="text-red-700 dark:text-red-300">{debugData.imageSearchDetails.message}</p>
+                      )}
+                    </div>
+                  ) : debugData.imageSearchDetails.imageSearchSuccess === false ? (
+                    <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded">
+                      <p className="text-red-800 dark:text-red-200 font-semibold">❌ Image search API call failed</p>
+                      <p className="text-red-700 dark:text-red-300">
+                        Try refreshing again or check the browser console for details.
+                      </p>
+                    </div>
+                  ) : debugData.imageSearchDetails.originalResultCount === 0 ? (
+                    <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded">
+                      <p className="text-yellow-800 dark:text-yellow-200 font-semibold">⚠️ No results from eBay image search API</p>
+                      <p className="text-yellow-700 dark:text-yellow-300">
+                        The eBay API didn't find any matches for this image. Possible reasons:
+                      </p>
+                      <ul className="list-disc pl-5 text-yellow-700 dark:text-yellow-300 mt-1">
+                        <li>Image quality issues or format not recognized</li>
+                        <li>No similar items currently listed on eBay</li>
+                        <li>Item is too unique or rare for visual matching</li>
+                        <li>API limitations or rate limiting</li>
+                      </ul>
+                    </div>
+                  ) : (
+                    <p className="text-green-600 dark:text-green-400">
+                      ✅ Image search successful - Found {debugData.imageSearchDetails.originalResultCount} item(s)
+                    </p>
+                  )}
+                  
+                  {/* API response details */}
+                  {debugData.imageSearchDetails.apiResponse && (
+                    <div className="mt-2">
+                      <p>API Status: {debugData.imageSearchDetails.apiResponse.status}</p>
+                      <p>Result Count: {debugData.imageSearchDetails.originalResultCount}</p>
+                      <p>Filter String: {debugData.imageSearchDetails.filterString}</p>
+                    </div>
+                  )}
+                  
+                  {/* Show original unfiltered matches if available */}
+                  {debugData.imageSearchDetails.originalResults && 
+                   debugData.imageSearchDetails.originalResults.length > 0 && (
+                    <div className="mt-2">
+                      <h5 className="font-semibold text-xs mb-1">Raw Image Matches from eBay:</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {debugData.imageSearchDetails.originalResults.map((match: any, idx: number) => (
+                          <a 
+                            key={`raw-${idx}`} 
+                            href={match.itemWebUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="block p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow"
+                          >
+                            <div className="aspect-square relative mb-1 bg-gray-100 dark:bg-gray-800 rounded overflow-hidden">
+                              {match.image?.imageUrl ? (
+                                <Image 
+                                  src={match.image.imageUrl} 
+                                  alt={match.title || 'Item image'} 
+                                  fill
+                                  className="object-contain"
+                                />
+                              ) : typeof match.image === 'string' ? (
+                                <Image 
+                                  src={match.image} 
+                                  alt={match.title || 'Item image'} 
+                                  fill
+                                  className="object-contain"
+                                />
+                              ) : (
+                                <div className="flex items-center justify-center h-full">
+                                  <PlaceholderImage width={80} height={80} />
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-xs truncate" title={match.title}>
+                              {match.title}
+                            </div>
+                            <div className="text-xs font-semibold text-green-600 dark:text-green-400">
+                              {typeof match.price === 'object' 
+                                ? `${match.price?.currency || 'GBP'} ${match.price?.value || 'N/A'}`
+                                : `GBP ${match.price || 'N/A'}`}
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   if (isLoading) {
@@ -469,6 +833,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 <ScrollBar orientation="horizontal" />
               </ScrollArea>
             )}
+            
+            {/* Debug Panel - moved here to appear under the main image */}
+            {renderDebugInfo()}
           </div>
           <div className="space-y-6">
             <Popover open={editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
@@ -550,26 +917,28 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 <CardHeader className="pb-1 md:pb-2 text-left">
                   <CardTitle className="text-base md:text-lg text-left">AI Price Estimate</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 pb-3 flex flex-col items-start justify-start w-full text-left">
-                  <div className="flex items-center gap-1 justify-start w-full text-left">
-                    <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-purple-400 break-words text-left">
-                      ${item.ebayListed ? item.ebayListed.toFixed(2) : 'N/A'}
-                    </span>
+                <CardContent className="pt-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">
+                      {item.ebayListed ? `£${item.ebayListed}` : 'Not available'}
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handleAiPriceRefresh}
-                      className="flex-shrink-0 h-6 w-6 md:h-7 md:w-7 p-0 text-muted-foreground hover:text-primary ml-auto"
                       disabled={loadingAiPrice}
+                      title="Refresh AI Price Estimate"
+                      className="h-8 w-8 ml-2 flex-shrink-0"
                     >
-                      {loadingAiPrice ? 
-                        <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : 
-                        <RefreshCw className="h-4 w-4 md:h-5 md:w-5" />
+                      {loadingAiPrice ?
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
+                        <RefreshCw className="h-3.5 w-3.5" />
                       }
                     </Button>
                   </div>
                 </CardContent>
               </Card>
+              
               <Card className="border dark:border-border shadow-sm h-full overflow-hidden text-left sm:col-span-2 lg:col-span-1">
                 <CardHeader className="pb-1 md:pb-2 text-left">
                   <CardTitle className="text-base md:text-lg text-left">Purchase Cost</CardTitle>

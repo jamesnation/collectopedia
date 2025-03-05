@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { SelectItem } from '@/db/schema/items-schema';
 import { itemTypeEnum, franchiseEnum } from '@/db/schema/items-schema';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Package, Moon, Sun } from "lucide-react";
+import { PlusCircle, Package, Moon, Sun, Loader2, RefreshCw, BarChart4 } from "lucide-react";
 import { FilterBar } from './ui/filter-bar';
 import SummaryPanel from './ui/summary-panel';
 import { ItemListView } from './ui/item-list-view';
@@ -13,6 +13,7 @@ import { AddItemModal } from './ui/add-item-modal';
 import { DEFAULT_BRANDS } from './utils/schema-adapter';
 import { toast } from "@/components/ui/use-toast";
 import { ImageCacheProvider } from './context/image-cache-context';
+import { useAuth } from "@clerk/nextjs";
 
 // Import custom hooks
 import { useCatalogItems } from './hooks/use-catalog-items';
@@ -36,6 +37,8 @@ export default function Catalog({
   theme,
   setTheme
 }: CatalogProps) {
+  const { userId } = useAuth();
+
   // Initialize hooks with initial data
   const { 
     items, 
@@ -89,6 +92,10 @@ export default function Catalog({
   const [loadingListedItemId, setLoadingListedItemId] = useState<string | null>(null);
   const [loadingSoldItemId, setLoadingSoldItemId] = useState<string | null>(null);
 
+  // State for updating all prices
+  const [isUpdatingAllPrices, setIsUpdatingAllPrices] = useState(false)
+  const [isUpdatingAllPricesEnhanced, setIsUpdatingAllPricesEnhanced] = useState(false)
+
   // Load data on component mount
   useEffect(() => {
     fetchItems();
@@ -124,8 +131,8 @@ export default function Catalog({
           if (item.id === id) {
             return {
               ...item,
-              ebayListed: type === 'listed' ? result.prices.median : item.ebayListed,
-              ebaySold: type === 'sold' ? result.prices.median : item.ebaySold
+              ebayListed: type === 'listed' ? result.prices?.median || item.ebayListed : item.ebayListed,
+              ebaySold: type === 'sold' ? result.prices?.median || item.ebaySold : item.ebaySold
             };
           }
           return item;
@@ -157,6 +164,86 @@ export default function Catalog({
       } else {
         setLoadingListedItemId(null);
       }
+    }
+  };
+
+  // Handle updating all prices for a user (only listed prices)
+  const handleUpdateAllPrices = async () => {
+    if (!userId) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to update prices.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsUpdatingAllPrices(true);
+      
+      const { refreshAllEbayPrices } = await import('@/actions/ebay-actions');
+      const result = await refreshAllEbayPrices(userId);
+      
+      if (result.success) {
+        toast({
+          title: "Prices updated",
+          description: `Successfully updated prices for ${result.totalUpdated} items.`,
+        });
+        
+        // Refresh the items to get the latest prices
+        await fetchItems();
+      } else {
+        throw new Error(result.error || 'Failed to update prices');
+      }
+    } catch (error) {
+      console.error('Error updating all prices:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update prices. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingAllPrices(false);
+    }
+  };
+  
+  // Handle updating all prices using enhanced image-based search
+  const handleUpdateAllPricesEnhanced = async () => {
+    if (!userId) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to update prices.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsUpdatingAllPricesEnhanced(true);
+      
+      const { refreshAllItemPricesEnhanced } = await import('@/actions/ebay-actions');
+      const result = await refreshAllItemPricesEnhanced(userId);
+      
+      if (result.success) {
+        toast({
+          title: "Enhanced price update",
+          description: `Updated prices for ${result.totalUpdated} items using text and image search.`,
+        });
+        
+        // Refresh the items to get the latest prices
+        await fetchItems();
+      } else {
+        throw new Error(result.error || 'Failed to update prices');
+      }
+    } catch (error) {
+      console.error('Error updating all prices with enhanced search:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update prices. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingAllPricesEnhanced(false);
     }
   };
 
@@ -326,6 +413,47 @@ export default function Catalog({
         {/* Items count footer */}
         <div className="mt-6 text-sm text-muted-foreground dark:text-muted-foreground text-center">
           {isLoading ? 'Loading items...' : `Showing ${totalCount} ${totalCount === 1 ? 'item' : 'items'}`}
+        </div>
+
+        {/* Update All Prices Buttons */}
+        <div className="flex flex-col sm:flex-row gap-2 mt-4">
+          <Button 
+            variant="outline" 
+            onClick={handleUpdateAllPrices}
+            disabled={isUpdatingAllPrices || isUpdatingAllPricesEnhanced}
+            className="w-full sm:w-auto"
+          >
+            {isUpdatingAllPrices ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Update All Prices
+              </>
+            )}
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            onClick={handleUpdateAllPricesEnhanced}
+            disabled={isUpdatingAllPrices || isUpdatingAllPricesEnhanced}
+            className="w-full sm:w-auto"
+          >
+            {isUpdatingAllPricesEnhanced ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating with AI...
+              </>
+            ) : (
+              <>
+                <BarChart4 className="mr-2 h-4 w-4" />
+                Update All with AI Vision
+              </>
+            )}
+          </Button>
         </div>
       </main>
 

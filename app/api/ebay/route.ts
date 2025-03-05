@@ -133,11 +133,24 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
       }
 
       prices.sort((a: number, b: number) => a - b);
+      
+      // Process items for debug mode - extract only what we need
+      const processedItems = items.slice(0, 5).map((item: any) => ({
+        id: item.itemId,
+        title: item.title,
+        price: item.price?.value,
+        currency: item.price?.currency,
+        image: item.image?.imageUrl,
+        url: item.itemWebUrl,
+        condition: item.condition
+      }));
+      
       return {
         lowest: prices[0],
         median: prices[Math.floor(prices.length / 2)],
         highest: prices[prices.length - 1],
-        listingType
+        listingType,
+        items: processedItems // Include items for debug mode
       };
     }
   } catch (error) {
@@ -156,8 +169,14 @@ export async function GET(request: Request) {
   const toyName = searchParams.get('toyName');
   const listingType = searchParams.get('listingType') as 'listed' | 'sold';
   const condition = searchParams.get('condition') as 'New' | 'Used' | null;
+  const includeItems = searchParams.get('includeItems') === 'true';
 
-  console.log('Received request for:', { toyName, listingType, condition });
+  console.log('Received eBay API request for:', { 
+    toyName, 
+    listingType, 
+    condition,
+    includeItems
+  });
   console.log('Environment:', process.env.NODE_ENV);
 
   if (!toyName || !listingType) {
@@ -168,6 +187,20 @@ export async function GET(request: Request) {
   try {
     const prices = await getEbayPrices(toyName, listingType, condition || undefined);
     console.log(`eBay prices for ${toyName} (${listingType})${condition ? ` condition: ${condition}` : ''}:`, prices);
+    
+    // Log additional info to help debug
+    if (prices.items) {
+      console.log(`Returning ${prices.items.length} item details for debug mode`);
+    } else {
+      console.log('No item details included in response (debug mode off or no results)');
+    }
+    
+    // If includeItems is false, remove the items from the response to reduce payload size
+    if (!includeItems && prices.items) {
+      console.log('Removing item details from response as includeItems=false');
+      delete prices.items;
+    }
+    
     return NextResponse.json(prices);
   } catch (error) {
     console.error('Error fetching eBay prices:', error);

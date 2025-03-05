@@ -5,6 +5,29 @@ const UPDATE_INTERVAL = 24 * 60 * 60 * 1000;
 // Key for storing the last update time in localStorage
 const LAST_UPDATE_KEY = 'lastEbayUpdateTime';
 
+// Helper function for safely accessing localStorage
+const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.error('Error accessing localStorage:', e);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): boolean => {
+    if (typeof window === 'undefined' || !window.localStorage) return false;
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      console.error('Error setting localStorage:', e);
+      return false;
+    }
+  }
+};
+
 /**
  * Hook to trigger background eBay price updates
  * This will run once per day when the user loads the collection page
@@ -15,7 +38,7 @@ export function useBackgroundUpdates() {
     if (typeof window === 'undefined') return;
     
     // Check when we last triggered an update
-    const lastUpdateTime = localStorage.getItem(LAST_UPDATE_KEY);
+    const lastUpdateTime = safeLocalStorage.getItem(LAST_UPDATE_KEY);
     const now = Date.now();
     
     // If we've never updated or it's been more than the update interval
@@ -28,7 +51,7 @@ export function useBackgroundUpdates() {
           if (response.success) {
             console.log(`Background update completed: ${response.message}`);
             // Update the last update time
-            localStorage.setItem(LAST_UPDATE_KEY, now.toString());
+            safeLocalStorage.setItem(LAST_UPDATE_KEY, now.toString());
           } else {
             console.error('Background update failed:', response.error);
           }
