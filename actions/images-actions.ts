@@ -13,11 +13,17 @@ type ActionResult<T> = {
 
 export const getImagesByItemIdAction = async (itemId: string): Promise<ActionResult<SelectImage[]>> => {
   try {
+    console.log(`Fetching images for item ${itemId}`);
     const images = await getImagesByItemId(itemId);
+    console.log(`Successfully fetched ${images.length} images for item ${itemId}`);
     return { isSuccess: true, data: images };
   } catch (error) {
-    console.error("Failed to get images:", error);
-    return { isSuccess: false, error: "Failed to get images" };
+    console.error(`Failed to get images for item ${itemId}:`, error);
+    return { 
+      isSuccess: false, 
+      error: error instanceof Error ? error.message : "Failed to get images",
+      data: [] // Return empty array instead of undefined for easier handling
+    };
   }
 };
 
@@ -25,7 +31,15 @@ export const createImageAction = async (image: Omit<InsertImage, 'id'>): Promise
   try {
     const imageWithId = { ...image, id: crypto.randomUUID() };
     const [createdImage] = await insertImage(imageWithId);
-    revalidatePath("/");
+    
+    // Add a cache-busting timestamp to ensure fresh data
+    const timestamp = Date.now();
+    
+    // Revalidate all paths that might display this item's images
+    revalidatePath(`/?t=${timestamp}`);  // Home page with catalog
+    revalidatePath(`/item/${image.itemId}?t=${timestamp}`);  // Item details page
+    revalidatePath(`/my-collection?t=${timestamp}`);  // Collection page
+    
     return { isSuccess: true, data: createdImage };
   } catch (error) {
     console.error("Failed to create image:", error);
@@ -33,10 +47,20 @@ export const createImageAction = async (image: Omit<InsertImage, 'id'>): Promise
   }
 };
 
-export const deleteImageAction = async (id: string): Promise<ActionResult<void>> => {
+export const deleteImageAction = async (id: string, itemId?: string): Promise<ActionResult<void>> => {
   try {
     await deleteImage(id);
-    revalidatePath("/");
+    
+    // Add a cache-busting timestamp to ensure fresh data
+    const timestamp = Date.now();
+    
+    // Revalidate all paths that might display this item's images
+    revalidatePath(`/?t=${timestamp}`);  // Home page with catalog
+    if (itemId) {
+      revalidatePath(`/item/${itemId}?t=${timestamp}`);  // Item details page
+    }
+    revalidatePath(`/my-collection?t=${timestamp}`);  // Collection page
+    
     return { isSuccess: true };
   } catch (error) {
     console.error("Failed to delete image:", error);

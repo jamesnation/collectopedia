@@ -270,6 +270,11 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             }
             return prevImages;
           });
+          
+          // Set the current image index to show the new image
+          setCurrentImageIndex(images.length);
+          
+          // Revalidate the path to update all components
           toast({
             title: "Image uploaded",
             description: "Your new image has been added to the item.",
@@ -290,7 +295,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
   const handleImageDelete = async (imageId: string) => {
     try {
-      const result = await deleteImageAction(imageId);
+      if (!item) return;
+
+      const result = await deleteImageAction(imageId, item.id);
       if (result.isSuccess) {
         setImages(prevImages => prevImages.filter(img => img.id !== imageId));
         setCurrentImageIndex(prevIndex => Math.min(prevIndex, images.length - 2));
@@ -298,8 +305,6 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
           title: "Image deleted",
           description: "The image has been removed from the item.",
         });
-      } else {
-        throw new Error('Failed to delete image');
       }
     } catch (error) {
       console.error('Error deleting image:', error);

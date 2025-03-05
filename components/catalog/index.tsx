@@ -12,6 +12,7 @@ import { ItemGridView } from './ui/item-grid-view';
 import { AddItemModal } from './ui/add-item-modal';
 import { DEFAULT_BRANDS } from './utils/schema-adapter';
 import { toast } from "@/components/ui/use-toast";
+import { ImageCacheProvider } from './context/image-cache-context';
 
 // Import custom hooks
 import { useCatalogItems } from './hooks/use-catalog-items';
@@ -273,30 +274,32 @@ export default function Catalog({
         />
 
         {/* Main Content - Conditional rendering based on view type */}
-        <div className="mt-6">
-          {view === 'list' ? (
-            <ItemListView
-              items={filteredAndSortedItems}
-              isLoading={isLoading}
-              onDelete={deleteItem}
-              onEbayRefresh={handleEbayRefresh}
-              loadingListedItemId={loadingListedItemId}
-              loadingSoldItemId={loadingSoldItemId}
-              loadingItemId={loadingItemId}
-              onSort={handleSort}
-              sortDescriptor={sortDescriptor}
-              showSold={showSold}
-            />
-          ) : (
-            <ItemGridView
-              items={filteredAndSortedItems}
-              isLoading={isLoading}
-              onDelete={deleteItem}
-              showSold={showSold}
-              loadingItemId={loadingItemId}
-            />
-          )}
-        </div>
+        <ImageCacheProvider>
+          <div className="mt-6">
+            {view === 'list' ? (
+              <ItemListView
+                items={filteredAndSortedItems}
+                isLoading={isLoading}
+                onDelete={deleteItem}
+                onEbayRefresh={handleEbayRefresh}
+                loadingListedItemId={loadingListedItemId}
+                loadingSoldItemId={loadingSoldItemId}
+                loadingItemId={loadingItemId}
+                onSort={handleSort}
+                sortDescriptor={sortDescriptor}
+                showSold={showSold}
+              />
+            ) : (
+              <ItemGridView
+                items={filteredAndSortedItems}
+                isLoading={isLoading}
+                onDelete={deleteItem}
+                showSold={showSold}
+                loadingItemId={loadingItemId}
+              />
+            )}
+          </div>
+        </ImageCacheProvider>
 
         {/* Empty state */}
         {!isLoading && filteredAndSortedItems.length === 0 && (

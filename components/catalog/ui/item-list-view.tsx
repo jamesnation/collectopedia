@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Trash2, RefreshCw, Loader2, ArrowUpDown, Eye, MoreHorizontal, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,6 +11,9 @@ import { SortDescriptor } from '../hooks/use-catalog-filters';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
+import { getImagesByItemIdAction } from '@/actions/images-actions';
+import { SelectImage } from '@/db/schema/images-schema';
+import { useImageCache } from '../context/image-cache-context';
 
 interface ItemListViewProps {
   items: CatalogItem[];
@@ -51,6 +54,41 @@ export function ItemListView({
   loadingSoldItemId
 }: ItemListViewProps) {
   const router = useRouter();
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const { imageCache, isLoading: isLoadingImages, loadImages } = useImageCache();
+
+  // Load images when items change
+  useEffect(() => {
+    if (items.length > 0 && !isLoading) {
+      // Extract all item IDs for batch loading
+      const itemIds = items.map(item => item.id);
+      loadImages(itemIds);
+    }
+  }, [items, isLoading, loadImages]);
+
+  // Helper function to get the primary image for an item
+  const getItemPrimaryImage = useMemo(() => (itemId: string): string => {
+    // If we have images from the cache, use the first one
+    if (imageCache[itemId] && imageCache[itemId].length > 0) {
+      return imageCache[itemId][0].url;
+    }
+    
+    // Fall back to the item.image field if present
+    const item = items.find(i => i.id === itemId);
+    if (item && item.image) {
+      return item.image;
+    }
+    
+    // Use placeholder if no image is available
+    return placeholderImage;
+  }, [imageCache, items]);
+
+  const handleImageLoad = (id: string) => {
+    setLoadedImages(prev => ({
+      ...prev,
+      [id]: true
+    }));
+  };
 
   return (
     <div className="bg-card rounded-lg overflow-hidden border border-border dark:bg-card/60 dark:border-border">
@@ -146,14 +184,23 @@ export function ItemListView({
               <TableRow key={item.id} className="bg-card hover:bg-muted/50 dark:bg-card/40 dark:hover:bg-card/60 dark:border-border transition-colors">
                 <TableCell className="p-2">
                   <Link href={`/item/${item.id}`}>
-                    <Image
-                      src={item.image || placeholderImage}
-                      alt={item.name}
-                      width={80}
-                      height={80}
-                      style={{ objectFit: 'cover' }}
-                      className="rounded-md cursor-pointer"
-                    />
+                    <div className="relative w-20 h-20">
+                      {isLoadingImages[item.id] ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-muted dark:bg-card/30">
+                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
+                        </div>
+                      ) : (
+                        <Image
+                          src={getItemPrimaryImage(item.id)}
+                          alt={item.name}
+                          width={80}
+                          height={80}
+                          style={{ objectFit: 'cover' }}
+                          className="rounded-md cursor-pointer"
+                          onLoad={() => handleImageLoad(item.id)}
+                        />
+                      )}
+                    </div>
                   </Link>
                 </TableCell>
                 <TableCell>
