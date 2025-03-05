@@ -636,7 +636,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded">
                       <p className="text-yellow-800 dark:text-yellow-200 font-semibold">⚠️ No results from eBay image search API</p>
                       <p className="text-yellow-700 dark:text-yellow-300">
-                        The eBay API didn't find any matches for this image. Possible reasons:
+                        The eBay API didn&apos;t find any matches for this image. Possible reasons:
                       </p>
                       <ul className="list-disc pl-5 text-yellow-700 dark:text-yellow-300 mt-1">
                         <li>Image quality issues or format not recognized</li>
