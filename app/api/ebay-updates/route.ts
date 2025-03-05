@@ -82,8 +82,8 @@ export async function POST(req: NextRequest) {
           continue;
         }
         
-        // Fetch eBay prices for this item
-        const prices = await fetchEbayPrices(item.name, 'listed');
+        // Fetch eBay prices for this item, including the condition
+        const prices = await fetchEbayPrices(item.name, 'listed', item.condition);
         
         if (prices.median === undefined || prices.median === null) {
           console.log(`No valid median price found for item ${item.id}: ${item.name}`);

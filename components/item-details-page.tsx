@@ -318,7 +318,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
         
         // Import the action dynamically to avoid SSR issues
         const { updateEbayPrices } = await import('@/actions/ebay-actions');
-        const result = await updateEbayPrices(item.id, item.name, 'listed');
+        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition);
         
         if (result.success) {
           // Update the local state with the new value

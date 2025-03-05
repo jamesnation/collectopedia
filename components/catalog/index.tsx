@@ -105,9 +105,15 @@ export default function Catalog({
     }
 
     try {
+      // Find the item to get its condition
+      const item = items.find(item => item.id === id);
+      if (!item) {
+        throw new Error('Item not found');
+      }
+
       // Call the real eBay API through our server action
       const { updateEbayPrices } = await import('@/actions/ebay-actions');
-      const result = await updateEbayPrices(id, name, type);
+      const result = await updateEbayPrices(id, name, type, item.condition);
       
       if (result.success) {
         console.log('eBay update result:', result);

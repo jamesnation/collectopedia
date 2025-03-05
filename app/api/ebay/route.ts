@@ -38,7 +38,7 @@ async function getEbayToken() {
   }
 }
 
-async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold') {
+async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold', condition?: 'New' | 'Used') {
   try {
     if (listingType === 'sold') {
       // Use RapidAPI for sold items
@@ -61,6 +61,14 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold')
         }
       };
 
+      // If condition is provided, add a filter for it
+      if (condition) {
+        console.log(`Adding condition filter: ${condition} for sold items`);
+        // RapidAPI doesn't seem to support condition filtering directly
+        // We can modify the keywords to include the condition
+        options.data.keywords = `${options.data.keywords} ${condition}`;
+      }
+
       const response = await axios.request(options);
       const data = response.data;
 
@@ -77,14 +85,25 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold')
     } else {
       // Use eBay API for active listings
       const token = await getEbayToken();
+      
+      // Build the filter string - start with existing filters
+      let filterString = 'deliveryCountry:GB,itemLocationCountry:GB';
+      
+      // Add condition filter if provided
+      if (condition) {
+        console.log(`Adding condition filter: ${condition} for active listings`);
+        filterString += `,conditions:${condition.toUpperCase()}`;
+      }
+      
       console.log('eBay API request URL:', 'https://api.ebay.com/buy/browse/v1/item_summary/search');
       console.log('eBay API request params:', {
         q: searchTerm,
         sort: 'price',
         limit: 100,
-        filter: 'deliveryCountry:GB,itemLocationCountry:GB'
+        filter: filterString
       });
       console.log('eBay API token (first 10 chars):', token.substring(0, 10));
+      
       const response = await axios.get('https://api.ebay.com/buy/browse/v1/item_summary/search', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -94,7 +113,7 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold')
           q: searchTerm,
           sort: 'price',
           limit: 100,
-          filter: 'deliveryCountry:GB,itemLocationCountry:GB'
+          filter: filterString
         }
       });
       console.log('eBay API response:', response.status, response.statusText);
@@ -136,8 +155,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const toyName = searchParams.get('toyName');
   const listingType = searchParams.get('listingType') as 'listed' | 'sold';
+  const condition = searchParams.get('condition') as 'New' | 'Used' | null;
 
-  console.log('Received request for:', { toyName, listingType });
+  console.log('Received request for:', { toyName, listingType, condition });
   console.log('Environment:', process.env.NODE_ENV);
 
   if (!toyName || !listingType) {
@@ -146,8 +166,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const prices = await getEbayPrices(toyName, listingType);
-    console.log(`eBay prices for ${toyName} (${listingType}):`, prices);
+    const prices = await getEbayPrices(toyName, listingType, condition || undefined);
+    console.log(`eBay prices for ${toyName} (${listingType})${condition ? ` condition: ${condition}` : ''}:`, prices);
     return NextResponse.json(prices);
   } catch (error) {
     console.error('Error fetching eBay prices:', error);

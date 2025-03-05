@@ -9,12 +9,17 @@ import { auth } from "@clerk/nextjs/server";
 // Remove the API_BASE_URL constant and use absolute URL instead
 const API_URL = '/api/ebay';
 
-export async function fetchEbayPrices(toyName: string, listingType: 'listed' | 'sold') {
+export async function fetchEbayPrices(toyName: string, listingType: 'listed' | 'sold', condition?: 'New' | 'Used') {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
   
   const url = new URL(API_URL, baseUrl);
   url.searchParams.append('toyName', toyName);
   url.searchParams.append('listingType', listingType);
+  
+  // Add condition parameter if provided
+  if (condition) {
+    url.searchParams.append('condition', condition);
+  }
 
   console.log('NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
   console.log('Fetching eBay prices from:', url.toString());
@@ -35,11 +40,11 @@ export async function fetchEbayPrices(toyName: string, listingType: 'listed' | '
   }
 }
 
-export async function updateEbayPrices(id: string, name: string, type: 'listed' | 'sold') {
+export async function updateEbayPrices(id: string, name: string, type: 'listed' | 'sold', condition?: 'New' | 'Used') {
   try {
-    const prices = await fetchEbayPrices(name, type);
+    const prices = await fetchEbayPrices(name, type, condition);
 
-    console.log(`${type.charAt(0).toUpperCase() + type.slice(1)} Prices:`, prices);
+    console.log(`${type.charAt(0).toUpperCase() + type.slice(1)} Prices (${condition || 'Any Condition'}):`, prices);
 
     // Check if prices.median is undefined or null
     if (prices.median === undefined || prices.median === null) {
@@ -109,8 +114,8 @@ export async function updateAllEbayListedValues() {
         // Skip items without a name
         if (!item.name) continue;
         
-        // Update the eBay listed price
-        const result = await updateEbayPrices(item.id, item.name, 'listed');
+        // Update the eBay listed price - pass the item's condition
+        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition);
         
         if (result.success && result.prices && result.prices.median) {
           totalListedValue += result.prices.median;
