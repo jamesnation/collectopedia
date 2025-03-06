@@ -171,64 +171,64 @@ export function ItemListView({
       <Table>
         <TableHeader>
           <TableRow className="border-b dark:border-border">
-            <TableHead className="w-24">Image</TableHead>
-            <TableHead className="w-52">
+            <TableHead className="w-24 text-left">Image</TableHead>
+            <TableHead className="w-52 text-left pl-4">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400 text-left p-0"
                 onClick={() => onSort('name')}
               >
                 Name <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'name' ? 'opacity-100' : 'opacity-50'}`} />
               </Button>
             </TableHead>
-            <TableHead className="w-32">
+            <TableHead className="w-32 text-left pl-4">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400 text-left p-0"
                 onClick={() => onSort('acquired')}
               >
                 Acquired <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'acquired' ? 'opacity-100' : 'opacity-50'}`} />
               </Button>
             </TableHead>
-            <TableHead className="w-24">
+            <TableHead className="w-24 text-left pl-4">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400 text-left p-0"
                 onClick={() => onSort('cost')}
               >
                 Cost <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'cost' ? 'opacity-100' : 'opacity-50'}`} />
               </Button>
             </TableHead>
-            <TableHead className="w-24">
+            <TableHead className="w-24 text-left pl-4">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400 text-left p-0"
                 onClick={() => onSort(showSold ? 'soldPrice' : 'value')}
               >
                 {showSold ? 'Sold For' : 'Value'} <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === (showSold ? 'soldPrice' : 'value') ? 'opacity-100' : 'opacity-50'}`} />
               </Button>
             </TableHead>
-            <TableHead className="w-32">
+            <TableHead className="w-32 text-left pl-4">
               <Button 
                 variant="ghost" 
-                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
+                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400 text-left p-0"
                 onClick={() => onSort('ebayListed')}
               >
                 AI Estimate <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebayListed' ? 'opacity-100' : 'opacity-50'}`} />
               </Button>
             </TableHead>
             {showSold && (
-              <TableHead className="w-32">
+              <TableHead className="w-32 text-left pl-4">
                 <Button 
                   variant="ghost" 
-                  className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
+                  className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400 text-left p-0"
                   onClick={() => onSort('soldDate')}
                 >
                   Sold Date <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'soldDate' ? 'opacity-100' : 'opacity-50'}`} />
                 </Button>
               </TableHead>
             )}
-            <TableHead className="w-24">Actions</TableHead>
+            <TableHead className="w-24 text-left pl-4">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -255,7 +255,7 @@ export function ItemListView({
                     </div>
                   </Link>
                 </TableCell>
-                <TableCell>
+                <TableCell className="pl-4">
                   <div className="space-y-1">
                     <Link href={`/item/${item.id}`} className="text-sm font-medium hover:text-primary dark:text-foreground dark:hover:text-primary transition-colors">
                       {item.name}
@@ -273,22 +273,20 @@ export function ItemListView({
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="dark:text-foreground">
+                <TableCell className="dark:text-foreground pl-4">
                   {formatDate(item.acquired)}
                 </TableCell>
-                <TableCell className="text-right dark:text-foreground">£{item.cost.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-bold text-foreground dark:text-purple-400">
+                <TableCell className="dark:text-foreground pl-4">£{item.cost.toFixed(2)}</TableCell>
+                <TableCell className="font-bold text-foreground dark:text-purple-400 pl-4">
                   £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end">
-                    <span className="whitespace-nowrap dark:text-foreground">£{item.ebayListed?.toFixed(2) || 'N/A'}</span>
-                  </div>
+                <TableCell className="pl-4">
+                  <span className="whitespace-nowrap dark:text-foreground">£{item.ebayListed?.toFixed(2) || 'N/A'}</span>
                 </TableCell>
                 {showSold && (
-                  <TableCell className="dark:text-foreground">{item.soldDate ? formatDate(item.soldDate) : 'N/A'}</TableCell>
+                  <TableCell className="dark:text-foreground pl-4">{item.soldDate ? formatDate(item.soldDate) : 'N/A'}</TableCell>
                 )}
-                <TableCell>
+                <TableCell className="actions-cell pl-4">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
