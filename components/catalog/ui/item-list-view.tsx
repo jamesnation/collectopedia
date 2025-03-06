@@ -236,13 +236,13 @@ export function ItemListView({
             Array(5).fill(0).map((_, index) => (
               <TableRow key={index} className="bg-white hover:bg-purple-50 dark:bg-card/40 dark:hover:bg-card/60 transition-colors">
                 <TableCell className="p-2"><Skeleton className="h-20 w-20 dark:bg-card/60" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-32 dark:bg-card/60" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-36 dark:bg-card/60" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-16 dark:bg-card/60" /></TableCell>
-                {showSold && <TableCell><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>}
-                <TableCell><Skeleton className="h-8 w-8 dark:bg-card/60" /></TableCell>
+                <TableCell className="pl-4"><Skeleton className="h-4 w-32 dark:bg-card/60" /></TableCell>
+                <TableCell className="pl-4"><Skeleton className="h-4 w-36 dark:bg-card/60" /></TableCell>
+                <TableCell className="pl-4"><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>
+                <TableCell className="pl-4"><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>
+                <TableCell className="pl-4"><Skeleton className="h-4 w-16 dark:bg-card/60" /></TableCell>
+                {showSold && <TableCell className="pl-4"><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>}
+                <TableCell className="pl-4"><Skeleton className="h-8 w-8 dark:bg-card/60" /></TableCell>
               </TableRow>
             ))
           ) : (
