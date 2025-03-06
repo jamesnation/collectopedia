@@ -414,47 +414,6 @@ export default function Catalog({
         <div className="mt-6 text-sm text-muted-foreground dark:text-muted-foreground text-center">
           {isLoading ? 'Loading items...' : `Showing ${totalCount} ${totalCount === 1 ? 'item' : 'items'}`}
         </div>
-
-        {/* Update All Prices Buttons */}
-        <div className="flex flex-col sm:flex-row gap-2 mt-4">
-          <Button 
-            variant="outline" 
-            onClick={handleUpdateAllPrices}
-            disabled={isUpdatingAllPrices || isUpdatingAllPricesEnhanced}
-            className="w-full sm:w-auto"
-          >
-            {isUpdatingAllPrices ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Update All Prices
-              </>
-            )}
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            onClick={handleUpdateAllPricesEnhanced}
-            disabled={isUpdatingAllPrices || isUpdatingAllPricesEnhanced}
-            className="w-full sm:w-auto"
-          >
-            {isUpdatingAllPricesEnhanced ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating with AI...
-              </>
-            ) : (
-              <>
-                <BarChart4 className="mr-2 h-4 w-4" />
-                Update All with AI Vision
-              </>
-            )}
-          </Button>
-        </div>
       </main>
 
       <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border dark:border-border">

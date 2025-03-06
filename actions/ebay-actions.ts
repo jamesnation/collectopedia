@@ -687,7 +687,8 @@ export async function getEnhancedEbayPrices(
             ...item,
             searchType: 'image',
             matchConfidence: item.relevanceScore || 'unknown',
-            image: item.image || (item.imageUrl ? { imageUrl: item.imageUrl } : undefined)
+            image: item.image || (item.imageUrl ? { imageUrl: item.imageUrl } : undefined),
+            url: item.itemWebUrl || item.webUrl || `https://www.ebay.co.uk/itm/${item.itemId || item.id}`
           }));
           
           // Store additional debug data if available

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { useState } from "react"
 import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from "@clerk/nextjs"
 
 // Define default brands (assuming this is what was in constants)
 const DEFAULT_BRANDS = [
@@ -31,6 +32,7 @@ export function CollectionsTab() {
   // Initialize the catalog items hook to get access to addItem
   const { addItem } = useCatalogItems();
   const { toast } = useToast();
+  const { userId } = useAuth();
   
   // State for tracking refresh progress
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -105,137 +107,38 @@ export function CollectionsTab() {
       // Show a toast to indicate the refresh has started
       toast({
         title: "Refreshing eBay Values",
-        description: "Starting refresh of all eBay values. This may take a while...",
+        description: "Starting refresh using AI Vision. This may take a while...",
         duration: 3000,
       });
       
-      // Process items in batches
-      const batchSize = 10; // Process 10 items at a time
-      let currentOffset = 0; // Start with offset 0
-      let remainingItems = 1; // Start with 1 to enter the loop
-      let totalProcessedSoFar = 0;
-      let totalSuccessfulSoFar = 0;
-      let totalFailedSoFar = 0;
-      let maxIterations = 50; // Safety limit for iterations
-      let currentIteration = 0;
+      // Use the enhanced function that includes image-based search
+      const { refreshAllItemPricesEnhanced } = await import('@/actions/ebay-actions');
       
-      console.log("[Refresh] Starting refresh process with batch size:", batchSize);
-      
-      // Keep processing batches until there are no more items
-      while (remainingItems > 0 && currentIteration < maxIterations) {
-        currentIteration++;
-        console.log(`[Refresh] Starting iteration ${currentIteration}, processed so far: ${totalProcessedSoFar}, offset: ${currentOffset}`);
-        
-        // Set a timeout for the fetch operation
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
-        
-        try {
-          console.log(`[Refresh] Sending batch request #${currentIteration} with offset ${currentOffset}`);
-          const response = await fetch('/api/ebay-updates/bulk-refresh', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              batchSize,
-              offset: currentOffset 
-            }),
-            signal: controller.signal
-          });
-          
-          // Clear timeout since request completed
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            throw new Error(`Error refreshing eBay values: ${response.statusText}`);
-          }
-          
-          const data = await response.json();
-          console.log(`[Refresh] Batch response:`, {
-            totalProcessed: data.results.totalProcessed,
-            successfulUpdates: data.results.successfulUpdates,
-            failedUpdates: data.results.failedUpdates,
-            remainingItems: data.results.remainingItems,
-            totalItems: data.results.totalItems,
-            nextOffset: data.results.nextOffset
-          });
-          
-          // Update progress based on the batch result
-          remainingItems = data.results.remainingItems;
-          const totalItems = data.results.totalItems;
-          
-          // Get the next offset for the next batch
-          currentOffset = data.results.nextOffset;
-          
-          // Add the current batch to our running totals
-          totalProcessedSoFar += data.results.totalProcessed;
-          totalSuccessfulSoFar += data.results.successfulUpdates;
-          totalFailedSoFar += data.results.failedUpdates;
-          
-          console.log(`[Refresh] Running totals: processed=${totalProcessedSoFar}, successful=${totalSuccessfulSoFar}, failed=${totalFailedSoFar}`);
-          
-          // Validate that we're not exceeding total items
-          if (totalProcessedSoFar > totalItems) {
-            console.error(`[Refresh] ERROR: Total processed (${totalProcessedSoFar}) would exceed total items (${totalItems})`);
-            console.error(`[Refresh] This suggests a counting error in either the frontend or API`);
-            
-            // Cap the total processed at the total items
-            totalProcessedSoFar = Math.min(totalItems, totalProcessedSoFar);
-            console.log(`[Refresh] Capping totalProcessed at ${totalProcessedSoFar}`);
-          }
-          
-          // Update progress state
-          setRefreshStats(prev => {
-            const newStats = {
-              processed: totalProcessedSoFar,
-              successful: totalSuccessfulSoFar,
-              failed: totalFailedSoFar,
-              total: totalItems
-            };
-            console.log(`[Refresh] New stats:`, newStats);
-            return newStats;
-          });
-          
-          // Calculate progress percentage
-          const progressPercentage = totalItems > 0 
-            ? Math.min(100, (totalProcessedSoFar / totalItems) * 100) 
-            : 100;
-          
-          console.log(`[Refresh] Progress percentage: ${progressPercentage}%`);
-          setRefreshProgress(progressPercentage);
-          
-          // Show progress in a toast
-          toast({
-            title: "Refresh in Progress",
-            description: `Processed ${totalProcessedSoFar} of ${totalItems} items`,
-            duration: 2000,
-          });
-        } catch (error) {
-          clearTimeout(timeoutId);
-          console.error(`[Refresh] Error during batch #${currentIteration}:`, error);
-          
-          if (error instanceof DOMException && error.name === 'AbortError') {
-            toast({
-              title: "Operation Timeout",
-              description: "A request took too long to complete. The refresh operation has been stopped.",
-              variant: "destructive",
-              duration: 5000,
-            });
-            break;
-          } else {
-            // Re-throw for the outer catch block
-            throw error;
-          }
-        }
+      if (!userId) {
+        throw new Error("User ID is required to refresh prices");
       }
       
-      // Show a success toast
-      toast({
-        title: "Refresh Complete",
-        description: `Successfully updated ${totalSuccessfulSoFar} items. Failed to update ${totalFailedSoFar} items.`,
-        duration: 5000,
-      });
+      const result = await refreshAllItemPricesEnhanced(userId);
+      
+      if (result.success) {
+        // Set progress to 100% since it's complete
+        setRefreshProgress(100);
+        setRefreshStats({
+          processed: result.totalUpdated,
+          successful: result.totalUpdated,
+          failed: 0,
+          total: result.totalUpdated
+        });
+        
+        // Show a success toast
+        toast({
+          title: "Refresh Complete",
+          description: `Successfully updated ${result.totalUpdated} items using AI Vision.`,
+          duration: 5000,
+        });
+      } else {
+        throw new Error(result.error || "An unknown error occurred");
+      }
     } catch (error) {
       console.error('Error refreshing eBay values:', error);
       toast({
@@ -251,22 +154,22 @@ export function CollectionsTab() {
 
   return (
     <div className="space-y-6">
-      {/* AI Estimate Refresh Card */}
+      {/* AI Vision Price Refresh Card */}
       <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <RefreshCw className="h-5 w-5 text-purple-500" />
-            AI Estimate Refresh
+            AI Vision Price Refresh
           </CardTitle>
           <CardDescription className="dark:text-muted-foreground">
-            Manually refresh all eBay values for your collection
+            Refresh all eBay values using AI Vision technology
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              AI Estimates (eBay values) are normally updated automatically when you browse your collection. 
-              Use this button to refresh all values immediately.
+              AI Vision analyzes both the images and titles of your items to find the most accurate prices on eBay.
+              Use this button to refresh all values at once.
             </p>
             
             {isRefreshing ? (
@@ -287,7 +190,7 @@ export function CollectionsTab() {
                 className="w-full"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh All AI Estimates
+                Refresh All Prices with AI Vision
               </Button>
             )}
           </div>

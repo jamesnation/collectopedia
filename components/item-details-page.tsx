@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X, RefreshCw, BarChart4, Percent } from "lucide-react"
+import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X, RefreshCw, BarChart4, Percent, ExternalLink } from "lucide-react"
 import { getItemByIdAction, updateItemAction } from "@/actions/items-actions"
 import { createSoldItemAction, getSoldItemByItemIdAction, updateSoldItemAction } from "@/actions/sold-items-actions"
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
@@ -517,6 +517,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                           ? `${match.price?.currency || 'GBP'} ${match.price?.value || 'N/A'}`
                           : `GBP ${match.price || 'N/A'}`}
                       </div>
+                      <div className="text-xs text-blue-500 flex items-center mt-1">
+                        <ExternalLink className="h-3 w-3 mr-1" /> View on eBay
+                      </div>
                       {match.relevanceScore && (
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           Match: {Math.round(match.relevanceScore * 100)}%
@@ -582,6 +585,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         {typeof match.price === 'object' 
                           ? `${match.price?.currency || 'GBP'} ${match.price?.value || 'N/A'}`
                           : `GBP ${match.price || 'N/A'}`}
+                      </div>
+                      <div className="text-xs text-blue-500 flex items-center mt-1">
+                        <ExternalLink className="h-3 w-3 mr-1" /> View on eBay
                       </div>
                     </a>
                   ))}
@@ -715,6 +721,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                               {typeof match.price === 'object' 
                                 ? `${match.price?.currency || 'GBP'} ${match.price?.value || 'N/A'}`
                                 : `GBP ${match.price || 'N/A'}`}
+                            </div>
+                            <div className="text-xs text-blue-500 flex items-center mt-1">
+                              <ExternalLink className="h-3 w-3 mr-1" /> View on eBay
                             </div>
                           </a>
                         ))}
