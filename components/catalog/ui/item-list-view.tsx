@@ -212,15 +212,6 @@ export function ItemListView({
               <Button 
                 variant="ghost" 
                 className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
-                onClick={() => onSort('ebaySold')}
-              >
-                eBay Sold <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebaySold' ? 'opacity-100' : 'opacity-50'}`} />
-              </Button>
-            </TableHead>
-            <TableHead className="w-32">
-              <Button 
-                variant="ghost" 
-                className="font-bold text-primary hover:bg-transparent hover:text-purple-400 dark:text-foreground dark:hover:bg-transparent dark:hover:text-purple-400"
                 onClick={() => onSort('ebayListed')}
               >
                 AI Estimate <ArrowUpDown className={`ml-2 h-4 w-4 ${sortDescriptor.column === 'ebayListed' ? 'opacity-100' : 'opacity-50'}`} />
@@ -249,7 +240,6 @@ export function ItemListView({
                 <TableCell><Skeleton className="h-4 w-36 dark:bg-card/60" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-16 dark:bg-card/60" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-16 dark:bg-card/60" /></TableCell>
                 {showSold && <TableCell><Skeleton className="h-4 w-24 dark:bg-card/60" /></TableCell>}
                 <TableCell><Skeleton className="h-8 w-8 dark:bg-card/60" /></TableCell>
@@ -289,22 +279,6 @@ export function ItemListView({
                 <TableCell className="text-right dark:text-foreground">£{item.cost.toFixed(2)}</TableCell>
                 <TableCell className="text-right font-bold text-foreground dark:text-purple-400">
                   £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end space-x-2">
-                    <span className="whitespace-nowrap dark:text-foreground">£{item.ebaySold?.toFixed(2) || 'N/A'}</span>
-                    {onEbayRefresh && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEbayRefresh(item.id, item.name, 'sold')}
-                        className="h-8 w-8 p-0 dark:text-muted-foreground dark:hover:text-primary"
-                        disabled={loadingSoldItemId === item.id}
-                      >
-                        {loadingSoldItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      </Button>
-                    )}
-                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end">
