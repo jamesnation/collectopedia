@@ -15,7 +15,8 @@ export async function GET() {
     'notes',
     'isSold',
     'soldDate',
-    'soldPrice'
+    'soldPrice',
+    'aiEstimate'
   ].join(',');
   
   // Add a sample row with example data
@@ -32,7 +33,8 @@ export async function GET() {
     'Gift from John',
     'false',
     '',
-    ''
+    '',
+    '55.00'
   ].join(',');
   
   // Combine headers and sample row

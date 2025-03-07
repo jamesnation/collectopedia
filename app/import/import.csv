@@ -1,6 +1,6 @@
-name,type,brand,acquired,cost,value,notes,isSold,soldDate,soldPrice
-"Optimus Prime","Vintage - MISB","Hasbro","1984-05-15",29.99,499.99,"Original G1 Optimus Prime, never opened",false,,
-"Megatron","Vintage - opened","Hasbro","1984-09-01",24.99,199.99,"G1 Megatron, good condition",false,,
-"Bumblebee","New - MISB","Takara Tomy","2022-03-10",59.99,79.99,"Masterpiece Bumblebee 2.0",false,,
-"Starscream","Vintage - opened","Hasbro","1985-02-14",19.99,149.99,"G1 Starscream, missing missiles",true,"2023-11-20",175.00
-"Soundwave","New - KO","Third Party","2021-12-25",89.99,129.99,"KO Masterpiece Soundwave",false,,
+name,type,brand,acquired,cost,value,notes,isSold,soldDate,soldPrice,aiEstimate
+"Optimus Prime","Vintage - MISB","Hasbro","1984-05-15",29.99,499.99,"Original G1 Optimus Prime, never opened",false,,,450.00
+"Megatron","Vintage - opened","Hasbro","1984-09-01",24.99,199.99,"G1 Megatron, good condition",false,,,180.00
+"Bumblebee","New - MISB","Takara Tomy","2022-03-10",59.99,79.99,"Masterpiece Bumblebee 2.0",false,,,75.00
+"Starscream","Vintage - opened","Hasbro","1985-02-14",19.99,149.99,"G1 Starscream, missing missiles",true,"2023-11-20",175.00,140.00
+"Soundwave","New - KO","Third Party","2021-12-25",89.99,129.99,"KO Masterpiece Soundwave",false,,,120.00

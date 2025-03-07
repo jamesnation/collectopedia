@@ -3,6 +3,7 @@
 import { AlertTriangle, RefreshCw } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CSVImport } from "@/components/settings/csv-import"
+import { CSVExport } from "@/components/settings/csv-export"
 import { DeleteUserData } from "@/components/settings/delete-user-data"
 import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema"
 import { useCatalogItems } from "@/components/catalog/hooks/use-catalog-items"
@@ -197,18 +198,23 @@ export function CollectionsTab() {
         </CardContent>
       </Card>
 
-      <CSVImport
-        onAddItem={handleAddItem}
-        onCreateCustomType={handleCreateCustomType}
-        onCreateCustomFranchise={handleCreateCustomFranchise}
-        onCreateCustomBrand={handleCreateCustomBrand}
-        onLoadCustomTypes={loadCustomTypes}
-        onLoadCustomFranchises={loadCustomFranchises}
-        onLoadCustomBrands={loadCustomBrands}
-        defaultTypeOptions={itemTypeEnum.enumValues}
-        defaultFranchiseOptions={franchiseEnum.enumValues}
-        defaultBrandOptions={DEFAULT_BRANDS}
-      />
+      {/* Data Import/Export Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CSVImport
+          onAddItem={handleAddItem}
+          onCreateCustomType={handleCreateCustomType}
+          onCreateCustomFranchise={handleCreateCustomFranchise}
+          onCreateCustomBrand={handleCreateCustomBrand}
+          onLoadCustomTypes={loadCustomTypes}
+          onLoadCustomFranchises={loadCustomFranchises}
+          onLoadCustomBrands={loadCustomBrands}
+          defaultTypeOptions={itemTypeEnum.enumValues}
+          defaultFranchiseOptions={franchiseEnum.enumValues}
+          defaultBrandOptions={DEFAULT_BRANDS}
+        />
+        
+        <CSVExport />
+      </div>
       
       <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
         <CardHeader>
