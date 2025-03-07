@@ -27,51 +27,47 @@ We're working on Collectopedia. The idea is it's a tracker for your collection o
    - [x] Password reset functionality
 
 2. Toy Management
-- [ ] Add new toys to the collection
- - [ ] Edit existing toy details
- - [ ] Delete toys from the collection
- - [ ] View all toys in a tabular format
- - [ ] Search functionality for toys
- - [ ] Filter toys by various attributes (e.g., type, date acquired)
- - [ ] Sort toys by different fields
+- [ x] Add new toys to the collection
+ - [x ] Edit existing toy details
+ - [x ] Delete toys from the collection
+ - [x ] View all toys in a tabular format
+ - [x ] Search functionality for toys
+ - [x ] Filter toys by various attributes (e.g., type, date acquired)
+ - [x ] Sort toys by different fields
 
 3. Toy Details
-  - [ ] Name
- - [ ] Date acquired
- - [ ] Cost
- - [ ] Current value
- - [ ] Type
- - [ ] Notes
- - [ ] Image upload and display
+  - [x ] Name
+ - [ x] Date acquired
+ - [ x] Cost
+ - [ x] Current value
+ - [ x] Type
+ - [ x] Notes
+ - [ x] Image upload and display
 
 4. eBay Integration
-- [ ] Fetch current eBay prices for active listings via eBay API
- - [ ] Fetch eBay prices for sold items via RapidAPI
- - [ ] Store fetched prices (Listed Value and Sold Value)
- - [ ] Bulk update eBay prices for all toys
+- [ x] Fetch current eBay prices for active listings via eBay API
+ - [ x] Fetch eBay prices for sold items via RapidAPI
+ - [ x] Store fetched prices (Listed Value and Sold Value)
+ - [ x] Bulk update eBay prices for all toys
 
 5. Data Visualization
 - [ ] Export collection data to CSV
  - [ ] Export collection data to PDF
- - [ ] Sync sold values to Google Sheets
 
 6. Export Functionality
-- [ ] Export collection data to CSV
- - [ ] Export collection data to PDF
- - [ ] Sync sold values to Google Sheets
+- [x ] Export collection data to CSV
+
 
 7. Data Backup
 - [ ] Automated backups of the collection data
  - [ ] Ability to restore from backup
 
-
 8. Advanced Features
-- [ ] Barcode scanning for quick toy lookup
- - [ ] AI-powered image recognition for toy identification
+ - [ x] AI-powered image recognition for toy identification
 
 9. User Preferences
-    - [ ] Customizable dashboard layout
-    - [ ] User-defined custom fields for toys
+    - [x ] Customizable dashboard layout
+    - [x ] User-defined custom fields for toys
 
 10. Collaboration
     - [ ] Sharing collections with other users
@@ -90,9 +86,9 @@ We're working on Collectopedia. The idea is it's a tracker for your collection o
 
 
 ## 14. User Interface
- - [ ] Responsive design for mobile and desktop
- - [ ] Accessible UI components
- - [ ] Dark mode / theme customization
+ - [ x] Responsive design for mobile and desktop
+ - [ x] Accessible UI components
+ - [ x] Dark mode / theme customization
 
 ## 15. Security
  - [ ] Data encryption

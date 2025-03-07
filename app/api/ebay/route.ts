@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import axios from 'axios';
 import qs from 'querystring';
 
@@ -40,6 +40,8 @@ async function getEbayToken() {
 
 async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold', condition?: 'New' | 'Used') {
   try {
+    console.log(`Getting eBay prices for search term: "${searchTerm}", type: ${listingType}, condition: ${condition || 'Any'}`);
+    
     if (listingType === 'sold') {
       // Use RapidAPI for sold items
       const options = {
@@ -164,50 +166,34 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
   }
 }
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const toyName = searchParams.get('toyName');
-  const listingType = searchParams.get('listingType') as 'listed' | 'sold';
-  const condition = searchParams.get('condition') as 'New' | 'Used' | null;
-  const includeItems = searchParams.get('includeItems') === 'true';
-
-  console.log('Received eBay API request for:', { 
-    toyName, 
-    listingType, 
-    condition,
-    includeItems
-  });
-  console.log('Environment:', process.env.NODE_ENV);
-
-  if (!toyName || !listingType) {
-    console.error('Missing parameters:', { toyName, listingType });
-    return NextResponse.json({ error: 'Missing toyName or listingType parameter' }, { status: 400 });
-  }
-
+export async function GET(request: NextRequest) {
   try {
-    const prices = await getEbayPrices(toyName, listingType, condition || undefined);
-    console.log(`eBay prices for ${toyName} (${listingType})${condition ? ` condition: ${condition}` : ''}:`, prices);
+    const searchParams = request.nextUrl.searchParams;
+    const toyName = searchParams.get('toyName');
+    const listingType = searchParams.get('listingType') as 'listed' | 'sold';
+    const condition = searchParams.get('condition') as 'New' | 'Used' | undefined;
     
-    // Log additional info to help debug
-    if (prices.items) {
-      console.log(`Returning ${prices.items.length} item details for debug mode`);
-    } else {
-      console.log('No item details included in response (debug mode off or no results)');
+    console.log('eBay API route received request:', {
+      toyName,
+      listingType,
+      condition,
+      fullUrl: request.nextUrl.toString()
+    });
+    
+    if (!toyName) {
+      return NextResponse.json({ error: 'Missing toyName parameter' }, { status: 400 });
     }
     
-    // If includeItems is false, remove the items from the response to reduce payload size
-    if (!includeItems && prices.items) {
-      console.log('Removing item details from response as includeItems=false');
-      delete prices.items;
+    if (!listingType || !['listed', 'sold'].includes(listingType)) {
+      return NextResponse.json({ error: 'Invalid listingType parameter' }, { status: 400 });
     }
+    
+    // Get prices from eBay - toyName already includes franchise if provided
+    const prices = await getEbayPrices(toyName, listingType, condition);
     
     return NextResponse.json(prices);
   } catch (error) {
-    console.error('Error fetching eBay prices:', error);
-    return NextResponse.json({ 
-      error: 'Failed to fetch eBay prices', 
-      details: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    }, { status: 500 });
+    console.error('Error in eBay API route:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

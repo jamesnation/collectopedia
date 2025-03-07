@@ -348,7 +348,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
           {
             title: item.name,
             image: primaryImage,
-            condition: item.condition
+            condition: item.condition,
+            franchise: item.franchise
           }, 
           shouldUseDebugMode // Explicitly pass the debug mode
         );

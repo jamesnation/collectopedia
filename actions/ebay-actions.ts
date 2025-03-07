@@ -34,7 +34,8 @@ interface EbaySearchResult {
 export async function fetchEbayPrices(
   toyName: string, 
   listingType: 'listed' | 'sold', 
-  condition?: 'New' | 'Used'
+  condition?: 'New' | 'Used',
+  franchise?: string
 ): Promise<{
   lowest: number | null;
   median: number | null;
@@ -44,12 +45,21 @@ export async function fetchEbayPrices(
   error?: string;
 }> {
   try {
-    console.log(`Fetching eBay prices for "${toyName}" (${listingType}, ${condition || 'Any condition'})`);
+    console.log(`Fetching eBay prices for "${toyName}" (${listingType}, ${condition || 'Any condition'}, Franchise: ${franchise || 'Any'})`);
     
     // Build the URL with query parameters
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
     const url = new URL('/api/ebay', baseUrl);
-    url.searchParams.append('toyName', toyName);
+    
+    // Create search term that includes franchise if provided
+    let searchTerm = toyName;
+    if (franchise && franchise.trim() && !['Other', 'Unknown'].includes(franchise)) {
+      searchTerm = `${franchise} ${toyName}`;
+      console.log('Added franchise to search term:', { originalName: toyName, franchise, finalSearchTerm: searchTerm });
+    } else {
+      console.log('Using original name without franchise:', { toyName, franchise: franchise || 'None', reason: !franchise ? 'No franchise' : franchise === 'Other' || franchise === 'Unknown' ? 'Excluded franchise' : 'Empty franchise' });
+    }
+    url.searchParams.append('toyName', searchTerm);
     url.searchParams.append('listingType', listingType);
     if (condition) {
       url.searchParams.append('condition', condition);
@@ -114,7 +124,8 @@ export async function updateEbayPrices(
   id: string, 
   name: string, 
   type: 'listed' | 'sold', 
-  condition?: 'New' | 'Used'
+  condition?: 'New' | 'Used',
+  franchise?: string
 ): Promise<{
   success: boolean;
   prices?: {
@@ -125,9 +136,9 @@ export async function updateEbayPrices(
   error?: string;
 }> {
   try {
-    console.log(`Updating eBay ${type} prices for item "${name}" (${condition || 'Any condition'})`);
+    console.log(`Updating eBay ${type} prices for item "${name}" (${condition || 'Any condition'}, Franchise: ${franchise || 'Any'})`);
     
-    const prices = await fetchEbayPrices(name, type, condition);
+    const prices = await fetchEbayPrices(name, type, condition, franchise);
 
     console.log(`${type.charAt(0).toUpperCase() + type.slice(1)} Prices (${condition || 'Any Condition'}):`, prices);
 
@@ -207,8 +218,8 @@ export async function updateAllEbayListedValues() {
         // Skip items without a name
         if (!item.name) continue;
         
-        // Update the eBay listed price - pass the item's condition
-        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition);
+        // Update the eBay listed price - pass the item's condition and franchise
+        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, item.franchise);
         
         if (result.success && result.prices && result.prices.median) {
           totalListedValue += result.prices.median;
@@ -563,6 +574,7 @@ export async function getEnhancedEbayPrices(
     title: string; 
     image?: string; 
     condition?: string;
+    franchise?: string;
   },
   includeDebugData: boolean = false
 ): Promise<{
@@ -577,10 +589,12 @@ export async function getEnhancedEbayPrices(
       title: string;
       imageUrl?: string;
       condition?: string;
+      franchise?: string;
     };
   };
 }> {
   console.log(`getEnhancedEbayPrices called with debug mode: ${includeDebugData}`);
+  console.log('Item details:', { title: item.title, franchise: item.franchise, condition: item.condition });
   
   const result: any = {};
   
@@ -593,7 +607,8 @@ export async function getEnhancedEbayPrices(
       searchParams: {
         title: item.title,
         imageUrl: item.image,
-        condition: item.condition
+        condition: item.condition,
+        franchise: item.franchise
       }
     };
   } else {
@@ -602,11 +617,12 @@ export async function getEnhancedEbayPrices(
   
   // Get text-based results (use existing function)
   try {
-    console.log('Fetching text-based results for:', item.title);
+    console.log('Fetching text-based results for:', item.title, 'with franchise:', item.franchise);
     const textResults = await fetchEbayPrices(
       item.title, 
       'listed', 
-      item.condition as 'New' | 'Used' | undefined
+      item.condition as 'New' | 'Used' | undefined,
+      item.franchise
     );
     
     if (textResults && typeof textResults === 'object') {
@@ -831,12 +847,19 @@ export async function refreshAllItemPricesEnhanced(
       // Process this batch in parallel
       await Promise.all(batch.map(async (item) => {
         try {
-          // Get the enhanced prices using both text and image search
-          const result = await getEnhancedEbayPrices({
-            title: item.name,
-            image: itemImages[item.id],
+          console.log('Processing item:', {
+            name: item.name,
+            franchise: item.franchise,
             condition: item.condition
           });
+          
+          // Get the enhanced prices using both text and image search
+          const result = await getEnhancedEbayPrices({
+            title: item.name.trim(),
+            image: itemImages[item.id],
+            condition: item.condition,
+            franchise: item.franchise
+          }, true); // Enable debug mode to help diagnose issues
           
           // Extract the best price (prefer combined, then image-based, then text-based)
           const bestPrice = result.combined?.median || 
@@ -916,7 +939,7 @@ export async function refreshAllEbayPrices(
       // Process this batch in parallel
       await Promise.all(batch.map(async (item) => {
         try {
-          const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition);
+          const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, item.franchise);
           
           if (result.success && result.prices?.median) {
             totalListedValue += result.prices.median;

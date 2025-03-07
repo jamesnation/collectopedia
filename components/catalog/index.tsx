@@ -96,6 +96,9 @@ export default function Catalog({
   const [isUpdatingAllPrices, setIsUpdatingAllPrices] = useState(false)
   const [isUpdatingAllPricesEnhanced, setIsUpdatingAllPricesEnhanced] = useState(false)
 
+  // State for AI price loading
+  const [loadingAiPrice, setLoadingAiPrice] = useState<string | null>(null);
+
   // Load data on component mount
   useEffect(() => {
     fetchItems();
@@ -121,7 +124,7 @@ export default function Catalog({
 
       // Call the real eBay API through our server action
       const { updateEbayPrices } = await import('@/actions/ebay-actions');
-      const result = await updateEbayPrices(id, name, type, item.condition);
+      const result = await updateEbayPrices(id, name, type, item.condition, item.franchise);
       
       if (result.success) {
         console.log('eBay update result:', result);
@@ -244,6 +247,62 @@ export default function Catalog({
       });
     } finally {
       setIsUpdatingAllPricesEnhanced(false);
+    }
+  };
+
+  // Handle AI price update
+  const handleRefreshAiPrice = async (id: string, name: string, type: 'listed' | 'sold') => {
+    try {
+      setLoadingAiPrice(id);
+      const item = items.find(i => i.id === id);
+      if (!item) {
+        throw new Error('Item not found');
+      }
+      
+      console.log('Refreshing AI price for item:', {
+        name: item.name,
+        franchise: item.franchise,
+        condition: item.condition
+      });
+      
+      const ebayActions = await import('@/actions/ebay-actions');
+      const result = await ebayActions.updateEbayPrices(
+        id,
+        item.name.trim(), // Trim the name to remove any extra spaces
+        type,
+        item.condition,
+        item.franchise
+      );
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update AI price');
+      }
+      
+      // Update the item in the local state
+      const updatedItems = items.map(i => {
+        if (i.id === id) {
+          return {
+            ...i,
+            [type === 'listed' ? 'ebayListed' : 'ebaySold']: result.prices?.median || null
+          };
+        }
+        return i;
+      });
+      setItems(updatedItems);
+      
+      toast({
+        title: "AI Price updated",
+        description: `Successfully updated AI price for ${name}.`,
+      });
+    } catch (error) {
+      console.error('Error updating AI price:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to update AI price',
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingAiPrice(null);
     }
   };
 
