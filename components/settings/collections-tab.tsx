@@ -16,17 +16,23 @@ import { useAuth } from "@clerk/nextjs"
 
 // Define default brands (assuming this is what was in constants)
 const DEFAULT_BRANDS = [
-  "Funko",
-  "LEGO",
-  "Hasbro",
-  "Mattel",
-  "Bandai",
-  "Hot Toys",
-  "McFarlane Toys",
-  "Mezco",
-  "NECA",
-  "Good Smile Company",
-  "Sideshow Collectibles"
+  'Hasbro',
+  'Toyworld',
+  'Mattel',
+  'Playmates',
+  'Sunbrow',
+  'Kenner',
+  'Mirage Studios',
+  'Filmation',
+  'Neca',
+  'Super7',
+  'Takara',
+  'Games Workshop',
+  'Senate',
+  'Other',
+  'Medium',
+  'Dead X',
+  'WWF'
 ]
 
 export function CollectionsTab() {

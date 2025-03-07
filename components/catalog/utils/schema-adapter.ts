@@ -67,20 +67,21 @@ export const CONDITION_OPTIONS = ["New", "Used"];
 
 // These could be fetched from an API or config file instead of hardcoded
 export const DEFAULT_BRANDS = [
-  'DC',
-  'Filmation',
-  'Funko',
-  'Games Workshop',
   'Hasbro',
-  'Kenner',
-  'Marvel',
-  'Matchbox',
+  'Toyworld',
   'Mattel',
-  'Medium',
   'Playmates',
-  'Senate',
-  'Sunbow',
+  'Sunbrow',
+  'Kenner',
+  'Mirage Studios',
+  'Filmation',
+  'Neca',
   'Super7',
   'Takara',
-  'Tomy'
+  'Games Workshop',
+  'Senate',
+  'Other',
+  'Medium',
+  'Dead X',
+  'WWF'
 ]; 

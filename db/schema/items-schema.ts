@@ -15,14 +15,19 @@ export const itemTypeEnum = pgEnum("item_type", [
 
 export const franchiseEnum = pgEnum("franchise", [
   'Transformers',
-  'TMNT',
-  'M.A.S.K',
+  'Masters of the Universe',
+  'Teenage Mutant Ninja Turtles',
+  'Monster in My Pocket',
   'Visionaries',
+  'Boglins',
+  'M.A.S.K',
   'WWF',
+  'WWE',
   'Warhammer',
-  'Monsters in My Pocket',
   'Senate',
-  'Skating (other)',
+  'CDS Detroit',
+  'Medium',
+  'Hyper',
   'Other',
   'Unknown'
 ]);
