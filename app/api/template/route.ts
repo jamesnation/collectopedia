@@ -15,9 +15,7 @@ export async function GET() {
     'notes',
     'isSold',
     'soldDate',
-    'soldPrice',
-    'ebayListed',
-    'ebaySold'
+    'soldPrice'
   ].join(',');
   
   // Add a sample row with example data
@@ -33,8 +31,6 @@ export async function GET() {
     '60.00',
     'Gift from John',
     'false',
-    '',
-    '',
     '',
     ''
   ].join(',');

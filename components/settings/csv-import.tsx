@@ -677,7 +677,7 @@ export function CSVImport({
             <ul className="list-disc pl-5 space-y-1">
               <li>First row must contain column headers</li>
               <li>Required columns: name, type, franchise, brand, cost, value</li>
-              <li>Optional columns: description, condition, purchaseDate, soldDate, soldPrice</li>
+              <li>Optional columns: description, condition, acquired, soldDate, soldPrice, isSold, notes</li>
             </ul>
           </div>
           
