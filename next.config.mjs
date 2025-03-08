@@ -2,6 +2,17 @@
 const nextConfig = {
   images: {
     domains: ['sjjbgnzyywlgpmgtmube.supabase.co'],
+    // Enable more aggressive image caching
+    minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days caching
+    // Set reasonable image size limits
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Enable formats like WebP and AVIF for better compression
+    formats: ['image/webp', 'image/avif'],
+  },
+  // Add additional experimental features if needed
+  experimental: {
+    optimizeCss: true,
   },
 }
 

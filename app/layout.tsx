@@ -44,6 +44,11 @@ export default async function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
+        <head>
+          <link rel="preconnect" href="https://sjjbgnzyywlgpmgtmube.supabase.co" />
+          <link rel="preconnect" href="https://vercel.com" />
+          <link rel="dns-prefetch" href="https://sjjbgnzyywlgpmgtmube.supabase.co" />
+        </head>
         <body className={inter.className}>
           <ThemeProvider
             attribute="class"

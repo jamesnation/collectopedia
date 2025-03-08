@@ -12,6 +12,7 @@ import { SelectImage } from '@/db/schema/images-schema';
 import { useImageCache } from '../context/image-cache-context';
 import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image';
 import { useRegionContext } from '@/contexts/region-context';
+import { vercelImageLoader } from '../utils/image-loader';
 
 interface ItemGridViewProps {
   items: CatalogItem[];
@@ -74,7 +75,15 @@ export function ItemGridView({
   const getItemPrimaryImage = useMemo(() => (itemId: string): string => {
     // If we have images from the cache, use the first one
     if (imageCache[itemId] && imageCache[itemId].length > 0) {
-      return imageCache[itemId][0].url;
+      // Get the base URL from Supabase
+      const originalUrl = imageCache[itemId][0].url;
+      
+      // Add a timestamp query parameter for first load to bust Vercel's cache when needed
+      // This ensures we always get the latest image if it was updated
+      const cacheBuster = new URLSearchParams(window.location.search).get('refresh') ? 
+        `?t=${Date.now()}` : '';
+      
+      return `${originalUrl}${cacheBuster}`;
     }
     
     // Fall back to the item.image field if present
@@ -153,7 +162,7 @@ export function ItemGridView({
           {/* The actual image with smoother transitions */}
           <Image
             src={getItemPrimaryImage(itemId)}
-            alt={item.name}
+            alt={item.name || 'Item image'}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             style={{ objectFit: 'cover' }}
@@ -161,7 +170,9 @@ export function ItemGridView({
             onLoadingComplete={() => handleImageLoad(itemId)}
             priority={isPriority}
             loading={isPriority ? 'eager' : 'lazy'}
-            quality={80}
+            quality={75} // Slightly reduced quality for better performance
+            unoptimized={false} // Ensure Vercel's image optimization is used
+            loader={vercelImageLoader} // Use our custom loader for Vercel's image optimization
           />
           
           {/* Hover overlay */}
