@@ -45,7 +45,28 @@ export function ItemGridView({
     if (items.length > 0 && !isLoading) {
       // Extract all item IDs for batch loading
       const itemIds = items.map(item => item.id);
-      loadImages(itemIds);
+      
+      // First load only the important visible items (first 8-12 items)
+      const visibleItemIds = itemIds.slice(0, 12);
+      
+      // Then load the rest after a small delay
+      loadImages(visibleItemIds);
+      
+      // Load the rest after the visible items are processed
+      if (itemIds.length > visibleItemIds.length) {
+        const remainingItemIds = itemIds.slice(12);
+        // Use requestIdleCallback or setTimeout to defer loading of non-visible items
+        const loadRemaining = () => {
+          console.log('[GRID] Loading remaining', remainingItemIds.length, 'items');
+          loadImages(remainingItemIds);
+        };
+        
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(loadRemaining);
+        } else {
+          setTimeout(loadRemaining, 1000);
+        }
+      }
     }
   }, [items, isLoading, loadImages]);
 
@@ -94,12 +115,16 @@ export function ItemGridView({
     const isCompleted = hasCompletedLoading[itemId];
     const isImageLoaded = loadedImages[itemId];
 
+    // Determine if this is a priority image (first 4 items, likely above the fold)
+    const isPriority = items.findIndex(i => i.id === itemId) < 4;
+
     console.log(`[GRID] Rendering image for ${itemId}:`, { 
       hasActualImage, 
       isItemLoading, 
       isImageLoaded,
       isCompleted,
-      imageSource: hasActualImage ? 'actual' : 'placeholder'
+      imageSource: hasActualImage ? 'actual' : 'placeholder',
+      isPriority
     });
 
     // Still loading and not yet determined if has images
@@ -130,10 +155,13 @@ export function ItemGridView({
             src={getItemPrimaryImage(itemId)}
             alt={item.name}
             fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             style={{ objectFit: 'cover' }}
             className={`transition-all duration-500 ${isImageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.97]'}`}
             onLoadingComplete={() => handleImageLoad(itemId)}
+            priority={isPriority}
+            loading={isPriority ? 'eager' : 'lazy'}
+            quality={80}
           />
           
           {/* Hover overlay */}

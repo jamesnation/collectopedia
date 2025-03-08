@@ -31,10 +31,43 @@ export const useImageCache = () => useContext(ImageCacheContext);
 
 // Provider component
 export function ImageCacheProvider({ children }: { children: ReactNode }) {
-  const [imageCache, setImageCache] = useState<Record<string, SelectImage[]>>({});
+  // Initialize state from localStorage if available
+  const [imageCache, setImageCache] = useState<Record<string, SelectImage[]>>(() => {
+    if (typeof window === 'undefined') return {};
+    
+    try {
+      const savedCache = localStorage.getItem('collectopedia-image-cache');
+      if (savedCache) {
+        console.log('[CACHE] Loaded cache from localStorage');
+        return JSON.parse(savedCache);
+      }
+    } catch (e) {
+      console.error('[CACHE] Failed to load image cache from localStorage:', e);
+    }
+    
+    return {};
+  });
+  
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
-  // New state to track items that have completed the loading process
-  const [hasCompletedLoading, setHasCompletedLoading] = useState<Record<string, boolean>>({});
+  // Initialize completed loading state based on cached images
+  const [hasCompletedLoading, setHasCompletedLoading] = useState<Record<string, boolean>>(() => {
+    return Object.keys(imageCache).reduce((acc, id) => ({
+      ...acc,
+      [id]: true
+    }), {});
+  });
+  
+  // Save cache to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(imageCache).length > 0) {
+      try {
+        localStorage.setItem('collectopedia-image-cache', JSON.stringify(imageCache));
+        console.log('[CACHE] Saved cache to localStorage with', Object.keys(imageCache).length, 'items');
+      } catch (e) {
+        console.error('[CACHE] Failed to save image cache to localStorage:', e);
+      }
+    }
+  }, [imageCache]);
   
   // Helper function to check if an item has actual images
   const hasImages = useCallback((itemId: string): boolean => {
@@ -72,8 +105,8 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       return newState;
     });
 
-    // Process in batches of 10 to prevent too many parallel requests
-    const batchSize = 10;
+    // Process in batches with increased batch size (25 instead of 10)
+    const batchSize = 25;
     
     // Split into batches
     for (let i = 0; i < idsToLoad.length; i += batchSize) {
@@ -119,11 +152,11 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
         })
       );
       
-      // Small delay between batches to prevent overwhelming the server
-      if (i + batchSize < idsToLoad.length) {
-        console.log('[CACHE] Adding delay between batches');
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      // Remove the artificial delay between batches
+      // if (i + batchSize < idsToLoad.length) {
+      //   console.log('[CACHE] Adding delay between batches');
+      //   await new Promise(resolve => setTimeout(resolve, 100));
+      // }
     }
     
     console.log('[CACHE] Completed loading all image batches');
