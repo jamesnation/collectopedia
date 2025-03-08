@@ -109,7 +109,9 @@ function CatalogInner({
   loadCustomBrands,
   theme,
   setTheme
-}) {
+}: {
+  userId: string | null | undefined;
+} & Record<string, any>) {
   // State for eBay refresh loading states
   const [loadingListedItemId, setLoadingListedItemId] = useState<string | null>(null);
   const [loadingSoldItemId, setLoadingSoldItemId] = useState<string | null>(null);
