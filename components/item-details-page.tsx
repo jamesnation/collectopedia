@@ -764,7 +764,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black/30">
-      <main className="container mx-auto px-2 sm:px-4 py-8 sm:py-12 max-w-full overflow-x-hidden">
+      <main className="container mx-auto px-2 sm:px-4 py-8 sm:py-12 max-w-7xl overflow-x-hidden">
         <Link href="/my-collection" className="inline-flex items-center text-purple-400 hover:text-primary/50 mb-4 sm:mb-8">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Collection
