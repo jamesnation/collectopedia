@@ -160,7 +160,7 @@ function CatalogInner({
 
     try {
       // Find the item to get its condition
-      const item = items.find(item => item.id === id);
+      const item = items.find((item: SelectItem) => item.id === id);
       if (!item) {
         throw new Error('Item not found');
       }
@@ -173,7 +173,7 @@ function CatalogInner({
         console.log('eBay update result:', result);
         
         // Update the local state with the new value
-        const updatedItems = items.map(item => {
+        const updatedItems = items.map((item: SelectItem) => {
           if (item.id === id) {
             return {
               ...item,
@@ -297,7 +297,7 @@ function CatalogInner({
   const handleRefreshAiPrice = async (id: string, name: string, type: 'listed' | 'sold') => {
     try {
       setLoadingAiPrice(id);
-      const item = items.find(i => i.id === id);
+      const item = items.find((i: SelectItem) => i.id === id);
       if (!item) {
         throw new Error('Item not found');
       }
@@ -322,7 +322,7 @@ function CatalogInner({
       }
       
       // Update the item in the local state
-      const updatedItems = items.map(i => {
+      const updatedItems = items.map((i: SelectItem) => {
         if (i.id === id) {
           return {
             ...i,
@@ -551,7 +551,7 @@ function ImageLoaderComponent({ itemIds }: { itemIds: string[] }) {
     console.log('[IMAGE LOADER] Current image cache state:', {
       cacheKeys: Object.keys(imageCache).length,
       completedLoadingKeys: Object.keys(hasCompletedLoading).length,
-      itemsWithImages: Object.keys(imageCache).filter(id => imageCache[id]?.length > 0).length
+      itemsWithImages: Object.keys(imageCache).filter((id: string) => imageCache[id]?.length > 0).length
     });
   }, [itemIds.length, imageCache, hasCompletedLoading]);
   
@@ -566,7 +566,7 @@ function ImageLoaderComponent({ itemIds }: { itemIds: string[] }) {
         console.log('[IMAGE LOADER] Image cache state after timeout:', {
           cacheKeys: Object.keys(imageCache).length,
           completedLoadingKeys: Object.keys(hasCompletedLoading).length,
-          itemsWithImages: Object.keys(imageCache).filter(id => imageCache[id]?.length > 0).length
+          itemsWithImages: Object.keys(imageCache).filter((id: string) => imageCache[id]?.length > 0).length
         });
       }, 2000);
       
