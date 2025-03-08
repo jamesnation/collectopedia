@@ -15,6 +15,7 @@ import { getImagesByItemIdAction } from '@/actions/images-actions';
 import { SelectImage } from '@/db/schema/images-schema';
 import { useImageCache } from '../context/image-cache-context';
 import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image';
+import { useRegionContext } from '@/contexts/region-context';
 
 interface ItemListViewProps {
   items: CatalogItem[];
@@ -55,6 +56,7 @@ export function ItemListView({
   loadingSoldItemId
 }: ItemListViewProps) {
   const router = useRouter();
+  const { formatCurrency } = useRegionContext();
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const { 
     imageCache, 
@@ -276,12 +278,14 @@ export function ItemListView({
                 <TableCell className="dark:text-foreground pl-4">
                   {formatDate(item.acquired)}
                 </TableCell>
-                <TableCell className="dark:text-foreground pl-4">£{item.cost.toFixed(2)}</TableCell>
+                <TableCell className="dark:text-foreground pl-4">
+                  {formatCurrency(item.cost)}
+                </TableCell>
                 <TableCell className="font-bold text-foreground dark:text-purple-400 pl-4">
-                  £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
+                  {formatCurrency(showSold ? (item.soldPrice ?? 0) : item.value)}
                 </TableCell>
                 <TableCell className="pl-4">
-                  <span className="whitespace-nowrap dark:text-foreground">£{item.ebayListed?.toFixed(2) || 'N/A'}</span>
+                  <span className="whitespace-nowrap dark:text-foreground">{item.ebayListed ? formatCurrency(item.ebayListed) : 'N/A'}</span>
                 </TableCell>
                 {showSold && (
                   <TableCell className="dark:text-foreground pl-4">{item.soldDate ? formatDate(item.soldDate) : 'N/A'}</TableCell>

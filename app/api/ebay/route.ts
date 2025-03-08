@@ -6,42 +6,65 @@ const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 
+// Define region configuration types
+interface RegionConfig {
+  marketplaceId: string;
+  locationCountry: string;
+  deliveryCountry: string;
+  siteId: string;
+}
+
+// Available region configurations
+const REGION_CONFIGS: Record<string, RegionConfig> = {
+  US: {
+    marketplaceId: 'EBAY-US',
+    locationCountry: 'US',
+    deliveryCountry: 'US',
+    siteId: '0'  // US site ID for RapidAPI
+  },
+  UK: {
+    marketplaceId: 'EBAY-GB',
+    locationCountry: 'GB',
+    deliveryCountry: 'GB',
+    siteId: '3'  // UK site ID for RapidAPI
+  }
+};
+
+// Default to UK if no region specified
+const DEFAULT_REGION = 'UK';
+
 console.log('EBAY_APP_ID:', EBAY_APP_ID ? 'Set' : 'Not set');
 console.log('EBAY_CERT_ID:', EBAY_CERT_ID ? 'Set' : 'Not set');
 console.log('RAPIDAPI_KEY:', RAPIDAPI_KEY ? 'Set' : 'Not set');
 
+// Function to get eBay OAuth token
 async function getEbayToken() {
   const auth = Buffer.from(`${EBAY_APP_ID}:${EBAY_CERT_ID}`).toString('base64');
   const data = qs.stringify({ grant_type: 'client_credentials', scope: 'https://api.ebay.com/oauth/api_scope' });
 
   try {
-    console.log('Requesting eBay token...');
-    console.log('Auth header (first 10 chars):', auth.substring(0, 10));
-    console.log('Token request URL:', 'https://api.ebay.com/identity/v1/oauth2/token');
-    console.log('Token request data:', data);
+    console.log('Getting eBay token...');
     const response = await axios.post('https://api.ebay.com/identity/v1/oauth2/token', data, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${auth}`
       }
     });
-    console.log('eBay token response:', response.status, response.statusText);
+    console.log('eBay token obtained');
     return response.data.access_token;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error('Error getting eBay token:', error.response?.status, error.response?.statusText);
-      console.error('Error response data:', error.response?.data);
-    } else {
-      console.error('Error getting eBay token:', error);
-    }
+    console.error('Error getting eBay token:', error);
     throw error;
   }
 }
 
-async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold', condition?: 'New' | 'Used') {
+// Main function to get eBay prices
+async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold', condition?: 'New' | 'Used', region: string = DEFAULT_REGION) {
   try {
-    console.log(`Getting eBay prices for search term: "${searchTerm}", type: ${listingType}, condition: ${condition || 'Any'}`);
-    
+    // Validate and get region config
+    const regionConfig = REGION_CONFIGS[region] || REGION_CONFIGS[DEFAULT_REGION];
+    console.log(`Using region config for ${region}:`, regionConfig);
+
     if (listingType === 'sold') {
       // Use RapidAPI for sold items
       const options = {
@@ -49,47 +72,78 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
         url: 'https://ebay-average-selling-price.p.rapidapi.com/findCompletedItems',
         headers: {
           'content-type': 'application/json',
-          'x-rapidapi-host': 'ebay-average-selling-price.p.rapidapi.com',
-          'x-rapidapi-key': RAPIDAPI_KEY
+          'X-RapidAPI-Key': RAPIDAPI_KEY,
+          'X-RapidAPI-Host': 'ebay-average-selling-price.p.rapidapi.com'
         },
         data: {
           keywords: searchTerm,
-          excluded_keywords: "",
-          max_search_results: "100",
-          category_id: "9355",
-          remove_outliers: true,
-          site_id: "3",
-          aspects: []
+          max_search_results: '100',
+          category_id: '9355', // Toys & Hobbies category
+          site_id: regionConfig.siteId, // Dynamic based on region
+          remove_outliers: true
         }
       };
-
-      // If condition is provided, add a filter for it
+      
+      // Add condition to keywords for sold items
       if (condition) {
-        console.log(`Adding condition filter: ${condition} for sold items`);
-        // RapidAPI doesn't seem to support condition filtering directly
-        // We can modify the keywords to include the condition
         options.data.keywords = `${options.data.keywords} ${condition}`;
+        console.log(`Adding condition "${condition}" to search term for sold items`);
       }
-
+      
+      console.log('RapidAPI request URL:', options.url);
+      console.log('RapidAPI request data:', options.data);
+      
       const response = await axios.request(options);
-      const data = response.data;
-
-      if (data.results === 0) {
-        return { lowest: null, median: null, highest: null, listingType, message: 'No sold items found' };
+      
+      // Process the data from RapidAPI
+      const completedItems = response.data;
+      if (!completedItems || !completedItems.average_sold_price) {
+        return { lowest: null, median: null, highest: null, listingType, message: 'No sold items data' };
       }
-
-      return {
-        lowest: data.min_price,
-        median: data.median_price,
-        highest: data.max_price,
-        listingType
+      
+      const averagePrice = parseFloat(completedItems.average_sold_price);
+      if (isNaN(averagePrice)) {
+        return { lowest: null, median: null, highest: null, listingType, message: 'Invalid average price' };
+      }
+      
+      // Extract prices for median calculation
+      const itemPrices = completedItems.items
+        .filter((item: any) => item.price)
+        .map((item: any) => parseFloat(item.price))
+        .filter((price: number) => !isNaN(price));
+      
+      if (itemPrices.length === 0) {
+        return { lowest: null, median: null, highest: null, listingType, message: 'No valid prices found' };
+      }
+      
+      itemPrices.sort((a: number, b: number) => a - b);
+      
+      const lowest = itemPrices[0];
+      const highest = itemPrices[itemPrices.length - 1];
+      
+      // Calculate the median price
+      let median;
+      const mid = Math.floor(itemPrices.length / 2);
+      if (itemPrices.length % 2 === 0) {
+        median = (itemPrices[mid - 1] + itemPrices[mid]) / 2;
+      } else {
+        median = itemPrices[mid];
+      }
+      
+      // Return the results
+      return { 
+        lowest,
+        median, 
+        highest,
+        listingType,
+        items: completedItems.items
       };
     } else {
       // Use eBay API for active listings
       const token = await getEbayToken();
       
-      // Build the filter string - start with existing filters
-      let filterString = 'deliveryCountry:GB,itemLocationCountry:GB';
+      // Build the filter string with region-specific values
+      let filterString = `deliveryCountry:${regionConfig.deliveryCountry},itemLocationCountry:${regionConfig.locationCountry}`;
       
       // Add condition filter if provided
       if (condition) {
@@ -109,7 +163,7 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
       const response = await axios.get('https://api.ebay.com/buy/browse/v1/item_summary/search', {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'X-EBAY-C-MARKETPLACE-ID': 'EBAY-GB'
+          'X-EBAY-C-MARKETPLACE-ID': regionConfig.marketplaceId
         },
         params: {
           q: searchTerm,
@@ -135,65 +189,84 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
       }
 
       prices.sort((a: number, b: number) => a - b);
-      
-      // Process items for debug mode - extract only what we need
-      const processedItems = items.slice(0, 5).map((item: any) => ({
-        id: item.itemId,
-        title: item.title,
-        price: item.price?.value,
-        currency: item.price?.currency,
-        image: item.image?.imageUrl,
-        url: item.itemWebUrl,
-        condition: item.condition
-      }));
-      
-      return {
-        lowest: prices[0],
-        median: prices[Math.floor(prices.length / 2)],
-        highest: prices[prices.length - 1],
+
+      const lowest = prices[0];
+      const highest = prices[prices.length - 1];
+
+      // Calculate the median price
+      let median;
+      const mid = Math.floor(prices.length / 2);
+      if (prices.length % 2 === 0) {
+        median = (prices[mid - 1] + prices[mid]) / 2;
+      } else {
+        median = prices[mid];
+      }
+
+      return { 
+        lowest, 
+        median, 
+        highest, 
         listingType,
-        items: processedItems // Include items for debug mode
+        items
       };
     }
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error('Error in getEbayPrices:', error.response?.status, error.response?.statusText);
-      console.error('Error response data:', error.response?.data);
-    } else {
-      console.error('Error in getEbayPrices:', error);
-    }
-    return { lowest: null, median: null, highest: null, listingType, message: 'Error fetching eBay prices' };
+    console.error('Error fetching eBay prices:', error);
+    return { lowest: null, median: null, highest: null, listingType, error: 'Failed to fetch prices' };
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const toyName = searchParams.get('toyName');
-    const listingType = searchParams.get('listingType') as 'listed' | 'sold';
-    const condition = searchParams.get('condition') as 'New' | 'Used' | undefined;
-    
-    console.log('eBay API route received request:', {
-      toyName,
-      listingType,
-      condition,
-      fullUrl: request.nextUrl.toString()
-    });
+    const toyName = request.nextUrl.searchParams.get('toyName');
+    const listingType = request.nextUrl.searchParams.get('listingType') as 'listed' | 'sold';
+    const conditionParam = request.nextUrl.searchParams.get('condition');
+    const condition = conditionParam === 'New' || conditionParam === 'Used' ? conditionParam : undefined;
+    const includeItems = request.nextUrl.searchParams.get('includeItems') === 'true';
+    const region = request.nextUrl.searchParams.get('region') || DEFAULT_REGION;
     
     if (!toyName) {
       return NextResponse.json({ error: 'Missing toyName parameter' }, { status: 400 });
     }
     
-    if (!listingType || !['listed', 'sold'].includes(listingType)) {
-      return NextResponse.json({ error: 'Invalid listingType parameter' }, { status: 400 });
+    if (!listingType || (listingType !== 'listed' && listingType !== 'sold')) {
+      return NextResponse.json({ error: 'Invalid or missing listingType parameter' }, { status: 400 });
     }
     
-    // Get prices from eBay - toyName already includes franchise if provided
-    const prices = await getEbayPrices(toyName, listingType, condition);
+    console.log(`eBay API request for "${toyName}" (${listingType}, ${condition || 'Any'}, Region: ${region})`);
     
-    return NextResponse.json(prices);
+    // Get prices from eBay
+    const prices = await getEbayPrices(toyName, listingType, condition, region);
+    
+    // Prepare the response
+    const response: any = {
+      lowest: prices.lowest,
+      median: prices.median,
+      highest: prices.highest,
+      listingType: prices.listingType
+    };
+    
+    // Include items in response if requested
+    if (includeItems && prices.items) {
+      response.items = prices.items;
+    }
+    
+    // Include error message if present
+    if (prices.error) {
+      response.error = prices.error;
+    }
+    
+    // Include informational message if present
+    if (prices.message) {
+      response.message = prices.message;
+    }
+    
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error in eBay API route:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

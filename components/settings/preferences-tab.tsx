@@ -1,22 +1,74 @@
 "use client"
 
-import { BugIcon, ImageIcon } from "lucide-react"
+import { BugIcon, ImageIcon, GlobeIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useEbayDebugMode } from "@/hooks/use-ebay-debug-mode"
+import { useRegionPreference, RegionCode, REGIONS } from "@/hooks/use-region-preference"
 import { Separator } from "@/components/ui/separator"
 import { useEffect } from "react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 export function PreferencesTab() {
   const { isDebugMode, isInitialized, toggleDebugMode } = useEbayDebugMode();
+  const { region, regionData, isInitialized: isRegionInitialized, changeRegion } = useRegionPreference();
 
   useEffect(() => {
     console.log('PreferencesTab - Debug mode status:', { isDebugMode, isInitialized });
-  }, [isDebugMode, isInitialized]);
+    console.log('PreferencesTab - Region status:', { region, isRegionInitialized });
+  }, [isDebugMode, isInitialized, region, isRegionInitialized]);
+
+  const handleRegionChange = (value: string) => {
+    changeRegion(value as RegionCode);
+  };
 
   return (
     <div className="space-y-6">
+      <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 dark:text-foreground">
+            <GlobeIcon className="h-5 w-5 text-blue-400" />
+            Region & Currency
+          </CardTitle>
+          <CardDescription className="dark:text-muted-foreground">
+            Set your preferred region and currency for the application
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-4">
+            <RadioGroup 
+              value={region} 
+              onValueChange={handleRegionChange}
+              disabled={!isRegionInitialized}
+              className="flex flex-col space-y-3"
+            >
+              {Object.entries(REGIONS).map(([code, data]) => (
+                <div key={code} className="flex items-center space-x-2">
+                  <RadioGroupItem value={code} id={`region-${code}`} />
+                  <Label htmlFor={`region-${code}`} className="flex items-center gap-2 cursor-pointer">
+                    <span className="font-medium">{data.label}</span>
+                    <span className="text-sm text-muted-foreground">
+                      ({data.currency} {data.currencyCode})
+                    </span>
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+            
+            <p className="text-sm text-muted-foreground">
+              This setting affects both displayed currencies and eBay price estimates.
+            </p>
+          </div>
+          
+          <Separator className="my-4" />
+          
+          <p className="text-xs text-muted-foreground">
+            Currency settings are stored locally in your browser.
+          </p>
+        </CardContent>
+      </Card>
+
       <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 dark:text-foreground">

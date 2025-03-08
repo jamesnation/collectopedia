@@ -5,6 +5,7 @@ import { getItemsByUserIdAction, updateItemAction } from './items-actions'
 import { recordEbayHistoryAction } from './ebay-history-actions' // Import for recording history
 import { auth } from "@clerk/nextjs/server";
 import { getImagesByItemIdAction } from './images-actions' // Correct import from images-actions
+import { cookies } from 'next/headers';
 
 // Remove the API_BASE_URL constant and use absolute URL instead
 const API_URL = '/api/ebay';
@@ -31,11 +32,26 @@ interface EbaySearchResult {
   };
 }
 
+// For handling both specific or global region parameter
+const getRegionFromPreference = (): string | undefined => {
+  // Since this is server-side, we can't directly access localStorage
+  // This function should be overridden with the actual region from client components
+  return undefined;
+};
+
+// Helper to get region from a cookie
+function getRegionFromCookie(): string | undefined {
+  const cookieStore = cookies();
+  const regionCookie = cookieStore.get('collectopedia_region_preference');
+  return regionCookie?.value;
+}
+
 export async function fetchEbayPrices(
   toyName: string, 
   listingType: 'listed' | 'sold', 
   condition?: 'New' | 'Used',
-  franchise?: string
+  franchise?: string,
+  region?: string
 ): Promise<{
   lowest: number | null;
   median: number | null;
@@ -45,7 +61,10 @@ export async function fetchEbayPrices(
   error?: string;
 }> {
   try {
-    console.log(`Fetching eBay prices for "${toyName}" (${listingType}, ${condition || 'Any condition'}, Franchise: ${franchise || 'Any'})`);
+    // Get region from cookie if not provided
+    const effectiveRegion = region || getRegionFromCookie() || 'UK'; // Default to UK if not found
+    
+    console.log(`Fetching eBay prices for "${toyName}" (${listingType}, ${condition || 'Any condition'}, Franchise: ${franchise || 'Any'}, Region: ${effectiveRegion})`);
     
     // Build the URL with query parameters
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
@@ -64,6 +83,9 @@ export async function fetchEbayPrices(
     if (condition) {
       url.searchParams.append('condition', condition);
     }
+    
+    // Add region parameter
+    url.searchParams.append('region', effectiveRegion);
     
     // Add debug parameter to get item details
     url.searchParams.append('includeItems', 'true');
@@ -125,7 +147,7 @@ export async function updateEbayPrices(
   name: string, 
   type: 'listed' | 'sold', 
   condition?: 'New' | 'Used',
-  franchise?: string
+  region?: string
 ): Promise<{
   success: boolean;
   prices?: {
@@ -136,9 +158,12 @@ export async function updateEbayPrices(
   error?: string;
 }> {
   try {
-    console.log(`Updating eBay ${type} prices for item "${name}" (${condition || 'Any condition'}, Franchise: ${franchise || 'Any'})`);
+    // Get region from cookie if not provided
+    const effectiveRegion = region || getRegionFromCookie() || 'UK'; // Default to UK if not found
     
-    const prices = await fetchEbayPrices(name, type, condition, franchise);
+    console.log(`Updating eBay ${type} prices for item "${name}" (${condition || 'Any condition'}, Region: ${effectiveRegion})`);
+    
+    const prices = await fetchEbayPrices(name, type, condition, undefined, effectiveRegion);
 
     console.log(`${type.charAt(0).toUpperCase() + type.slice(1)} Prices (${condition || 'Any Condition'}):`, prices);
 
@@ -154,7 +179,8 @@ export async function updateEbayPrices(
 
     // Update the database with the new prices
     const updateData = {
-      [type === 'listed' ? 'ebayListed' : 'ebaySold']: roundedPrice
+      [type === 'listed' ? 'ebayListed' : 'ebaySold']: roundedPrice,
+      ebayLastUpdated: new Date()
     };
 
     console.log(`Updating item ${id} with ${type} price: ${roundedPrice}`);
@@ -219,7 +245,7 @@ export async function updateAllEbayListedValues() {
         if (!item.name) continue;
         
         // Update the eBay listed price - pass the item's condition and franchise
-        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, item.franchise);
+        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, getRegionFromCookie());
         
         if (result.success && result.prices && result.prices.median) {
           totalListedValue += result.prices.median;
@@ -575,6 +601,7 @@ export async function getEnhancedEbayPrices(
     image?: string; 
     condition?: string;
     franchise?: string;
+    region?: string;
   },
   includeDebugData: boolean = false
 ): Promise<{
@@ -590,11 +617,17 @@ export async function getEnhancedEbayPrices(
       imageUrl?: string;
       condition?: string;
       franchise?: string;
+      region?: string;
     };
   };
 }> {
   console.log(`getEnhancedEbayPrices called with debug mode: ${includeDebugData}`);
-  console.log('Item details:', { title: item.title, franchise: item.franchise, condition: item.condition });
+  console.log('Item details:', { 
+    title: item.title, 
+    franchise: item.franchise, 
+    condition: item.condition,
+    region: item.region
+  });
   
   const result: any = {};
   
@@ -608,74 +641,69 @@ export async function getEnhancedEbayPrices(
         title: item.title,
         imageUrl: item.image,
         condition: item.condition,
-        franchise: item.franchise
+        franchise: item.franchise,
+        region: item.region
       }
     };
   } else {
     console.log('Debug mode is disabled, no debug data will be collected');
   }
   
-  // Get text-based results (use existing function)
-  try {
-    console.log('Fetching text-based results for:', item.title, 'with franchise:', item.franchise);
-    const textResults = await fetchEbayPrices(
-      item.title, 
-      'listed', 
-      item.condition as 'New' | 'Used' | undefined,
-      item.franchise
-    );
+  // Get text-based results with franchise
+  const textResults = await fetchEbayPrices(
+    item.title,
+    'listed',
+    item.condition as 'New' | 'Used' | undefined,
+    item.franchise,
+    getRegionFromCookie()
+  );
+  
+  if (textResults && typeof textResults === 'object') {
+    result.textBased = {
+      lowest: textResults.lowest || 0,
+      median: textResults.median || 0,
+      highest: textResults.highest || 0
+    };
     
-    if (textResults && typeof textResults === 'object') {
-      result.textBased = {
-        lowest: textResults.lowest || 0,
-        median: textResults.median || 0,
-        highest: textResults.highest || 0
-      };
+    console.log('Text-based results:', result.textBased);
+    
+    // Store raw items data for debug mode
+    if (includeDebugData && textResults.items) {
+      console.log(`Found ${textResults.items.length} text matches for debug`);
       
-      console.log('Text-based results:', result.textBased);
-      
-      // Store raw items data for debug mode
-      if (includeDebugData && textResults.items) {
-        console.log(`Found ${textResults.items.length} text matches for debug`);
-        
-        // Log the first item to debug image structure
-        if (textResults.items.length > 0) {
-          console.log(`First text match item structure:`, {
-            hasImage: !!textResults.items[0].image,
-            imageType: typeof textResults.items[0].image,
-            hasImageUrl: !!textResults.items[0].imageUrl,
-            imageUrlType: typeof textResults.items[0].imageUrl,
-            fullItem: JSON.stringify(textResults.items[0]).substring(0, 500) + '...'
-          });
-        }
-        
-        result.debugData.textMatches = textResults.items.map((item: any) => {
-          // Create a consistent image object structure
-          let imageObj;
-          if (item.image) {
-            imageObj = typeof item.image === 'string' 
-              ? { imageUrl: item.image } 
-              : item.image;
-          } else if (item.imageUrl) {
-            imageObj = { imageUrl: item.imageUrl };
-          }
-          
-          return {
-            ...item,
-            searchType: 'text',
-            matchConfidence: item.relevanceScore || 'unknown',
-            // Use the consistent image object
-            image: imageObj
-          };
+      // Log the first item to debug image structure
+      if (textResults.items.length > 0) {
+        console.log(`First text match item structure:`, {
+          hasImage: !!textResults.items[0].image,
+          imageType: typeof textResults.items[0].image,
+          hasImageUrl: !!textResults.items[0].imageUrl,
+          imageUrlType: typeof textResults.items[0].imageUrl,
+          fullItem: JSON.stringify(textResults.items[0]).substring(0, 500) + '...'
         });
       }
-    } else {
-      console.log('No valid text results returned:', textResults);
-      // Set default values to prevent undefined errors
-      result.textBased = { lowest: 0, median: 0, highest: 0 };
+      
+      result.debugData.textMatches = textResults.items.map((item: any) => {
+        // Create a consistent image object structure
+        let imageObj;
+        if (item.image) {
+          imageObj = typeof item.image === 'string' 
+            ? { imageUrl: item.image } 
+            : item.image;
+        } else if (item.imageUrl) {
+          imageObj = { imageUrl: item.imageUrl };
+        }
+        
+        return {
+          ...item,
+          searchType: 'text',
+          matchConfidence: item.relevanceScore || 'unknown',
+          // Use the consistent image object
+          image: imageObj
+        };
+      });
     }
-  } catch (error) {
-    console.error('Error getting text-based eBay prices:', error);
+  } else {
+    console.log('No valid text results returned:', textResults);
     // Set default values to prevent undefined errors
     result.textBased = { lowest: 0, median: 0, highest: 0 };
   }
@@ -858,7 +886,8 @@ export async function refreshAllItemPricesEnhanced(
             title: item.name.trim(),
             image: itemImages[item.id],
             condition: item.condition,
-            franchise: item.franchise
+            franchise: item.franchise,
+            region: getRegionFromCookie()
           }, true); // Enable debug mode to help diagnose issues
           
           // Extract the best price (prefer combined, then image-based, then text-based)
@@ -939,7 +968,7 @@ export async function refreshAllEbayPrices(
       // Process this batch in parallel
       await Promise.all(batch.map(async (item) => {
         try {
-          const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, item.franchise);
+          const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, getRegionFromCookie());
           
           if (result.success && result.prices?.median) {
             totalListedValue += result.prices.median;
@@ -973,4 +1002,111 @@ export async function refreshAllEbayPrices(
       error: error instanceof Error ? error.message : 'Failed to update all eBay prices'
     };
   }
+}
+
+export async function updateItemWithEnhancedPricing(item: any, itemImages: Record<string, string | undefined>) {
+  if (!item || !item.id) {
+    console.error('Invalid item provided to updateItemWithEnhancedPricing');
+    return { success: false, error: 'Invalid item' };
+  }
+  
+  try {
+    console.log(`Updating item ${item.id} (${item.name}) with enhanced pricing`);
+    
+    // No image for this item
+    if (!itemImages[item.id]) {
+      console.log(`No image available for ${item.name}. Using text-based pricing only.`);
+      
+      // Update the eBay listed price - pass the item's condition and franchise
+      const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, getRegionFromCookie());
+      
+      if (result.success && result.prices && result.prices.median) {
+        console.log(`Successfully updated price for ${item.name} to ${result.prices.median}`);
+        return { success: true, newPrice: result.prices.median };
+      } else {
+        console.error(`Failed to update price for ${item.name}`);
+        return { success: false, error: result.error || 'Unknown error' };
+      }
+    }
+    
+    // We have an image, use enhanced pricing
+    console.log(`Using enhanced pricing with image for ${item.name}`);
+    
+    try {
+      // Use the enhanced pricing that includes image search
+      const enhancedResult = await getEnhancedEbayPrices({
+        title: item.name,
+        image: itemImages[item.id],
+        condition: item.condition,
+        franchise: item.franchise,
+        region: getRegionFromCookie()
+      }, true); // Enable debug mode to help diagnose issues
+      
+      // Extract the best price estimate
+      if (enhancedResult.combined?.median || enhancedResult.imageBased?.median || enhancedResult.textBased?.median) {
+        return { success: true };
+      } else {
+        return { success: false, error: 'No valid prices found' };
+      }
+    } catch (error) {
+      console.error(`Error in enhanced pricing for ${item.name}:`, error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  } catch (error) {
+    console.error(`Error updating pricing for ${item.id} (${item.name}):`, error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+export async function processBatchEbayPriceUpdate(batch: any[], progress: any = null): Promise<{
+  successfulUpdates: number;
+  failedUpdates: number;
+  totalValue: number;
+}> {
+  console.log(`Processing eBay price update batch of ${batch.length} items`);
+  
+  const results = {
+    successfulUpdates: 0,
+    failedUpdates: 0,
+    totalValue: 0
+  };
+  
+  try {
+    await Promise.all(batch.map(async (item) => {
+      try {
+        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, getRegionFromCookie());
+        
+        if (result.success && result.prices?.median) {
+          results.successfulUpdates++;
+          results.totalValue += result.prices.median;
+          
+          // Update progress if provided
+          if (progress) {
+            progress.update(`Updated price for ${item.name}: ${result.prices.median}`);
+          }
+        } else {
+          console.error(`Failed to update price for item ${item.id} (${item.name}):`, result.error);
+          results.failedUpdates++;
+          
+          // Update progress if provided
+          if (progress) {
+            progress.update(`Failed to update price for ${item.name}: ${result.error}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Error updating price for item ${item.id} (${item.name}):`, error);
+        results.failedUpdates++;
+        
+        // Update progress if provided
+        if (progress) {
+          progress.update(`Error updating price for ${item.name}`);
+        }
+      }
+    }));
+  } catch (error) {
+    console.error("Error processing batch:", error);
+  }
+  
+  console.log(`Batch update complete:`, results);
+  return results;
 }

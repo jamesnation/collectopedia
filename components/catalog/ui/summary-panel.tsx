@@ -1,5 +1,6 @@
 import { DollarSign, ShoppingCart, BarChart4, Percent, Brain } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useRegionContext } from "@/contexts/region-context";
 
 interface SummaryPanelProps {
   totalValue?: number;
@@ -9,16 +10,6 @@ interface SummaryPanelProps {
   ebaySoldValue?: number;
   showSold: boolean;
 }
-
-// Utility function for formatting currency values
-const formatCurrency = (value: number) => {
-  return value.toLocaleString('en-GB', { 
-    style: 'currency', 
-    currency: 'GBP',
-    minimumFractionDigits: 2, 
-    maximumFractionDigits: 2 
-  });
-};
 
 const formatNumber = (value: number) => {
   return value.toLocaleString('en-US');
@@ -34,6 +25,7 @@ export default function SummaryPanel({
 }: SummaryPanelProps) {
   const profit = totalValue - totalCost;
   const profitMargin = totalCost > 0 ? (profit / totalCost) * 100 : 0;
+  const { formatCurrency } = useRegionContext();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">

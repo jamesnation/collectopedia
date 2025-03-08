@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { getCustomBrandsAction } from "@/actions/custom-brands-actions"
 import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image'
 import { useEbayDebugMode } from "@/hooks/use-ebay-debug-mode"
+import { useRegionContext } from "@/contexts/region-context"
 
 const placeholderImage = PLACEHOLDER_IMAGE_PATH;
 
@@ -68,6 +69,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [loadingAiPrice, setLoadingAiPrice] = useState(false)
   const [debugData, setDebugData] = useState<any>(null);
   const { isDebugMode, isInitialized } = useEbayDebugMode();
+  const { formatCurrency, currencySymbol, region } = useRegionContext();
 
   const defaultBrands = [
     'DC',
@@ -349,7 +351,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             title: item.name,
             image: primaryImage,
             condition: item.condition,
-            franchise: item.franchise
+            franchise: item.franchise,
+            region: region
           }, 
           shouldUseDebugMode // Explicitly pass the debug mode
         );
@@ -908,7 +911,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         onClick={() => handleEditStart('value')}
                       >
                         <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-purple-400 break-words text-left">
-                          ${typeof item.value === 'number' ? item.value.toFixed(2) : parseFloat(item.value).toFixed(2)}
+                          {formatCurrency(item.value)}
                         </span>
                         <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity inline-flex" />
                       </Button>
@@ -943,7 +946,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 <CardContent className="pt-2">
                   <div className="flex items-center justify-between">
                     <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">
-                      {item.ebayListed ? `£${item.ebayListed}` : 'Not available'}
+                      {item.ebayListed ? formatCurrency(item.ebayListed) : 'Not available'}
                     </div>
                     <Button
                       variant="ghost"
@@ -975,7 +978,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         onClick={() => handleEditStart('cost')}
                       >
                         <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold break-words text-left">
-                          ${typeof item.cost === 'number' ? item.cost.toFixed(2) : parseFloat(item.cost).toFixed(2)}
+                          {formatCurrency(item.cost)}
                         </span>
                         <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity inline-flex" />
                       </Button>
@@ -1016,7 +1019,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground text-left">Total Profit</p>
                     <div className="flex items-center gap-1 justify-start text-left">
                       <p className={`text-sm sm:text-base md:text-lg lg:text-xl font-bold break-words text-left ${(item.value - item.cost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        ${(item.value - item.cost).toFixed(2)}
+                        {formatCurrency(item.value - item.cost)}
                       </p>
                       <BarChart4 className="flex-shrink-0 h-4 w-4 md:h-5 md:w-5 text-purple-400" aria-label="Total Profit" />
                     </div>
@@ -1289,7 +1292,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground">Sold Price</Label>
-                        <p className="font-semibold text-purple-400">${item.soldPrice.toFixed(2)}</p>
+                        <p className="font-semibold text-purple-400">{formatCurrency(item.soldPrice)}</p>
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground">Sold Date</Label>
@@ -1398,8 +1401,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     <CardTitle className="text-lg mb-2">{relatedItem.name}</CardTitle>
                     <p className="font-semibold text-primary/70">
                       {relatedItem.isSold 
-                        ? `Sold: $${relatedItem.soldPrice?.toFixed(2) || 'N/A'}` 
-                        : `Value: $${relatedItem.value.toFixed(2)}`}
+                        ? `Sold: ${formatCurrency(relatedItem.soldPrice)}` 
+                        : `Value: ${formatCurrency(relatedItem.value)}`}
                     </p>
                   </CardContent>
                   <CardFooter>

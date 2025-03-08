@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
+import { RegionProvider } from "@/contexts/region-context";
 import Sidebar from "@/components/sidebar";
 import { auth } from "@clerk/nextjs/server";
 import { getProfileByUserIdAction } from "@/actions/profiles-actions";
@@ -50,12 +51,14 @@ export default async function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <div className="flex h-screen dark:bg-black/30">
-              <Sidebar />
-              <main className="flex-1 overflow-auto pt-16 md:pt-0">
-                {children}
-              </main>
-            </div>
+            <RegionProvider>
+              <div className="flex h-screen dark:bg-black/30">
+                <Sidebar />
+                <main className="flex-1 overflow-auto pt-16 md:pt-0">
+                  {children}
+                </main>
+              </div>
+            </RegionProvider>
           </ThemeProvider>
         </body>
       </html>

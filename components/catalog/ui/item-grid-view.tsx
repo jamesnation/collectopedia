@@ -11,6 +11,7 @@ import { getImagesByItemIdAction } from '@/actions/images-actions';
 import { SelectImage } from '@/db/schema/images-schema';
 import { useImageCache } from '../context/image-cache-context';
 import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image';
+import { useRegionContext } from '@/contexts/region-context';
 
 interface ItemGridViewProps {
   items: CatalogItem[];
@@ -37,6 +38,7 @@ export function ItemGridView({
     hasCompletedLoading,
     hasImages
   } = useImageCache();
+  const { formatCurrency } = useRegionContext();
 
   // Load images when items change
   useEffect(() => {
@@ -200,10 +202,10 @@ export function ItemGridView({
                 </div>
                 <div className="flex justify-between items-end pt-2">
                   <div className="text-sm text-muted-foreground dark:text-muted-foreground">
-                    Cost: <span className="font-medium dark:text-muted-foreground">£{item.cost.toFixed(2)}</span>
+                    Cost: <span className="font-medium dark:text-muted-foreground">{formatCurrency(item.cost)}</span>
                   </div>
                   <div className="text-sm font-semibold text-foreground dark:text-purple-400">
-                    £{(showSold ? (item.soldPrice ?? 0) : item.value).toFixed(2)}
+                    {formatCurrency(showSold ? (item.soldPrice ?? 0) : item.value)}
                   </div>
                 </div>
               </div>
