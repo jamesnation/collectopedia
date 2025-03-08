@@ -764,40 +764,42 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black/30">
-      <main className="container mx-auto px-4 py-12">
-        <Link href="/my-collection" className="inline-flex items-center text-purple-400 hover:text-primary/50 mb-8">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+      <main className="container mx-auto px-2 sm:px-4 py-8 sm:py-12 max-w-full overflow-x-hidden">
+        <Link href="/my-collection" className="inline-flex items-center text-purple-400 hover:text-primary/50 mb-4 sm:mb-8">
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Collection
         </Link>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <div className="relative aspect-square">
-              <Image
-                src={images[currentImageIndex]?.url || item?.image || placeholderImage}
-                alt={`${item?.name} - Image ${currentImageIndex + 1}`}
-                layout="fill"
-                objectFit="cover"
-                className="rounded-lg shadow-lg"
-                priority={true}
-              />
+        <div className="grid md:grid-cols-2 gap-4 sm:gap-8 w-full overflow-hidden">
+          <div className="space-y-2 sm:space-y-4 w-full overflow-hidden">
+            <div className="relative aspect-square w-full overflow-hidden rounded-lg">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Image
+                  src={images[currentImageIndex]?.url || item?.image || placeholderImage}
+                  alt={`${item?.name} - Image ${currentImageIndex + 1}`}
+                  fill
+                  className="object-contain rounded-lg"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority={true}
+                />
+              </div>
               {images.length > 1 && (
                 <>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
+                    className="absolute left-0 sm:left-1 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 p-0 sm:p-1"
                     onClick={() => setCurrentImageIndex(prevIndex => (prevIndex > 0 ? prevIndex - 1 : images.length - 1))}
                   >
-                    <ChevronLeft className="h-6 w-6" />
+                    <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 md:h-6 md:w-6" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background"
+                    className="absolute right-0 sm:right-1 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 p-0 sm:p-1"
                     onClick={() => setCurrentImageIndex(prevIndex => (prevIndex < images.length - 1 ? prevIndex + 1 : 0))}
                   >
-                    <ChevronRight className="h-6 w-6" />
+                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 md:h-6 md:w-6" />
                   </Button>
                 </>
               )}
@@ -805,28 +807,28 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="absolute bottom-2 right-2 bg-background bg-opacity-70 hover:bg-opacity-100"
+                    className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 bg-background/80 hover:bg-background/90 text-xs sm:text-sm p-1 sm:p-2 h-auto"
                   >
-                    <Edit className="mr-2 h-4 w-4" />
+                    <Edit className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
                     Edit Images
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80">
+                <PopoverContent className="w-full max-w-[320px] sm:w-80 dark:bg-black/90 dark:border-border">
                   <div className="space-y-4">
                     <h4 className="font-semibold text-sm text-foreground">Edit Item Images</h4>
                     <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
-                    <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                       {images.map((image, index) => (
                         <div key={index} className="relative">
-                          <Image src={image.url} alt={`Image ${index + 1}`} width={100} height={100} className="rounded-md" />
+                          <Image src={image.url} alt={`Image ${index + 1}`} width={100} height={100} className="w-full h-auto aspect-square object-cover rounded-md" />
                           <Button
                             type="button"
                             variant="destructive"
                             size="icon"
-                            className="absolute top-0 right-0 h-6 w-6"
+                            className="absolute top-0 right-0 h-5 w-5 sm:h-6 sm:w-6"
                             onClick={() => handleImageDelete(image.id)}
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                         </div>
                       ))}
@@ -836,21 +838,21 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               </Popover>
             </div>
             {images.length > 1 && (
-              <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-                <div className="flex w-max space-x-4 p-4">
+              <ScrollArea className="w-full overflow-x-auto overflow-y-hidden rounded-md border">
+                <div className="flex w-max space-x-1 sm:space-x-2 p-1 sm:p-2">
                   {images.map((image, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`relative w-20 h-20 rounded-md overflow-hidden ${
+                      className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-md overflow-hidden flex-shrink-0 ${
                         index === currentImageIndex ? 'ring-2 ring-primary' : ''
                       }`}
                     >
                       <Image
                         src={image.url}
                         alt={`${item?.name} - Thumbnail ${index + 1}`}
-                        layout="fill"
-                        objectFit="cover"
+                        fill
+                        className="object-cover"
                         loading="lazy"
                       />
                     </button>

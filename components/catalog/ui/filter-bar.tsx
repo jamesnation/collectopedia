@@ -30,6 +30,8 @@ interface FilterBarProps {
   customTypes: CustomEntity[];
   defaultFranchiseOptions: string[];
   customFranchises: CustomEntity[];
+  showWithImages: boolean;
+  setShowWithImages: (show: boolean) => void;
 }
 
 export function FilterBar({
@@ -52,7 +54,9 @@ export function FilterBar({
   defaultTypeOptions,
   customTypes,
   defaultFranchiseOptions,
-  customFranchises
+  customFranchises,
+  showWithImages,
+  setShowWithImages
 }: FilterBarProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
@@ -99,6 +103,20 @@ export function FilterBar({
                   className="data-[state=checked]:dark:bg-purple-600"
                 />
                 <Label htmlFor="show-sold" className="dark:text-white">Show Sold Items</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-with-images"
+                  checked={showWithImages}
+                  onCheckedChange={setShowWithImages}
+                  className="data-[state=checked]:dark:bg-purple-600"
+                />
+                <Label htmlFor="show-with-images" className="dark:text-white">Has Images Only</Label>
+              </div>
+              
+              <div className="text-xs text-muted-foreground dark:text-gray-400 ml-6 -mt-1 mb-3">
+                Show only items with uploaded images
               </div>
               
               <div className="space-y-1">
@@ -170,6 +188,7 @@ export function FilterBar({
                   setFranchiseFilter('all');
                   setYearFilter('all');
                   setSoldYearFilter('all');
+                  setShowWithImages(false);
                   setIsFilterOpen(false);
                 }}
                 className="dark:bg-gray-750 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700 dark:hover:border-purple-300/30"

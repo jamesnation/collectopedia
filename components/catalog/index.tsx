@@ -1,8 +1,14 @@
 "use client"
 
-import { useEffect, useState, useCallback } from 'react';
-import { SelectItem } from '@/db/schema/items-schema';
-import { itemTypeEnum, franchiseEnum } from '@/db/schema/items-schema';
+import React, { useEffect, useState, useCallback } from 'react'
+import { SelectItem } from "@/db/schema/items-schema"
+import { useTheme } from 'next-themes'
+import { useBackgroundUpdates } from '@/hooks/use-background-updates'
+import { useAuth } from "@clerk/nextjs";
+import { ImageCacheProvider, useImageCache } from './context/image-cache-context';
+import { useCatalogItems } from './hooks/use-catalog-items';
+import { useCustomEntities } from './hooks/use-custom-entities';
+import { useCatalogFilters } from './hooks/use-catalog-filters';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Package, Moon, Sun, Loader2, RefreshCw, BarChart4 } from "lucide-react";
 import { FilterBar } from './ui/filter-bar';
@@ -12,13 +18,7 @@ import { ItemGridView } from './ui/item-grid-view';
 import { AddItemModal } from './ui/add-item-modal';
 import { DEFAULT_BRANDS } from './utils/schema-adapter';
 import { toast } from "@/components/ui/use-toast";
-import { ImageCacheProvider } from './context/image-cache-context';
-import { useAuth } from "@clerk/nextjs";
-
-// Import custom hooks
-import { useCatalogItems } from './hooks/use-catalog-items';
-import { useCustomEntities } from './hooks/use-custom-entities';
-import { useCatalogFilters } from './hooks/use-catalog-filters';
+import { itemTypeEnum, franchiseEnum } from '@/db/schema/items-schema';
 
 interface CatalogProps {
   initialItems: SelectItem[];
@@ -64,6 +64,63 @@ export default function Catalog({
     initialBrands
   });
 
+  // Wrap everything in the ImageCacheProvider at the top level
+  return (
+    <ImageCacheProvider>
+      <CatalogInner
+        userId={userId}
+        items={items}
+        isLoading={isLoading}
+        loadingItemId={loadingItemId}
+        fetchItems={fetchItems}
+        addItem={addItem}
+        updateItem={updateItem}
+        deleteItem={deleteItem}
+        setItems={setItems}
+        customTypes={customTypes}
+        loadCustomTypes={loadCustomTypes}
+        customFranchises={customFranchises}
+        loadCustomFranchises={loadCustomFranchises}
+        customBrands={customBrands}
+        loadCustomBrands={loadCustomBrands}
+        theme={theme}
+        setTheme={setTheme}
+      />
+    </ImageCacheProvider>
+  );
+}
+
+// Inner component with access to the image cache
+function CatalogInner({
+  userId,
+  items,
+  isLoading,
+  loadingItemId,
+  fetchItems,
+  addItem,
+  updateItem,
+  deleteItem,
+  setItems,
+  customTypes,
+  loadCustomTypes,
+  customFranchises,
+  loadCustomFranchises,
+  customBrands,
+  loadCustomBrands,
+  theme,
+  setTheme
+}) {
+  // State for eBay refresh loading states
+  const [loadingListedItemId, setLoadingListedItemId] = useState<string | null>(null);
+  const [loadingSoldItemId, setLoadingSoldItemId] = useState<string | null>(null);
+
+  // State for updating all prices
+  const [isUpdatingAllPrices, setIsUpdatingAllPrices] = useState(false)
+  const [isUpdatingAllPricesEnhanced, setIsUpdatingAllPricesEnhanced] = useState(false)
+
+  // State for AI price loading
+  const [loadingAiPrice, setLoadingAiPrice] = useState<string | null>(null);
+
   const {
     view,
     setView,
@@ -85,27 +142,11 @@ export default function Catalog({
     availableSoldYears,
     totalCount,
     sortDescriptor,
-    handleSort
+    handleSort,
+    showWithImages,
+    setShowWithImages,
+    itemsNeedingImageCheck
   } = useCatalogFilters({ items });
-
-  // State for eBay refresh loading states
-  const [loadingListedItemId, setLoadingListedItemId] = useState<string | null>(null);
-  const [loadingSoldItemId, setLoadingSoldItemId] = useState<string | null>(null);
-
-  // State for updating all prices
-  const [isUpdatingAllPrices, setIsUpdatingAllPrices] = useState(false)
-  const [isUpdatingAllPricesEnhanced, setIsUpdatingAllPricesEnhanced] = useState(false)
-
-  // State for AI price loading
-  const [loadingAiPrice, setLoadingAiPrice] = useState<string | null>(null);
-
-  // Load data on component mount
-  useEffect(() => {
-    fetchItems();
-    loadCustomTypes();
-    loadCustomFranchises();
-    loadCustomBrands();
-  }, [fetchItems, loadCustomTypes, loadCustomFranchises, loadCustomBrands]);
 
   // Handle eBay refresh
   const handleEbayRefresh = async (id: string, name: string, type: 'sold' | 'listed') => {
@@ -350,6 +391,14 @@ export default function Catalog({
     }
   };
 
+  // Load data on component mount
+  useEffect(() => {
+    fetchItems();
+    loadCustomTypes();
+    loadCustomFranchises();
+    loadCustomBrands();
+  }, [fetchItems, loadCustomTypes, loadCustomFranchises, loadCustomBrands]);
+
   return (
     <div className="min-h-screen text-foreground transition-colors duration-200 
       bg-slate-50 dark:bg-black/30">
@@ -417,35 +466,39 @@ export default function Catalog({
           customTypes={customTypes}
           defaultFranchiseOptions={franchiseEnum.enumValues}
           customFranchises={customFranchises}
+          showWithImages={showWithImages}
+          setShowWithImages={setShowWithImages}
         />
 
-        {/* Main Content - Conditional rendering based on view type */}
-        <ImageCacheProvider>
-          <div className="mt-6">
-            {view === 'list' ? (
-              <ItemListView
-                items={filteredAndSortedItems}
-                isLoading={isLoading}
-                onDelete={deleteItem}
-                onEbayRefresh={handleEbayRefresh}
-                loadingListedItemId={loadingListedItemId}
-                loadingSoldItemId={loadingSoldItemId}
-                loadingItemId={loadingItemId}
-                onSort={handleSort}
-                sortDescriptor={sortDescriptor}
-                showSold={showSold}
-              />
-            ) : (
-              <ItemGridView
-                items={filteredAndSortedItems}
-                isLoading={isLoading}
-                onDelete={deleteItem}
-                showSold={showSold}
-                loadingItemId={loadingItemId}
-              />
-            )}
-          </div>
-        </ImageCacheProvider>
+        {/* If showWithImages is true and we have itemIds to check, use an inner component to handle image loading */}
+        {showWithImages && itemsNeedingImageCheck.length > 0 && (
+          <ImageLoaderComponent itemIds={itemsNeedingImageCheck} />
+        )}
+        
+        <div className="mt-6">
+          {view === 'list' ? (
+            <ItemListView
+              items={filteredAndSortedItems}
+              isLoading={isLoading}
+              onDelete={deleteItem}
+              onEbayRefresh={handleEbayRefresh}
+              loadingListedItemId={loadingListedItemId}
+              loadingSoldItemId={loadingSoldItemId}
+              loadingItemId={loadingItemId}
+              onSort={handleSort}
+              sortDescriptor={sortDescriptor}
+              showSold={showSold}
+            />
+          ) : (
+            <ItemGridView
+              items={filteredAndSortedItems}
+              isLoading={isLoading}
+              onDelete={deleteItem}
+              showSold={showSold}
+              loadingItemId={loadingItemId}
+            />
+          )}
+        </div>
 
         {/* Empty state */}
         {!isLoading && filteredAndSortedItems.length === 0 && (
@@ -482,4 +535,43 @@ export default function Catalog({
       </footer>
     </div>
   );
+}
+
+// Create a helper component to load images when needed
+function ImageLoaderComponent({ itemIds }: { itemIds: string[] }) {
+  const { loadImages, imageCache, hasCompletedLoading } = useImageCache();
+  
+  // Add diagnostic logging
+  useEffect(() => {
+    console.log('[IMAGE LOADER] Component mounted with', itemIds.length, 'items to check');
+    
+    // Log the current state of the image cache
+    console.log('[IMAGE LOADER] Current image cache state:', {
+      cacheKeys: Object.keys(imageCache).length,
+      completedLoadingKeys: Object.keys(hasCompletedLoading).length,
+      itemsWithImages: Object.keys(imageCache).filter(id => imageCache[id]?.length > 0).length
+    });
+  }, [itemIds.length, imageCache, hasCompletedLoading]);
+  
+  // Load images for these items when the component mounts
+  useEffect(() => {
+    if (itemIds.length > 0) {
+      console.log('[IMAGE LOADER] Loading images for items with "Has Images" filter:', itemIds.length);
+      loadImages(itemIds);
+      
+      // Add a timeout to log cache state after images have had time to load
+      const timer = setTimeout(() => {
+        console.log('[IMAGE LOADER] Image cache state after timeout:', {
+          cacheKeys: Object.keys(imageCache).length,
+          completedLoadingKeys: Object.keys(hasCompletedLoading).length,
+          itemsWithImages: Object.keys(imageCache).filter(id => imageCache[id]?.length > 0).length
+        });
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [itemIds, loadImages, imageCache, hasCompletedLoading]);
+  
+  // This is just a loading handler, doesn't render anything
+  return null;
 } 

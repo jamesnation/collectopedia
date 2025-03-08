@@ -29,7 +29,28 @@ export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}
     setIsLoading(true);
     try {
       const result = await getItemsByUserIdAction(userId);
+      
       if (result.isSuccess && result.data) {
+        // Add diagnostic logs for image data
+        console.log('[ITEMS DATA] Successfully fetched items:', result.data.length);
+        
+        // Check the first few items for image data
+        const sampleItems = result.data.slice(0, 5);
+        console.log('[ITEMS DATA] Sample items image data:', 
+          sampleItems.map(item => ({
+            id: item.id.substring(0, 8) + '...',
+            name: item.name,
+            hasDirectImage: Boolean(item.image),
+            imageValue: item.image ? (typeof item.image === 'string' ? 
+              (item.image.length > 50 ? item.image.substring(0, 50) + '...' : item.image) : 
+              'non-string-value') : null
+          }))
+        );
+        
+        // Count items with images
+        const itemsWithImage = result.data.filter(item => Boolean(item.image)).length;
+        console.log(`[ITEMS DATA] ${itemsWithImage} out of ${result.data.length} items have a direct image value`);
+        
         const catalogItems = result.data.map(mapSchemaItemToCatalogItem);
         setItems(catalogItems);
         return catalogItems;

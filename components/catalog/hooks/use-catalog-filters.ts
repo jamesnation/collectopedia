@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useContext } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import { CatalogItem } from '../utils/schema-adapter';
+import { useImageCache } from '../context/image-cache-context';
 
 export type SortDirection = 'ascending' | 'descending';
 
@@ -14,6 +15,9 @@ interface UseCatalogFiltersProps {
 }
 
 export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
+  // Get image cache context
+  const { imageCache, hasCompletedLoading, hasImages } = useImageCache();
+  
   // View state
   const [view, setView] = useState<'list' | 'grid'>('list');
   
@@ -27,6 +31,7 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [showSold, setShowSold] = useState(false);
   const [soldYearFilter, setSoldYearFilter] = useState<string>('all');
+  const [showWithImages, setShowWithImages] = useState(false);
   
   // Sort state
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
@@ -102,6 +107,48 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
       });
     }
 
+    // Apply show with images filter - check for either image field or images array
+    if (showWithImages) {
+      // Add diagnostic logs before filtering
+      console.log('[IMAGE FILTER] Before filtering: Items count =', result.length);
+      
+      // Log the first few items' image properties for debugging
+      console.log('[IMAGE FILTER] Sample items image data:', 
+        result.slice(0, 3).map(item => ({
+          id: item.id,
+          name: item.name,
+          imageType: typeof item.image,
+          imageValue: item.image,
+          hasImage: Boolean(item.image),
+          hasImagesArray: Array.isArray(item.images) && item.images.length > 0,
+          imagesInCache: imageCache[item.id]?.length || 0,
+          hasCompletedLoadingImages: hasCompletedLoading[item.id] || false
+        }))
+      );
+      
+      result = result.filter(item => {
+        // Check if item has a direct image property that's non-empty
+        const hasDirectImage = Boolean(item.image && String(item.image).trim() !== '');
+        
+        // Check if item has an images array property that's non-empty
+        const hasImagesArray = Array.isArray(item.images) && item.images.length > 0;
+        
+        // Check if item has images in the image cache
+        const hasImagesInCache = (imageCache[item.id]?.length || 0) > 0;
+        
+        // Log each item's filter evaluation for the first few items
+        if (result.indexOf(item) < 5) {
+          console.log(`[IMAGE FILTER] Item "${item.name}": hasDirectImage=${hasDirectImage}, hasImagesArray=${hasImagesArray}, hasImagesInCache=${hasImagesInCache}`);
+        }
+        
+        // Consider the item as having images if any condition is true
+        return hasDirectImage || hasImagesArray || hasImagesInCache;
+      });
+      
+      // Add diagnostic logs after filtering
+      console.log('[IMAGE FILTER] After filtering: Items count =', result.length);
+    }
+
     // Apply sorting
     result.sort((a, b) => {
       const { column, direction } = sortDescriptor;
@@ -144,7 +191,10 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     yearFilter, 
     sortDescriptor, 
     showSold, 
-    soldYearFilter
+    soldYearFilter,
+    showWithImages,
+    imageCache,
+    hasCompletedLoading
   ]);
 
   // Calculate summary values 
@@ -203,6 +253,8 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     setShowSold,
     soldYearFilter,
     setSoldYearFilter,
+    showWithImages,
+    setShowWithImages,
     
     // Sort state
     sortDescriptor,
@@ -216,5 +268,8 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     availableYears,
     availableSoldYears,
     totalCount: filteredAndSortedItems.length,
+    
+    // Helper data for image filtering
+    itemsNeedingImageCheck: showWithImages ? items.map(item => item.id) : [],
   };
 } 
