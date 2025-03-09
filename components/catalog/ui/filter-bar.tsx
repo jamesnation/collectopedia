@@ -79,6 +79,16 @@ export function FilterBar({
       </div>
       
       <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto justify-end">
+        <div className="flex items-center border rounded-md px-2 py-1 dark:border-gray-600 dark:bg-gray-750">
+          <Switch
+            id="show-sold-external"
+            checked={showSold}
+            onCheckedChange={setShowSold}
+            className="data-[state=checked]:dark:bg-purple-600 mr-2"
+          />
+          <Label htmlFor="show-sold-external" className="text-sm dark:text-white whitespace-nowrap">Show Sold</Label>
+        </div>
+
         <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-9 dark:bg-gray-750 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700 dark:hover:border-purple-300/30">
@@ -93,16 +103,6 @@ export function FilterBar({
                 <p className="text-sm text-muted-foreground dark:text-gray-400">
                   Narrow down your collection view
                 </p>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-sold"
-                  checked={showSold}
-                  onCheckedChange={setShowSold}
-                  className="data-[state=checked]:dark:bg-purple-600"
-                />
-                <Label htmlFor="show-sold" className="dark:text-white">Show Sold Items</Label>
               </div>
               
               <div className="flex items-center space-x-2">
