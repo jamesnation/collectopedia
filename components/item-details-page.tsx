@@ -1032,35 +1032,36 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               </PopoverContent>
             </Popover>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              {/* Cost Card */}
               <Card className="border dark:border-border shadow-sm h-full overflow-hidden text-left">
                 <CardHeader className="pb-1 md:pb-2 text-left">
-                  <CardTitle className="text-base md:text-lg text-left">Estimated Value</CardTitle>
+                  <CardTitle className="text-base md:text-lg text-left">Cost</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 pb-3 flex flex-col items-start justify-start w-full text-left">
-                  <Popover open={editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
+                <CardContent className="pt-2">
+                  <Popover open={editingField === 'cost'} onOpenChange={(open) => !open && handleEditCancel()}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="p-0 h-auto font-normal group w-full text-left justify-start !items-start"
-                        onClick={() => handleEditStart('value')}
+                        className="p-0 h-auto font-normal text-left justify-start hover:bg-transparent group"
+                        onClick={() => handleEditStart('cost')}
                       >
-                        <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-purple-400 break-words text-left">
-                          {formatCurrency(item.value)}
+                        <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-blue-400 break-words text-left">
+                          {formatCurrency(item?.cost || 0)}
                         </span>
                         <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity inline-flex" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
                       <div className="space-y-4">
-                        <h4 className="font-semibold text-sm text-foreground">Edit Item Value</h4>
+                        <h4 className="font-semibold text-sm text-foreground">Edit Item Cost</h4>
                         <div className="space-y-2">
-                          <Label htmlFor="value" className="text-sm font-medium text-foreground">Value</Label>
+                          <Label htmlFor="cost" className="text-sm font-medium text-foreground">Cost</Label>
                           <Input
-                            id="value"
-                            name="value"
+                            id="cost"
+                            name="cost"
                             type="number"
-                            value={item.value}
+                            value={item?.cost || 0}
                             onChange={handleInputChange}
                             className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
                           />
@@ -1074,6 +1075,51 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </Popover>
                 </CardContent>
               </Card>
+              
+              {/* Value Card (Renamed from Estimated Value) */}
+              <Card className="border dark:border-border shadow-sm h-full overflow-hidden text-left">
+                <CardHeader className="pb-1 md:pb-2 text-left">
+                  <CardTitle className="text-base md:text-lg text-left">Value</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <Popover open={editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="p-0 h-auto font-normal text-left justify-start hover:bg-transparent group"
+                        onClick={() => handleEditStart('value')}
+                      >
+                        <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-purple-400 break-words text-left">
+                          {formatCurrency(item?.value || 0)}
+                        </span>
+                        <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity inline-flex" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm text-foreground">Edit Item Value</h4>
+                        <div className="space-y-2">
+                          <Label htmlFor="value" className="text-sm font-medium text-foreground">Value</Label>
+                          <Input
+                            id="value"
+                            name="value"
+                            type="number"
+                            value={item?.value || 0}
+                            onChange={handleInputChange}
+                            className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                          <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </CardContent>
+              </Card>
+              
+              {/* AI Price Estimate Card */}
               <Card className="border dark:border-border shadow-sm h-full overflow-hidden text-left">
                 <CardHeader className="pb-1 md:pb-2 text-left">
                   <CardTitle className="text-base md:text-lg text-left">AI Price Estimate</CardTitle>
@@ -1081,7 +1127,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 <CardContent className="pt-2">
                   <div className="flex items-center justify-between">
                     <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">
-                      {item.ebayListed ? formatCurrency(item.ebayListed) : 'Not available'}
+                      {item?.ebayListed ? formatCurrency(item.ebayListed) : 'Not available'}
                     </div>
                     <Button
                       variant="ghost"
@@ -1099,82 +1145,43 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </div>
                 </CardContent>
               </Card>
-              
-              <Card className="border dark:border-border shadow-sm h-full overflow-hidden text-left sm:col-span-2 lg:col-span-1">
-                <CardHeader className="pb-1 md:pb-2 text-left">
-                  <CardTitle className="text-base md:text-lg text-left">Date Acquired</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 pb-3 flex flex-col items-start justify-start w-full text-left">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Date Acquired</Label>
-                    <Popover open={editingField === 'acquired'} onOpenChange={(open) => !open && handleEditCancel()}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="p-0 h-auto font-normal text-left justify-start w-full group"
-                          onClick={() => handleEditStart('acquired')}
-                        >
-                          <div className="flex items-center">
-                            <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
-                              {item && new Date(item.acquired).toLocaleDateString()}
-                            </Badge>
-                            <Edit className="ml-2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
-                        <div className="space-y-4">
-                          <h4 className="font-semibold text-sm text-purple-400">Edit Date Acquired</h4>
-                          <div className="space-y-2">
-                            <Label htmlFor="acquired" className="text-sm font-medium text-purple-400">Date Acquired</Label>
-                            <Input
-                              id="acquired"
-                              type="date"
-                              name="acquired"
-                              value={item.acquired ? new Date(item.acquired).toISOString().split('T')[0] : ''}
-                              onChange={handleInputChange}
-                              className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
-                            />
-                          </div>
-                          <div className="flex justify-end space-x-2">
-                            <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary/70 hover:bg-accent hover:text-accent-foreground">Cancel</Button>
-                            <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
             
-            <Card className="border dark:border-border shadow-sm mt-3 md:mt-4 lg:mt-6 overflow-hidden text-left">
-              <CardHeader className="pb-1 md:pb-2 text-left">
-                <CardTitle className="text-base md:text-lg text-left">Profit Metrics</CardTitle>
+            {/* Profit Metrics Card */}
+            <Card className="border dark:border-border shadow-sm mb-4">
+              <CardHeader className="pb-1 md:pb-2">
+                <CardTitle className="text-base md:text-lg">Profit Metrics</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0 pb-3 text-left">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
-                  {/* Total Profit */}
-                  <div className="space-y-1 flex flex-col items-start text-left">
-                    <p className="text-xs sm:text-sm font-medium text-muted-foreground text-left">Total Profit</p>
-                    <div className="flex items-center gap-1 justify-start text-left">
-                      <p className={`text-sm sm:text-base md:text-lg lg:text-xl font-bold break-words text-left ${(item.value - item.cost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {formatCurrency(item.value - item.cost)}
-                      </p>
-                      <BarChart4 className="flex-shrink-0 h-4 w-4 md:h-5 md:w-5 text-purple-400" aria-label="Total Profit" />
-                    </div>
-                  </div>
-                  
-                  {/* Profit Margin */}
-                  <div className="space-y-1 flex flex-col items-start text-left">
-                    <p className="text-xs sm:text-sm font-medium text-muted-foreground text-left">Profit Margin</p>
-                    <div className="flex items-center gap-1 justify-start text-left">
-                      <p className={`text-sm sm:text-base md:text-lg lg:text-xl font-bold break-words text-left ${(item.cost > 0 ? ((item.value - item.cost) / item.cost * 100) : 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {item.cost > 0 ? ((item.value - item.cost) / item.cost * 100).toFixed(2) : '0.00'}%
-                      </p>
-                      <Percent className="flex-shrink-0 h-4 w-4 md:h-5 md:w-5 text-purple-400" aria-label="Profit Margin" />
-                    </div>
-                  </div>
+              <CardContent className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <h4 className="text-sm font-medium text-muted-foreground">Total Profit</h4>
+                  <p className={`text-lg font-bold ${
+                    item && item.value && item.cost && (item.value - item.cost) > 0 
+                      ? 'text-green-500' 
+                      : item && item.value && item.cost && (item.value - item.cost) < 0
+                        ? 'text-red-500'
+                        : 'text-muted-foreground'
+                  }`}>
+                    {item && item.value && item.cost 
+                      ? formatCurrency(item.value - item.cost)
+                      : 'N/A'
+                    }
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <h4 className="text-sm font-medium text-muted-foreground">Profit Margin</h4>
+                  <p className={`text-lg font-bold ${
+                    item && item.value && item.cost && item.cost > 0 && ((item.value - item.cost) / item.cost * 100) > 0 
+                      ? 'text-green-500' 
+                      : item && item.value && item.cost && item.cost > 0 && ((item.value - item.cost) / item.cost * 100) < 0
+                        ? 'text-red-500'
+                        : 'text-muted-foreground'
+                  }`}>
+                    {item && item.value && item.cost && item.cost > 0
+                      ? `${((item.value - item.cost) / item.cost * 100).toFixed(1)}%`
+                      : 'N/A'
+                    }
+                  </p>
                 </div>
               </CardContent>
             </Card>

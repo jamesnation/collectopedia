@@ -7,7 +7,9 @@ import {
   KeyboardSensor, 
   PointerSensor, 
   useSensor, 
-  useSensors 
+  useSensors,
+  DragStartEvent,
+  DragEndEvent
 } from '@dnd-kit/core';
 import { 
   SortableContext, 
@@ -32,11 +34,14 @@ export default function DndWrapper({
   direction = 'vertical',
   className = ''
 }: DndWrapperProps) {
-  // Set up sensors
+  // Set up sensors with better balanced activation constraints
   const sensors = useSensors(
     useSensor(PointerSensor, {
+      // Find a better balance for the activation constraints
       activationConstraint: {
-        distance: 5,
+        distance: 3, // Reduced from 8 to 3 to make dragging easier
+        delay: 100, // Add small delay to help differentiate between click and drag
+        tolerance: 3, // Reduced tolerance
       },
     }),
     useSensor(KeyboardSensor, {
@@ -54,11 +59,24 @@ export default function DndWrapper({
     ? "grid grid-cols-1 gap-2 mt-2"
     : "flex flex-row flex-wrap gap-2 mt-2 overflow-x-auto";
 
+  // Handle drag start event
+  const handleDragStart = (event: DragStartEvent) => {
+    // You can add logging or additional logic here if needed
+    console.log('Drag started');
+  };
+
+  // Handle drag end event with the provided onReorder function
+  const handleDragEnd = (event: DragEndEvent) => {
+    console.log('Drag ended');
+    onReorder(event);
+  };
+
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragEnd={onReorder}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <SortableContext items={items.map(img => img.id)} strategy={strategy}>
         <div className={`${containerClass} ${className}`}>

@@ -30,11 +30,22 @@ export default function SortableImageItem({
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id: image.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+
+  // Handle image deletion
+  const handleDelete = (e: React.MouseEvent) => {
+    // Stop propagation to prevent drag event
+    e.stopPropagation();
+    e.preventDefault();
+    // Call the delete function with image id
+    onImageDelete(image.id);
   };
 
   // Size mappings
@@ -72,10 +83,11 @@ export default function SortableImageItem({
     <div 
       ref={setNodeRef} 
       style={style}
-      className={`relative bg-card border rounded-md ${dimensions.container}`}
+      className={`relative bg-card border rounded-md ${dimensions.container} ${isDragging ? 'ring-2 ring-primary' : ''}`}
     >
+      {/* Drag handle with clearer visual feedback */}
       <div 
-        className={`${handlePosition} cursor-grab active:cursor-grabbing z-10`}
+        className={`${handlePosition} cursor-grab active:cursor-grabbing z-10 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-sm`}
         {...attributes} 
         {...listeners}
       >
@@ -84,26 +96,33 @@ export default function SortableImageItem({
           : <GripHorizontal className="h-4 w-4 text-muted-foreground" />
         }
       </div>
+      
       <div className={containerPadding}>
-        <Image 
-          src={image.url} 
-          alt={`Image ${index + 1}`} 
-          width={dimensions.width} 
-          height={dimensions.height}
-          className="h-auto aspect-square object-cover rounded-md" 
-        />
+        {/* The image itself is not draggable directly */}
+        <div className="pointer-events-none">
+          <Image 
+            src={image.url} 
+            alt={`Image ${index + 1}`} 
+            width={dimensions.width} 
+            height={dimensions.height}
+            className="h-auto aspect-square object-cover rounded-md" 
+          />
+        </div>
+        
+        {/* Delete button with pointer-events-auto to ensure clicks work */}
         <Button
           type="button"
           variant="destructive"
           size="icon"
-          className="absolute top-1 right-1 h-5 w-5"
-          onClick={() => onImageDelete(image.id)}
+          className="absolute top-1 right-1 h-5 w-5 z-20 pointer-events-auto"
+          onClick={handleDelete}
         >
           <X className="h-3 w-3" />
         </Button>
+        
         {index === 0 && (
           <Badge 
-            className={`absolute text-xs ${direction === 'vertical' ? 'bottom-1 left-7' : 'bottom-1 left-1'}`} 
+            className={`absolute text-xs ${direction === 'vertical' ? 'bottom-1 left-7' : 'bottom-1 left-1'} z-20`} 
             variant="secondary"
           >
             Primary
