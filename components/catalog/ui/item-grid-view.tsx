@@ -47,15 +47,17 @@ export function ItemGridView({
       // Extract all item IDs for batch loading
       const itemIds = items.map(item => item.id);
       
-      // First load only the important visible items (first 8-12 items)
-      const visibleItemIds = itemIds.slice(0, 12);
+      console.log(`[GRID] Loading images for ${itemIds.length} items${showSold ? ' (including sold items)' : ''}`);
       
-      // Then load the rest after a small delay
+      // Increase the number of priority items for faster initial loading
+      const visibleItemIds = itemIds.slice(0, 20); // Load more items initially
+      
+      // Load all visible items immediately
       loadImages(visibleItemIds);
       
       // Load the rest after the visible items are processed
       if (itemIds.length > visibleItemIds.length) {
-        const remainingItemIds = itemIds.slice(12);
+        const remainingItemIds = itemIds.slice(20);
         // Use requestIdleCallback or setTimeout to defer loading of non-visible items
         const loadRemaining = () => {
           console.log('[GRID] Loading remaining', remainingItemIds.length, 'items');
@@ -65,25 +67,19 @@ export function ItemGridView({
         if ('requestIdleCallback' in window) {
           (window as any).requestIdleCallback(loadRemaining);
         } else {
-          setTimeout(loadRemaining, 1000);
+          // Reduce timeout to 300ms for faster loading of remaining items
+          setTimeout(loadRemaining, 300);
         }
       }
     }
-  }, [items, isLoading, loadImages]);
+  }, [items, isLoading, loadImages, showSold]);
 
-  // Helper function to get the primary image for an item
+  // Helper function to get the primary image for an item - simplified for performance
   const getItemPrimaryImage = useMemo(() => (itemId: string): string => {
     // If we have images from the cache, use the first one
     if (imageCache[itemId] && imageCache[itemId].length > 0) {
-      // Get the base URL from Supabase
-      const originalUrl = imageCache[itemId][0].url;
-      
-      // Add a timestamp query parameter for first load to bust Vercel's cache when needed
-      // This ensures we always get the latest image if it was updated
-      const cacheBuster = new URLSearchParams(window.location.search).get('refresh') ? 
-        `?t=${Date.now()}` : '';
-      
-      return `${originalUrl}${cacheBuster}`;
+      // Get the base URL from Supabase - directly use the URL without modification
+      return imageCache[itemId][0].url;
     }
     
     // Fall back to the item.image field if present
@@ -123,6 +119,9 @@ export function ItemGridView({
     const isItemLoading = isLoadingImages[itemId];
     const isCompleted = hasCompletedLoading[itemId];
     const isImageLoaded = loadedImages[itemId];
+    
+    // Track if this is a sold item for logging
+    const isSold = item.isSold;
 
     // Determine if this is a priority image (first 4 items, likely above the fold)
     const isPriority = items.findIndex(i => i.id === itemId) < 4;
@@ -133,7 +132,8 @@ export function ItemGridView({
       isImageLoaded,
       isCompleted,
       imageSource: hasActualImage ? 'actual' : 'placeholder',
-      isPriority
+      isPriority,
+      isSold
     });
 
     // Still loading and not yet determined if has images
@@ -170,9 +170,8 @@ export function ItemGridView({
             onLoadingComplete={() => handleImageLoad(itemId)}
             priority={isPriority}
             loading={isPriority ? 'eager' : 'lazy'}
-            quality={75} // Slightly reduced quality for better performance
-            unoptimized={false} // Ensure Vercel's image optimization is used
-            loader={vercelImageLoader} // Use our custom loader for Vercel's image optimization
+            quality={75}
+            unoptimized={false}
           />
           
           {/* Hover overlay */}

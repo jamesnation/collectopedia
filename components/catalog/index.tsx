@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useCallback } from 'react'
-import { SelectItem } from "@/db/schema/items-schema"
+import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
 import { useTheme } from 'next-themes'
 import { useBackgroundUpdates } from '@/hooks/use-background-updates'
 import { useAuth } from "@clerk/nextjs";
@@ -21,7 +21,7 @@ import { toast } from "@/components/ui/use-toast";
 import { itemTypeEnum, franchiseEnum } from '@/db/schema/items-schema';
 
 interface CatalogProps {
-  initialItems: SelectItem[];
+  initialItems: SelectItemType[];
   initialTypes: { id: string; name: string }[];
   initialFranchises: { id: string; name: string }[];
   initialBrands: { id: string; name: string }[];
@@ -123,9 +123,19 @@ function CatalogInner({
   // State for AI price loading
   const [loadingAiPrice, setLoadingAiPrice] = useState<string | null>(null);
 
+  // State for view and filter
+  const [view, setView] = useState<'list' | 'grid'>('grid');
+
+  // Add imageCache context
+  const { 
+    imageCache, 
+    isLoading: isLoadingImages, 
+    loadImages,
+    invalidateCache,
+    hasImages
+  } = useImageCache();
+
   const {
-    view,
-    setView,
     searchQuery,
     setSearchQuery,
     typeFilter,
@@ -160,7 +170,7 @@ function CatalogInner({
 
     try {
       // Find the item to get its condition
-      const item = items.find((item: SelectItem) => item.id === id);
+      const item = items.find((item: SelectItemType) => item.id === id);
       if (!item) {
         throw new Error('Item not found');
       }
@@ -173,7 +183,7 @@ function CatalogInner({
         console.log('eBay update result:', result);
         
         // Update the local state with the new value
-        const updatedItems = items.map((item: SelectItem) => {
+        const updatedItems = items.map((item: SelectItemType) => {
           if (item.id === id) {
             return {
               ...item,
@@ -297,7 +307,7 @@ function CatalogInner({
   const handleRefreshAiPrice = async (id: string, name: string, type: 'listed' | 'sold') => {
     try {
       setLoadingAiPrice(id);
-      const item = items.find((i: SelectItem) => i.id === id);
+      const item = items.find((i: SelectItemType) => i.id === id);
       if (!item) {
         throw new Error('Item not found');
       }
@@ -322,7 +332,7 @@ function CatalogInner({
       }
       
       // Update the item in the local state
-      const updatedItems = items.map((i: SelectItem) => {
+      const updatedItems = items.map((i: SelectItemType) => {
         if (i.id === id) {
           return {
             ...i,
@@ -401,6 +411,16 @@ function CatalogInner({
     loadCustomBrands();
   }, [fetchItems, loadCustomTypes, loadCustomFranchises, loadCustomBrands]);
 
+  const handleShowSoldChange = (show: boolean) => {
+    // Clear image loading state when toggling sold items to ensure they load properly
+    if (show) {
+      // Invalidate the cache for all items to force reloading of sold items
+      console.log('[CATALOG] Invalidating image cache for sold items');
+      invalidateCache();
+    }
+    setShowSold(show);
+  };
+
   return (
     <div className="min-h-screen text-foreground transition-colors duration-200 
       bg-slate-50 dark:bg-black/30">
@@ -459,7 +479,7 @@ function CatalogInner({
           yearFilter={yearFilter}
           setYearFilter={setYearFilter}
           showSold={showSold}
-          setShowSold={setShowSold}
+          setShowSold={handleShowSoldChange}
           soldYearFilter={soldYearFilter}
           setSoldYearFilter={setSoldYearFilter}
           availableYears={availableYears}

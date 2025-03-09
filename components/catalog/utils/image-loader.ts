@@ -10,20 +10,14 @@ interface ImageLoaderParams {
  * This ensures all images go through Vercel's optimization regardless of their source
  */
 export const vercelImageLoader = ({ src, width, quality = 75 }: ImageLoaderParams): string => {
-  // Check if the image is already using Vercel's Image Optimization
-  if (src.includes('/_next/image')) {
+  // Check if the image is already using Vercel's Image Optimization or is a relative URL
+  if (src.includes('/_next/image') || src.startsWith('/')) {
     return src;
   }
 
-  // For images from Supabase or any external source
-  const url = new URL(`/_next/image`, window.location.origin);
-  
-  // Set query parameters for the image optimization
-  url.searchParams.set('url', encodeURIComponent(src));
-  url.searchParams.set('w', width.toString());
-  url.searchParams.set('q', quality.toString());
-  
-  return url.toString();
+  // If using Vercel deployment, let Next.js handle the optimization automatically
+  // This approach is simpler and faster than manually constructing URLs
+  return src;
 };
 
 /**
@@ -34,16 +28,7 @@ export const getResponsiveImageUrl = (
   size: 'thumbnail' | 'small' | 'medium' | 'large' = 'medium'
 ): string => {
   if (!src) return '';
-  
-  const widths = {
-    thumbnail: 100,
-    small: 400,
-    medium: 800,
-    large: 1200
-  };
-  
-  const width = widths[size];
-  return vercelImageLoader({ src, width });
+  return src; // Let Next.js handle the optimization
 };
 
 /**
@@ -51,5 +36,5 @@ export const getResponsiveImageUrl = (
  */
 export const getSizedImageUrl = (src: string, width: number, quality = 75): string => {
   if (!src) return '';
-  return vercelImageLoader({ src, width, quality });
+  return src; // Let Next.js handle the optimization
 }; 

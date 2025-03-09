@@ -83,80 +83,90 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     
     console.log('[CACHE] loadImages called with', itemIds.length, 'items');
     
-    // Filter out items that are already loading or have completed loading
-    const idsToLoad = itemIds.filter(id => 
-      !isLoading[id] && !hasCompletedLoading[id]
-    );
+    // Filter out items that are already loading
+    const idsToLoad = itemIds.filter(id => !isLoading[id]);
     
-    if (!idsToLoad.length) {
+    // Even if an item has completed loading before, we should reload it 
+    // if there's a URL parameter indicating we should refresh
+    let shouldForceReload = false;
+    if (typeof window !== 'undefined') {
+      shouldForceReload = new URLSearchParams(window.location.search).get('refresh') === 'true';
+    }
+    
+    // If not forcing reload, further filter out items that have already completed loading
+    const filteredIdsToLoad = shouldForceReload 
+      ? idsToLoad 
+      : idsToLoad.filter(id => !hasCompletedLoading[id]);
+    
+    if (!filteredIdsToLoad.length) {
       console.log('[CACHE] All requested images already cached or loading');
       return;
     }
     
-    console.log('[CACHE] Will load images for', idsToLoad.length, 'items', idsToLoad);
+    console.log('[CACHE] Will load images for', filteredIdsToLoad.length, 'items', shouldForceReload ? '(force reload)' : '');
     
     // Set loading state for all items about to be loaded
     setIsLoading(prev => {
       const newState = { ...prev };
-      idsToLoad.forEach(id => {
+      filteredIdsToLoad.forEach(id => {
         newState[id] = true;
       });
       console.log('[CACHE] Updated loading state for', Object.keys(newState).filter(id => newState[id]).length, 'items');
       return newState;
     });
 
-    // Process in batches with increased batch size (25 instead of 10)
-    const batchSize = 25;
+    // Process in batches with increased batch size for faster loading
+    const batchSize = 50; // Increased from 25
     
     // Split into batches
-    for (let i = 0; i < idsToLoad.length; i += batchSize) {
-      const batchIds = idsToLoad.slice(i, i + batchSize);
+    for (let i = 0; i < filteredIdsToLoad.length; i += batchSize) {
+      const batchIds = filteredIdsToLoad.slice(i, i + batchSize);
       console.log('[CACHE] Processing batch', Math.floor(i/batchSize) + 1, 'with', batchIds.length, 'items');
       
-      // Load images for current batch in parallel
-      await Promise.all(
-        batchIds.map(async (itemId) => {
-          try {
-            console.log('[CACHE] Fetching images for item', itemId);
-            const result = await getImagesByItemIdAction(itemId);
-            
-            if (result.isSuccess && result.data) {
-              console.log('[CACHE] Successfully fetched', result.data.length, 'images for item', itemId);
-              setImageCache(prev => {
-                const newCache = {
-                  ...prev,
-                  [itemId]: result.data || [],
-                };
-                console.log('[CACHE] Updated cache for item', itemId, 'with', (result.data || []).length, 'images');
-                return newCache;
-              });
-            } else {
-              console.warn('[CACHE] Failed to fetch images for item', itemId, result.error);
+      try {
+        // Load images for current batch in parallel
+        await Promise.all(
+          batchIds.map(async (itemId) => {
+            try {
+              console.log('[CACHE] Fetching images for item', itemId);
+              const result = await getImagesByItemIdAction(itemId);
+              
+              if (result.isSuccess && result.data) {
+                console.log('[CACHE] Successfully fetched', result.data.length, 'images for item', itemId);
+                setImageCache(prev => {
+                  const newCache = {
+                    ...prev,
+                    [itemId]: result.data || [],
+                  };
+                  console.log('[CACHE] Updated cache for item', itemId, 'with', (result.data || []).length, 'images');
+                  return newCache;
+                });
+              } else {
+                console.warn('[CACHE] Failed to fetch images for item', itemId, result.error);
+              }
+            } catch (error) {
+              console.error(`[CACHE] Error fetching images for item ${itemId}:`, error);
+            } finally {
+              console.log('[CACHE] Setting loading state to false for item', itemId);
+              
+              // Mark the item as having completed loading, regardless of result
+              setHasCompletedLoading(prev => ({
+                ...prev,
+                [itemId]: true
+              }));
+              
+              setIsLoading(prev => ({
+                ...prev,
+                [itemId]: false,
+              }));
             }
-          } catch (error) {
-            console.error(`[CACHE] Error fetching images for item ${itemId}:`, error);
-          } finally {
-            console.log('[CACHE] Setting loading state to false for item', itemId);
-            
-            // Mark the item as having completed loading, regardless of result
-            setHasCompletedLoading(prev => ({
-              ...prev,
-              [itemId]: true
-            }));
-            
-            setIsLoading(prev => ({
-              ...prev,
-              [itemId]: false,
-            }));
-          }
-        })
-      );
+          })
+        );
+      } catch (error) {
+        console.error('[CACHE] Error processing batch:', error);
+      }
       
-      // Remove the artificial delay between batches
-      // if (i + batchSize < idsToLoad.length) {
-      //   console.log('[CACHE] Adding delay between batches');
-      //   await new Promise(resolve => setTimeout(resolve, 100));
-      // }
+      // No delays between batches for maximum performance
     }
     
     console.log('[CACHE] Completed loading all image batches');
