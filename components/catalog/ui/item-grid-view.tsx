@@ -139,7 +139,7 @@ export function ItemGridView({
     // Still loading and not yet determined if has images
     if (isItemLoading || (!isCompleted && !hasActualImage)) {
       return (
-        <div className="flex items-center justify-center h-40 w-full bg-muted dark:bg-card/40">
+        <div className="flex items-center justify-center h-60 w-full bg-muted dark:bg-card/40">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
         </div>
       );
@@ -148,7 +148,7 @@ export function ItemGridView({
     // Loading completed and we know we have an actual image
     if (hasActualImage) {
       return (
-        <div className="relative h-40 w-full overflow-hidden">
+        <div className="relative h-60 w-full overflow-hidden">
           {/* Stable placeholder background during loading to prevent layout shift */}
           <div className="absolute inset-0 bg-muted dark:bg-gray-800"></div>
           
@@ -165,7 +165,7 @@ export function ItemGridView({
             alt={item.name || 'Item image'}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            style={{ objectFit: 'cover' }}
+            style={{ objectFit: 'contain', objectPosition: 'center' }}
             className={`transition-all duration-500 ${isImageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.97]'}`}
             onLoadingComplete={() => handleImageLoad(itemId)}
             priority={isPriority}
@@ -186,7 +186,7 @@ export function ItemGridView({
 
     // Loading completed and we know we don't have an image - show placeholder with consistent size
     return (
-      <div className="rounded-md overflow-hidden w-full h-40">
+      <div className="rounded-md overflow-hidden w-full h-60">
         <PlaceholderImage 
           className="w-full h-full" 
         />
@@ -195,11 +195,11 @@ export function ItemGridView({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
       {isLoading ? (
         Array(10).fill(0).map((_, index) => (
           <Card key={index} className="bg-card dark:bg-card/60 dark:border-border overflow-hidden">
-            <div className="h-40 w-full relative">
+            <div className="h-60 w-full relative">
               <Skeleton className="h-full w-full absolute dark:bg-card/60" />
             </div>
             <CardContent className="p-4 space-y-2">
