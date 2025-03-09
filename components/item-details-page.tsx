@@ -27,9 +27,11 @@ import DynamicImageUpload from "@/components/image-upload"
 import { generateYearOptions } from "@/lib/utils"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getCustomBrandsAction } from "@/actions/custom-brands-actions"
+import { getCustomFranchisesAction } from "@/actions/custom-franchises-actions"
 import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image'
 import { useEbayDebugMode } from "@/hooks/use-ebay-debug-mode"
 import { useRegionContext } from "@/contexts/region-context"
+import { franchiseEnum, itemTypeEnum } from "@/db/schema/items-schema"
 
 const placeholderImage = PLACEHOLDER_IMAGE_PATH;
 
@@ -65,6 +67,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [images, setImages] = useState<SelectImage[]>([])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [customBrands, setCustomBrands] = useState<{ id: string; name: string }[]>([])
+  const [customFranchises, setCustomFranchises] = useState<{ id: string; name: string }[]>([])
   const yearOptions = generateYearOptions()
   const [loadingAiPrice, setLoadingAiPrice] = useState(false)
   const [debugData, setDebugData] = useState<any>(null);
@@ -102,12 +105,22 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
       fetchSoldItem(id)
       fetchImages(id)
       loadCustomBrands()
+      loadCustomFranchises()
     }
   }, [id])
 
   useEffect(() => {
     if (item) {
       fetchRelatedItems(item.franchise, item.id, item.isSold)
+      
+      // Update sold details state when item changes
+      if (item.isSold && item.soldPrice) {
+        setSoldPrice(item.soldPrice.toString())
+      }
+      
+      if (item.isSold && item.soldDate) {
+        setSoldDate(new Date(item.soldDate).toISOString().split('T')[0])
+      }
     }
   }, [item])
 
@@ -160,6 +173,13 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     }
   };
 
+  const loadCustomFranchises = async () => {
+    const result = await getCustomFranchisesAction();
+    if (result.isSuccess && result.data) {
+      setCustomFranchises(result.data);
+    }
+  };
+
   const handleEditStart = (field: string) => {
     setEditingField(field)
   }
@@ -171,25 +191,41 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const handleEditSave = async () => {
     if (item) {
       try {
-        const result = await updateItemAction(item.id, item)
+        let updatedItem = { ...item };
+        
+        // Handle sold details specific fields
+        if (editingField === 'soldPrice' || editingField === 'soldDate') {
+          if (editingField === 'soldPrice') {
+            updatedItem.soldPrice = soldPrice ? parseInt(soldPrice) : 0;
+          }
+          
+          if (editingField === 'soldDate') {
+            updatedItem.soldDate = soldDate ? new Date(soldDate) : null;
+          }
+        }
+        
+        const result = await updateItemAction(item.id, updatedItem);
         if (result.isSuccess) {
-          setEditingField(null)
+          if (result.data && result.data[0]) {
+            setItem(result.data[0]);
+          }
+          setEditingField(null);
           toast({
             title: "Item updated",
             description: "Your changes have been saved successfully.",
-          })
+          });
         } else {
-          throw new Error('Action failed')
+          throw new Error('Action failed');
         }
       } catch (error) {
         toast({
           title: "Error",
           description: "Failed to update item. Please try again.",
           variant: "destructive",
-        })
+        });
       }
     }
-  }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (item) {
@@ -626,7 +662,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   )}
                   <div className="mt-2">
                     <p className="text-xs font-semibold">Troubleshooting steps:</p>
-                    <ol className="list-decimal pl-5 text-xs text-red-700 dark:text-red-300">
+                    <ol className="list-decimal pl-5 text-red-700 dark:text-red-300">
                       <li>Check if the image URL is accessible in a browser</li>
                       <li>Verify that the image is not too large (should be under 5MB)</li>
                       <li>Try a different image for this item</li>
@@ -969,43 +1005,48 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               
               <Card className="border dark:border-border shadow-sm h-full overflow-hidden text-left sm:col-span-2 lg:col-span-1">
                 <CardHeader className="pb-1 md:pb-2 text-left">
-                  <CardTitle className="text-base md:text-lg text-left">Purchase Cost</CardTitle>
+                  <CardTitle className="text-base md:text-lg text-left">Date Acquired</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 pb-3 flex flex-col items-start justify-start w-full text-left">
-                  <Popover open={editingField === 'cost'} onOpenChange={(open) => !open && handleEditCancel()}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="p-0 h-auto font-normal group w-full text-left justify-start !items-start"
-                        onClick={() => handleEditStart('cost')}
-                      >
-                        <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold break-words text-left">
-                          {formatCurrency(item.cost)}
-                        </span>
-                        <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity inline-flex" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-sm text-foreground">Edit Item Cost</h4>
-                        <div className="space-y-2">
-                          <Label htmlFor="cost" className="text-sm font-medium text-foreground">Cost</Label>
-                          <Input
-                            id="cost"
-                            name="cost"
-                            type="number"
-                            value={item.cost}
-                            onChange={handleInputChange}
-                            className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
-                          />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Date Acquired</Label>
+                    <Popover open={editingField === 'acquired'} onOpenChange={(open) => !open && handleEditCancel()}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="p-0 h-auto font-normal text-left justify-start w-full group"
+                          onClick={() => handleEditStart('acquired')}
+                        >
+                          <div className="flex items-center">
+                            <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
+                              {item && new Date(item.acquired).toLocaleDateString()}
+                            </Badge>
+                            <Edit className="ml-2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                        <div className="space-y-4">
+                          <h4 className="font-semibold text-sm text-purple-400">Edit Date Acquired</h4>
+                          <div className="space-y-2">
+                            <Label htmlFor="acquired" className="text-sm font-medium text-purple-400">Date Acquired</Label>
+                            <Input
+                              id="acquired"
+                              type="date"
+                              name="acquired"
+                              value={item.acquired ? new Date(item.acquired).toISOString().split('T')[0] : ''}
+                              onChange={handleInputChange}
+                              className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary/70 hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                            <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                          </div>
                         </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
-                          <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -1051,7 +1092,42 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Date Acquired</Label>
-                      <p>{item && new Date(item.acquired).toLocaleDateString()}</p>
+                      <Popover open={editingField === 'acquired'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="p-0 h-auto font-normal text-left justify-start w-full group"
+                            onClick={() => handleEditStart('acquired')}
+                          >
+                            <div className="flex items-center">
+                              <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
+                                {item && new Date(item.acquired).toLocaleDateString()}
+                              </Badge>
+                              <Edit className="ml-2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-purple-400">Edit Date Acquired</h4>
+                            <div className="space-y-2">
+                              <Label htmlFor="acquired" className="text-sm font-medium text-purple-400">Date Acquired</Label>
+                              <Input
+                                id="acquired"
+                                type="date"
+                                name="acquired"
+                                value={item.acquired ? new Date(item.acquired).toISOString().split('T')[0] : ''}
+                                onChange={handleInputChange}
+                                className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="outline" onClick={handleEditCancel} className="border-input text-primary/70 hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                              <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Collection Status</Label>
@@ -1061,9 +1137,14 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                           checked={isSold}
                           onCheckedChange={handleSoldToggle}
                         />
-                        <span className={`text-sm ${isSold ? "text-rose-500 font-medium" : "text-emerald-600 font-medium"}`}>
-                          {isSold ? 'Sold' : 'In Collection'}
-                        </span>
+                        <Badge 
+                          variant="outline" 
+                          className={`ml-2 ${isSold ? "bg-red-50 dark:bg-red-950/20" : "bg-green-50 dark:bg-green-950/20"}`}
+                        >
+                          <span className={`${isSold ? "text-rose-500" : "text-emerald-600"} font-medium`}>
+                            {isSold ? 'Sold' : 'In Collection'}
+                          </span>
+                        </Badge>
                       </div>
                     </div>
                   </div>
@@ -1074,16 +1155,122 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Type</Label>
-                      <div className="flex items-center">
-                        <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.type}</Badge>
-                      </div>
+                      <Popover open={editingField === 'type'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="p-0 h-auto font-normal text-left justify-start w-full group"
+                            onClick={() => handleEditStart('type')}
+                          >
+                            <div className="flex items-center">
+                              <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.type}</Badge>
+                              <Edit className="ml-2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                          <h4 className="font-semibold text-sm text-purple-400">Edit Type</h4>
+                          <div className="space-y-2 mt-2">
+                            <Label htmlFor="type" className="text-sm font-medium text-purple-400">Type</Label>
+                            <Select
+                              value={item.type || ""}
+                              onValueChange={(value) => {
+                                if (item) {
+                                  const updatedItem = {
+                                    ...item,
+                                    type: value
+                                  };
+                                  setItem(updatedItem);
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                              <SelectContent className="dark:bg-black/90">
+                                <SelectGroup>
+                                  <SelectLabel>Item Types</SelectLabel>
+                                  {itemTypeEnum.enumValues.map((type) => (
+                                    <SelectItem key={type} value={type}>
+                                      {type}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex justify-end space-x-2 mt-4">
+                            <Button variant="outline" onClick={handleEditCancel}>Cancel</Button>
+                            <Button onClick={handleEditSave}>Save</Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Franchise</Label>
-                      <p>{item.franchise}</p>
+                      <Popover open={editingField === 'franchise'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="p-0 h-auto font-normal text-left justify-start w-full group"
+                            onClick={() => handleEditStart('franchise')}
+                          >
+                            <div className="flex items-center">
+                              <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.franchise || 'Not specified'}</Badge>
+                              <Edit className="ml-2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                          <h4 className="font-semibold text-sm text-purple-400">Edit Franchise</h4>
+                          <div className="space-y-2 mt-2">
+                            <Label htmlFor="franchise" className="text-sm font-medium text-purple-400">Franchise</Label>
+                            <Select
+                              value={item.franchise || ""}
+                              onValueChange={(value) => {
+                                if (item) {
+                                  const updatedItem = {
+                                    ...item,
+                                    franchise: value
+                                  };
+                                  setItem(updatedItem);
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select franchise" />
+                              </SelectTrigger>
+                              <SelectContent className="dark:bg-black/90">
+                                <SelectGroup>
+                                  <SelectLabel>Default Franchises</SelectLabel>
+                                  {franchiseEnum.enumValues.map((franchise) => (
+                                    <SelectItem key={franchise} value={franchise}>
+                                      {franchise}
+                                    </SelectItem>
+                                  ))}
+                                  {customFranchises.length > 0 && (
+                                    <>
+                                      <SelectLabel>Custom Franchises</SelectLabel>
+                                      {customFranchises.map((franchise) => (
+                                        <SelectItem key={franchise.id} value={franchise.name}>
+                                          {franchise.name}
+                                        </SelectItem>
+                                      ))}
+                                    </>
+                                  )}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex justify-end space-x-2 mt-4">
+                            <Button variant="outline" onClick={handleEditCancel}>Cancel</Button>
+                            <Button onClick={handleEditSave}>Save</Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
-                    
+
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Brand</Label>
                       <Popover open={editingField === 'brand'} onOpenChange={(open) => !open && handleEditCancel()}>
@@ -1093,8 +1280,10 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                             className="p-0 h-auto font-normal text-left justify-start w-full group"
                             onClick={() => handleEditStart('brand')}
                           >
-                            <span>{item.brand || 'Not specified'}</span>
-                            <Edit className="ml-2 h-3.5 w-3.5 inline opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="flex items-center">
+                              <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.brand || 'Not specified'}</Badge>
+                              <Edit className="ml-2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
@@ -1155,8 +1344,10 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                             className="p-0 h-auto font-normal text-left justify-start w-full group"
                             onClick={() => handleEditStart('year')}
                           >
-                            <span>{item.year || 'Not specified'}</span>
-                            <Edit className="ml-2 h-3.5 w-3.5 inline opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="flex items-center">
+                              <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.year || 'Not specified'}</Badge>
+                              <Edit className="ml-2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
@@ -1209,8 +1400,10 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                             className="p-0 h-auto font-normal text-left justify-start w-full group"
                             onClick={() => handleEditStart('condition')}
                           >
-                            <span>{item.condition || 'Not specified'}</span>
-                            <Edit className="ml-2 h-3.5 w-3.5 inline opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="flex items-center">
+                              <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">{item.condition || 'Not specified'}</Badge>
+                              <Edit className="ml-2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
@@ -1256,7 +1449,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </div>
                 </div>
 
-                {isSold && (
+                {isSold && !item.soldPrice && !item.soldDate && (
                   <div className="space-y-4 pt-4 border-t border-border">
                     <h3 className="text-sm font-semibold text-muted-foreground">Sale Information</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -1288,17 +1481,86 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </div>
                 )}
                 
-                {item.isSold && item.soldPrice && item.soldDate && !isSold && (
+                {item.isSold && (item.soldPrice || item.soldDate) && (
                   <div className="pt-4 border-t border-border">
                     <h3 className="text-sm font-semibold text-muted-foreground mb-3">Sale Information</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground">Sold Price</Label>
-                        <p className="font-semibold text-purple-400">{formatCurrency(item.soldPrice)}</p>
+                        <Popover open={editingField === 'soldPrice'} onOpenChange={(open) => !open && handleEditCancel()}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="p-0 h-auto font-normal group w-full text-left justify-start !items-start"
+                              onClick={() => handleEditStart('soldPrice')}
+                            >
+                              <div className="flex items-center">
+                                <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10 text-purple-400 font-semibold">
+                                  {formatCurrency(item.soldPrice || 0)}
+                                </Badge>
+                                <Edit className="ml-2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                            <div className="space-y-4">
+                              <h4 className="font-semibold text-sm text-foreground">Edit Sold Price</h4>
+                              <div className="space-y-2">
+                                <Label htmlFor="soldPrice" className="text-sm font-medium text-foreground">Sold Price</Label>
+                                <Input
+                                  id="soldPrice"
+                                  name="soldPrice"
+                                  type="number"
+                                  value={soldPrice || item.soldPrice || ''}
+                                  onChange={(e) => setSoldPrice(e.target.value)}
+                                  className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
+                                />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                                <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground">Sold Date</Label>
-                        <p className="font-semibold text-purple-400">{new Date(item.soldDate).toLocaleDateString()}</p>
+                        <Popover open={editingField === 'soldDate'} onOpenChange={(open) => !open && handleEditCancel()}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="p-0 h-auto font-normal group w-full text-left justify-start !items-start"
+                              onClick={() => handleEditStart('soldDate')}
+                            >
+                              <div className="flex items-center">
+                                <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10 text-purple-400 font-semibold">
+                                  {item.soldDate ? new Date(item.soldDate).toLocaleDateString() : 'Not specified'}
+                                </Badge>
+                                <Edit className="ml-2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                            <div className="space-y-4">
+                              <h4 className="font-semibold text-sm text-foreground">Edit Sold Date</h4>
+                              <div className="space-y-2">
+                                <Label htmlFor="soldDate" className="text-sm font-medium text-foreground">Sold Date</Label>
+                                <Input
+                                  id="soldDate"
+                                  type="date"
+                                  value={soldDate || (item.soldDate ? new Date(item.soldDate).toISOString().split('T')[0] : '')}
+                                  onChange={(e) => setSoldDate(e.target.value)}
+                                  className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
+                                />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                                <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </div>
