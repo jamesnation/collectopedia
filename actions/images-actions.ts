@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getImagesByItemId, insertImage, deleteImage } from "@/db/queries/images-queries";
+import { getImagesByItemId, insertImage, deleteImage, updateImageOrder, updateMultipleImageOrders } from "@/db/queries/images-queries";
 import { InsertImage, SelectImage } from "@/db/schema/images-schema";
 import crypto from 'crypto';
 
@@ -29,7 +29,16 @@ export const getImagesByItemIdAction = async (itemId: string): Promise<ActionRes
 
 export const createImageAction = async (image: Omit<InsertImage, 'id'>): Promise<ActionResult<SelectImage>> => {
   try {
-    const imageWithId = { ...image, id: crypto.randomUUID() };
+    // Get the current images to determine the next order
+    const currentImages = await getImagesByItemId(image.itemId);
+    const nextOrder = currentImages.length;
+    
+    const imageWithId = { 
+      ...image, 
+      id: crypto.randomUUID(),
+      order: nextOrder // Set the order to be at the end of the list
+    };
+    
     const [createdImage] = await insertImage(imageWithId);
     
     // Add a cache-busting timestamp to ensure fresh data
@@ -82,5 +91,50 @@ export const createMultipleImagesAction = async (images: Omit<InsertImage, 'id'>
   } catch (error) {
     console.error("Failed to create multiple images:", error);
     return { isSuccess: false, error: "Failed to create multiple images" };
+  }
+};
+
+export const updateImageOrderAction = async (
+  imageId: string, 
+  newOrder: number, 
+  itemId: string
+): Promise<ActionResult<SelectImage>> => {
+  try {
+    const [updatedImage] = await updateImageOrder(imageId, newOrder);
+    
+    // Add a cache-busting timestamp to ensure fresh data
+    const timestamp = Date.now();
+    
+    // Revalidate all paths that might display this item's images
+    revalidatePath(`/?t=${timestamp}`);  // Home page with catalog
+    revalidatePath(`/item/${itemId}?t=${timestamp}`);  // Item details page
+    revalidatePath(`/my-collection?t=${timestamp}`);  // Collection page
+    
+    return { isSuccess: true, data: updatedImage };
+  } catch (error) {
+    console.error("Failed to update image order:", error);
+    return { isSuccess: false, error: "Failed to update image order" };
+  }
+};
+
+export const reorderImagesAction = async (
+  itemId: string,
+  imageOrders: { id: string; order: number }[]
+): Promise<ActionResult<void>> => {
+  try {
+    await updateMultipleImageOrders(imageOrders);
+    
+    // Add a cache-busting timestamp to ensure fresh data
+    const timestamp = Date.now();
+    
+    // Revalidate all paths that might display this item's images
+    revalidatePath(`/?t=${timestamp}`);  // Home page with catalog
+    revalidatePath(`/item/${itemId}?t=${timestamp}`);  // Item details page
+    revalidatePath(`/my-collection?t=${timestamp}`);  // Collection page
+    
+    return { isSuccess: true };
+  } catch (error) {
+    console.error("Failed to reorder images:", error);
+    return { isSuccess: false, error: "Failed to reorder images" };
   }
 };

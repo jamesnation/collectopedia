@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { itemsTable } from "./items-schema";
 
 export const imagesTable = pgTable("images", {
@@ -6,6 +6,7 @@ export const imagesTable = pgTable("images", {
   itemId: text("item_id").references(() => itemsTable.id, { onDelete: 'cascade' }).notNull(),
   userId: text("user_id").notNull(),
   url: text("url").notNull(),
+  order: integer("order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

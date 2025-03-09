@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X, RefreshCw, BarChart4, Percent, ExternalLink } from "lucide-react"
+import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X, RefreshCw, BarChart4, Percent, ExternalLink, Info } from "lucide-react"
 import { getItemByIdAction, updateItemAction } from "@/actions/items-actions"
 import { createSoldItemAction, getSoldItemByItemIdAction, updateSoldItemAction } from "@/actions/sold-items-actions"
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { getRelatedItemsAction } from "@/actions/items-actions"
-import { getImagesByItemIdAction, createImageAction, deleteImageAction } from "@/actions/images-actions"
+import { getImagesByItemIdAction, createImageAction, deleteImageAction, reorderImagesAction } from "@/actions/images-actions"
 import { SelectImage } from "@/db/schema/images-schema"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import DynamicImageUpload from "@/components/image-upload"
@@ -32,6 +32,19 @@ import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeh
 import { useEbayDebugMode } from "@/hooks/use-ebay-debug-mode"
 import { useRegionContext } from "@/contexts/region-context"
 import { franchiseEnum, itemTypeEnum } from "@/db/schema/items-schema"
+import { GripVertical } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { arrayMove } from '@dnd-kit/sortable'; // Keep arrayMove for the handleImageReorder function
+
+// Create dynamic imports for our DnD components
+const DndWrapper = dynamic(() => import('./dnd-wrapper'), { 
+  ssr: false,
+  loading: () => <div className="p-4 text-center">Loading drag and drop functionality...</div>
+});
+
+const SortableImageItem = dynamic(() => import('./sortable-image-item'), { 
+  ssr: false 
+});
 
 const placeholderImage = PLACEHOLDER_IMAGE_PATH;
 
@@ -160,11 +173,13 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   }
 
   const fetchImages = async (itemId: string) => {
-    const result = await getImagesByItemIdAction(itemId)
+    const result = await getImagesByItemIdAction(itemId);
     if (result.isSuccess && result.data) {
-      setImages(result.data)
+      setImages(result.data);
+    } else {
+      console.error("Failed to fetch images:", result.error);
     }
-  }
+  };
 
   const loadCustomBrands = async () => {
     const result = await getCustomBrandsAction();
@@ -369,7 +384,23 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
         setDebugData(null); // Clear previous debug data
         
         // Get the current primary image URL
-        const primaryImage = images.length > 0 ? images[0].url : undefined;
+        // We need to refetch the images to ensure we have the latest order
+        let primaryImage: string | undefined;
+        
+        try {
+          // Fetch the latest images to get the correct primary image
+          const imagesResult = await getImagesByItemIdAction(item.id);
+          if (imagesResult.isSuccess && imagesResult.data && imagesResult.data.length > 0) {
+            primaryImage = imagesResult.data[0].url;
+          } else {
+            // Fallback to current images state if fetch fails
+            primaryImage = images.length > 0 ? images[0].url : undefined;
+          }
+        } catch (error) {
+          console.error("Error fetching latest images:", error);
+          // Fallback to current images state
+          primaryImage = images.length > 0 ? images[0].url : undefined;
+        }
         
         // Log that we're refreshing with debug mode
         console.log('Refreshing AI price with debug mode:', { isDebugMode, isInitialized });
@@ -779,6 +810,52 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     );
   };
 
+  // Update the handleImageReorder function:
+  const handleImageReorder = async (event: any) => {
+    const { active, over } = event;
+    
+    if (active && over && active.id !== over.id) {
+      setImages((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        
+        // Update the server with the new order
+        const updatedOrders = newItems.map((item, index) => ({
+          id: item.id,
+          order: index
+        }));
+        
+        if (item?.id) {
+          // Update the server with the new order
+          reorderImagesAction(item.id, updatedOrders)
+            .then(() => {
+              // Refetch the images to ensure we have the latest order from the server
+              // This ensures the primary image is correctly identified for AI price estimation
+              fetchImages(item.id);
+              
+              toast({
+                title: "Success",
+                description: "Image order updated successfully",
+                variant: "default",
+              });
+            })
+            .catch(error => {
+              console.error('Failed to update image order:', error);
+              toast({
+                title: "Error",
+                description: "Failed to update image order",
+                variant: "destructive",
+              });
+            });
+        }
+        
+        return newItems;
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -849,30 +926,46 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     Edit Images
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full max-w-[320px] sm:w-80 dark:bg-black/90 dark:border-border">
+                <PopoverContent className="w-full max-w-[90vw] sm:max-w-[600px] dark:bg-black/90 dark:border-border">
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-sm text-foreground">Edit Item Images</h4>
-                    <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                      {images.map((image, index) => (
-                        <div key={index} className="relative">
-                          <Image src={image.url} alt={`Image ${index + 1}`} width={100} height={100} className="w-full h-auto aspect-square object-cover rounded-md" />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-0 right-0 h-5 w-5 sm:h-6 sm:w-6"
-                            onClick={() => handleImageDelete(image.id)}
-                          >
-                            <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-semibold text-sm text-foreground">Edit Item Images</h4>
+                      <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
                     </div>
+                    
+                    {images.length > 0 && (
+                      <>
+                        <div className="flex items-center text-sm text-muted-foreground space-x-1 mb-2">
+                          <Info className="h-3 w-3" />
+                          <span>Drag images to reorder. The first image will be used as the primary image.</span>
+                        </div>
+                        
+                        <ScrollArea className="w-full h-auto max-h-[40vh]">
+                          <DndWrapper
+                            items={images}
+                            onReorder={handleImageReorder}
+                            direction="horizontal"
+                            className="pb-4" // Add padding at bottom for ScrollArea
+                            renderItem={({ image, index }: { image: SelectImage; index: number }) => (
+                              <SortableImageItem
+                                key={image.id}
+                                image={image}
+                                index={index}
+                                direction="horizontal"
+                                size="md"
+                                onImageDelete={handleImageDelete}
+                              />
+                            )}
+                          />
+                          <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
+                      </>
+                    )}
                   </div>
                 </PopoverContent>
               </Popover>
             </div>
+            
             {images.length > 1 && (
               <ScrollArea className="w-full overflow-x-auto overflow-y-hidden rounded-md border">
                 <div className="flex w-max space-x-1 sm:space-x-2 p-1 sm:p-2">
@@ -899,7 +992,11 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             )}
             
             {/* Debug Panel - moved here to appear under the main image */}
-            {renderDebugInfo()}
+            {isDebugMode && (
+              <>
+                {renderDebugInfo()}
+              </>
+            )}
           </div>
           <div className="space-y-6">
             <Popover open={editingField === 'name'} onOpenChange={(open) => !open && handleEditCancel()}>
