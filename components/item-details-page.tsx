@@ -127,7 +127,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
       fetchRelatedItems(item.franchise, item.id, item.isSold)
       
       // Update sold details state when item changes
-      if (item.isSold && item.soldPrice) {
+      if (item.isSold && item.soldPrice !== undefined && item.soldPrice !== null) {
         setSoldPrice(item.soldPrice.toString())
       }
       
@@ -196,32 +196,46 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   };
 
   const handleEditStart = (field: string) => {
-    setEditingField(field)
+    console.log('Starting to edit field:', field);
+    setEditingField(field);
   }
 
   const handleEditCancel = () => {
-    setEditingField(null)
+    console.log('Canceling edit for field:', editingField);
+    setEditingField(null);
   }
+
+  // Add a specific handler for sold price changes
+  const handleSoldPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    console.log('Updating soldPrice state:', newValue);
+    setSoldPrice(newValue);
+  };
 
   const handleEditSave = async () => {
     if (item) {
       try {
         let updatedItem = { ...item };
         
-        // Handle sold details specific fields
-        if (editingField === 'soldPrice' || editingField === 'soldDate') {
-          if (editingField === 'soldPrice') {
-            updatedItem.soldPrice = soldPrice ? parseInt(soldPrice) : 0;
-          }
+        // Handle each editable field
+        if (editingField === 'soldPrice-main' || editingField === 'soldPrice' || editingField === 'soldPrice-detail') {
+          const parsedSoldPrice = soldPrice ? parseInt(soldPrice) : 0;
+          updatedItem.soldPrice = parsedSoldPrice;
+          console.log('Updating soldPrice to:', parsedSoldPrice, 'from editing field:', editingField);
           
-          if (editingField === 'soldDate') {
-            updatedItem.soldDate = soldDate ? new Date(soldDate) : null;
-          }
+          // Log the full updated item for debugging
+          console.log('Full updated item:', updatedItem);
+        } else if (editingField === 'soldDate') {
+          updatedItem.soldDate = soldDate ? new Date(soldDate) : null;
         }
         
+        console.log('Sending API request to update item:', updatedItem);
         const result = await updateItemAction(item.id, updatedItem);
+        console.log('Update result:', result);
+        
         if (result.isSuccess) {
           if (result.data && result.data[0]) {
+            console.log('Setting item to:', result.data[0]);
             setItem(result.data[0]);
           }
           setEditingField(null);
@@ -230,9 +244,10 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             description: "Your changes have been saved successfully.",
           });
         } else {
-          throw new Error('Action failed');
+          throw new Error(result.error || 'Action failed');
         }
       } catch (error) {
+        console.error('Error saving edit:', error);
         toast({
           title: "Error",
           description: "Failed to update item. Please try again.",
@@ -856,6 +871,13 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     }
   };
 
+  // Add a direct form submission handler for soldPrice fields
+  const handleSoldPriceForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Sold price form submitted with value:', soldPrice);
+    handleEditSave();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -1084,46 +1106,89 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 </CardContent>
               </Card>
               
-              {/* Value Card (Renamed from Estimated Value) */}
+              {/* Value or Sold Price Card */}
               <Card className="border dark:border-border shadow-sm h-full overflow-hidden text-left">
                 <CardHeader className="pb-1 md:pb-2 text-left">
-                  <CardTitle className="text-base md:text-lg text-left">Value</CardTitle>
+                  <CardTitle className="text-base md:text-lg text-left">
+                    {item.isSold ? "Sold Price" : "Value"}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-2">
-                  <Popover open={editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="p-0 h-auto font-normal text-left justify-start hover:bg-transparent group"
-                        onClick={() => handleEditStart('value')}
-                      >
-                        <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-purple-400 break-words text-left">
-                          {formatCurrency(item?.value || 0)}
-                        </span>
-                        <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity inline-flex" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-sm text-foreground">Edit Item Value</h4>
-                        <div className="space-y-2">
-                          <Label htmlFor="value" className="text-sm font-medium text-foreground">Value</Label>
-                          <Input
-                            id="value"
-                            name="value"
-                            type="number"
-                            value={item?.value || 0}
-                            onChange={handleInputChange}
-                            className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
-                          />
+                  {item.isSold ? (
+                    // Sold Price Display for sold items
+                    <Popover open={editingField === 'soldPrice-main'} onOpenChange={(open) => !open && handleEditCancel()}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="p-0 h-auto font-normal text-left justify-start hover:bg-transparent group"
+                          onClick={() => handleEditStart('soldPrice-main')}
+                        >
+                          <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-green-500 break-words text-left">
+                            {formatCurrency(item?.soldPrice || 0)}
+                          </span>
+                          <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity inline-flex" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                        <form onSubmit={handleSoldPriceForm}>
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-foreground">Edit Sold Price</h4>
+                            <div className="space-y-2">
+                              <Label htmlFor="soldPrice-main" className="text-sm font-medium text-foreground">Sold Price</Label>
+                              <Input
+                                id="soldPrice-main"
+                                name="soldPrice-main"
+                                type="number"
+                                value={soldPrice}
+                                onChange={handleSoldPriceChange}
+                                className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button type="button" variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                              <Button type="submit" className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                            </div>
+                          </div>
+                        </form>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    // Value display for non-sold items
+                    <Popover open={editingField === 'value'} onOpenChange={(open) => !open && handleEditCancel()}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="p-0 h-auto font-normal text-left justify-start hover:bg-transparent group"
+                          onClick={() => handleEditStart('value')}
+                        >
+                          <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-purple-400 break-words text-left">
+                            {formatCurrency(item?.value || 0)}
+                          </span>
+                          <Edit className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity inline-flex" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                        <div className="space-y-4">
+                          <h4 className="font-semibold text-sm text-foreground">Edit Item Value</h4>
+                          <div className="space-y-2">
+                            <Label htmlFor="value" className="text-sm font-medium text-foreground">Value</Label>
+                            <Input
+                              id="value"
+                              name="value"
+                              type="number"
+                              value={item?.value || 0}
+                              onChange={handleInputChange}
+                              className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                            <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                          </div>
                         </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
-                          <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                      </PopoverContent>
+                    </Popover>
+                  )}
                 </CardContent>
               </Card>
               
@@ -1164,30 +1229,50 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 <div className="space-y-1.5">
                   <h4 className="text-sm font-medium text-muted-foreground">Total Profit</h4>
                   <p className={`text-lg font-bold ${
-                    item && item.value && item.cost && (item.value - item.cost) > 0 
-                      ? 'text-green-500' 
-                      : item && item.value && item.cost && (item.value - item.cost) < 0
-                        ? 'text-red-500'
-                        : 'text-muted-foreground'
+                    item.isSold 
+                      ? (item.soldPrice && item.cost && (item.soldPrice - item.cost) > 0 
+                          ? 'text-green-500' 
+                          : item.soldPrice && item.cost && (item.soldPrice - item.cost) < 0
+                            ? 'text-red-500'
+                            : 'text-muted-foreground')
+                      : (item.value && item.cost && (item.value - item.cost) > 0 
+                          ? 'text-green-500' 
+                          : item.value && item.cost && (item.value - item.cost) < 0
+                            ? 'text-red-500'
+                            : 'text-muted-foreground')
                   }`}>
-                    {item && item.value && item.cost 
-                      ? formatCurrency(item.value - item.cost)
-                      : 'N/A'
+                    {item.isSold
+                      ? (item.soldPrice && item.cost 
+                          ? formatCurrency(item.soldPrice - item.cost)
+                          : 'N/A')
+                      : (item.value && item.cost 
+                          ? formatCurrency(item.value - item.cost)
+                          : 'N/A')
                     }
                   </p>
                 </div>
                 <div className="space-y-1.5">
                   <h4 className="text-sm font-medium text-muted-foreground">Profit Margin</h4>
                   <p className={`text-lg font-bold ${
-                    item && item.value && item.cost && item.cost > 0 && ((item.value - item.cost) / item.cost * 100) > 0 
-                      ? 'text-green-500' 
-                      : item && item.value && item.cost && item.cost > 0 && ((item.value - item.cost) / item.cost * 100) < 0
-                        ? 'text-red-500'
-                        : 'text-muted-foreground'
+                    item.isSold
+                      ? (item.soldPrice && item.cost && item.cost > 0 && ((item.soldPrice - item.cost) / item.cost * 100) > 0 
+                          ? 'text-green-500' 
+                          : item.soldPrice && item.cost && item.cost > 0 && ((item.soldPrice - item.cost) / item.cost * 100) < 0
+                            ? 'text-red-500'
+                            : 'text-muted-foreground')
+                      : (item.value && item.cost && item.cost > 0 && ((item.value - item.cost) / item.cost * 100) > 0 
+                          ? 'text-green-500' 
+                          : item.value && item.cost && item.cost > 0 && ((item.value - item.cost) / item.cost * 100) < 0
+                            ? 'text-red-500'
+                            : 'text-muted-foreground')
                   }`}>
-                    {item && item.value && item.cost && item.cost > 0
-                      ? `${((item.value - item.cost) / item.cost * 100).toFixed(1)}%`
-                      : 'N/A'
+                    {item.isSold
+                      ? (item.soldPrice && item.cost && item.cost > 0
+                          ? `${((item.soldPrice - item.cost) / item.cost * 100).toFixed(1)}%`
+                          : 'N/A')
+                      : (item.value && item.cost && item.cost > 0
+                          ? `${((item.value - item.cost) / item.cost * 100).toFixed(1)}%`
+                          : 'N/A')
                     }
                   </p>
                 </div>
@@ -1569,10 +1654,11 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                         <Label htmlFor="sold-price" className="text-xs text-muted-foreground">Sold Price</Label>
                         <Input
                           id="sold-price"
+                          name="soldPrice-initial"
                           type="number"
                           placeholder="Enter sold price"
                           value={soldPrice}
-                          onChange={(e) => setSoldPrice(e.target.value)}
+                          onChange={handleSoldPriceChange}
                           className="mt-1"
                         />
                       </div>
@@ -1599,12 +1685,12 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground">Sold Price</Label>
-                        <Popover open={editingField === 'soldPrice'} onOpenChange={(open) => !open && handleEditCancel()}>
+                        <Popover open={editingField === 'soldPrice-detail'} onOpenChange={(open) => !open && handleEditCancel()}>
                           <PopoverTrigger asChild>
                             <Button
                               variant="ghost"
                               className="p-0 h-auto font-normal group w-full text-left justify-start !items-start"
-                              onClick={() => handleEditStart('soldPrice')}
+                              onClick={() => handleEditStart('soldPrice-detail')}
                             >
                               <div className="flex items-center">
                                 <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10 text-purple-400 font-semibold">
@@ -1615,24 +1701,26 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
-                            <div className="space-y-4">
-                              <h4 className="font-semibold text-sm text-foreground">Edit Sold Price</h4>
-                              <div className="space-y-2">
-                                <Label htmlFor="soldPrice" className="text-sm font-medium text-foreground">Sold Price</Label>
-                                <Input
-                                  id="soldPrice"
-                                  name="soldPrice"
-                                  type="number"
-                                  value={soldPrice || item.soldPrice || ''}
-                                  onChange={(e) => setSoldPrice(e.target.value)}
-                                  className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
-                                />
+                            <form onSubmit={handleSoldPriceForm}>
+                              <div className="space-y-4">
+                                <h4 className="font-semibold text-sm text-foreground">Edit Sold Price</h4>
+                                <div className="space-y-2">
+                                  <Label htmlFor="soldPrice-detail" className="text-sm font-medium text-foreground">Sold Price</Label>
+                                  <Input
+                                    id="soldPrice-detail"
+                                    name="soldPrice-detail"
+                                    type="number"
+                                    value={soldPrice || item.soldPrice || ''}
+                                    onChange={handleSoldPriceChange}
+                                    className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
+                                  />
+                                </div>
+                                <div className="flex justify-end space-x-2">
+                                  <Button type="button" variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                                  <Button type="submit" className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                                </div>
                               </div>
-                              <div className="flex justify-end space-x-2">
-                                <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
-                                <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
-                              </div>
-                            </div>
+                            </form>
                           </PopoverContent>
                         </Popover>
                       </div>
