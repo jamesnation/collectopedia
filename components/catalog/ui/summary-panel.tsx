@@ -9,6 +9,7 @@ interface SummaryPanelProps {
   ebayListedValue?: number;
   ebaySoldValue?: number;
   showSold: boolean;
+  unsoldTotalCost?: number;
 }
 
 const formatNumber = (value: number) => {
@@ -21,11 +22,16 @@ export default function SummaryPanel({
   totalItems = 0,
   ebayListedValue = 0,
   ebaySoldValue = 0,
-  showSold = false
+  showSold = false,
+  unsoldTotalCost = 0
 }: SummaryPanelProps) {
   const profit = totalValue - totalCost;
   const profitMargin = totalCost > 0 ? (profit / totalCost) * 100 : 0;
   const { formatCurrency } = useRegionContext();
+  
+  // Total spent is the total cost of unsold items minus the total profit from sold items
+  // Only calculated when showing sold items
+  const totalSpent = showSold ? (unsoldTotalCost - profit) : 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
@@ -35,6 +41,11 @@ export default function SummaryPanel({
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Total {showSold ? "Sold" : "Collection"} Value</p>
               <p className="text-2xl font-bold dark:text-foreground">{formatCurrency(totalValue)}</p>
+              {showSold && (
+                <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground mt-2">
+                  Total Spent: <span className={`font-semibold ${totalSpent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{formatCurrency(totalSpent)}</span>
+                </p>
+              )}
             </div>
             <DollarSign className="h-6 w-6 text-purple-400 dark:text-purple-400" aria-label="Total Value" />
           </div>

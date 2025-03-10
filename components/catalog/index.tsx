@@ -464,6 +464,7 @@ function CatalogInner({
           ebayListedValue={summaryValues.ebayListedValue}
           ebaySoldValue={summaryValues.ebaySoldValue}
           showSold={showSold}
+          unsoldTotalCost={summaryValues.unsoldTotalCost}
         />
 
         {/* Filter Bar */}

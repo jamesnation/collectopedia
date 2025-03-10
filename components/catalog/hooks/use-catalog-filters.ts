@@ -199,6 +199,11 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
 
   // Calculate summary values 
   const summaryValues = useMemo(() => {
+    // Calculate the total cost of all unsold items
+    const unsoldTotalCost = items
+      .filter(item => !item.isSold)
+      .reduce((sum, item) => sum + item.cost, 0);
+      
     return filteredAndSortedItems.reduce((acc, item) => {
       acc.totalValue += showSold ? (item.soldPrice ?? 0) : item.value;
       acc.totalCost += item.cost;
@@ -209,9 +214,10 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
       totalValue: 0,
       totalCost: 0,
       ebayListedValue: 0,
-      ebaySoldValue: 0
+      ebaySoldValue: 0,
+      unsoldTotalCost
     });
-  }, [filteredAndSortedItems, showSold]);
+  }, [filteredAndSortedItems, showSold, items]);
 
   // Get unique years for filter options
   const availableYears = useMemo(() => {
