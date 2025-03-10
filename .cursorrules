@@ -1,10 +1,14 @@
 # Project Specification & Guidelines
 
-Use the project specification and guidelines to build the Notes app.
+Collectopedia is a web application designed to help users manage their toy collection. It allows users to add, edit, delete, and view details of their toys, as well as fetch current market prices via the eBay API. 
+
+Each toy will have an associated image and separate detail page. 
+
+Stats will track value of time etc. 
 
 ## Overview
 
-Notes is a web app that allows you to manage your notes.
+We're working on Collectopedia. The idea is it's a tracker for your collection of toys, similar to discogs for records or priceharting.com for video games.
 
 ## Tech Stack
 

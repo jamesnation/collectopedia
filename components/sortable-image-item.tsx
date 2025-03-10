@@ -37,6 +37,8 @@ export default function SortableImageItem({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
+    position: 'relative' as const,
+    zIndex: isDragging ? 50 : 'auto',
   };
 
   // Handle image deletion
@@ -69,60 +71,55 @@ export default function SortableImageItem({
 
   const dimensions = sizeMap[size];
 
-  // Handle position differs based on direction
-  const handlePosition = direction === 'vertical' 
-    ? "absolute top-0 left-0 h-full flex items-center justify-center p-1"
-    : "absolute top-0 left-0 w-full flex justify-center items-start p-1";
-
-  // Container padding differs based on direction  
-  const containerPadding = direction === 'vertical'
-    ? "pl-7" // Padding left for vertical
-    : "pt-7"; // Padding top for horizontal
-
   return (
     <div 
       ref={setNodeRef} 
       style={style}
-      className={`relative bg-card border rounded-md ${dimensions.container} ${isDragging ? 'ring-2 ring-primary' : ''}`}
+      className={`relative bg-card border rounded-md overflow-hidden ${dimensions.container} ${isDragging ? 'ring-2 ring-primary shadow-lg' : ''}`}
     >
-      {/* Drag handle with clearer visual feedback */}
-      <div 
-        className={`${handlePosition} cursor-grab active:cursor-grabbing z-10 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-sm`}
-        {...attributes} 
-        {...listeners}
-      >
-        {direction === 'vertical' 
-          ? <GripVertical className="h-4 w-4 text-muted-foreground" />
-          : <GripHorizontal className="h-4 w-4 text-muted-foreground" />
-        }
-      </div>
-      
-      <div className={containerPadding}>
-        {/* The image itself is not draggable directly */}
-        <div className="pointer-events-none">
+      {/* Image container with padding to make room for controls */}
+      <div className="w-full h-full pt-6 relative">
+        {/* Drag handle at the top */}
+        <div 
+          className="absolute top-0 left-0 right-0 h-6 flex items-center justify-center bg-muted/30 cursor-grab active:cursor-grabbing z-10 hover:bg-muted/50"
+          {...attributes} 
+          {...listeners}
+        >
+          {direction === 'vertical' 
+            ? <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+            : <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+          }
+        </div>
+        
+        {/* The image itself */}
+        <div className="pointer-events-none h-full w-full">
           <Image 
             src={image.url} 
             alt={`Image ${index + 1}`} 
             width={dimensions.width} 
             height={dimensions.height}
-            className="h-auto aspect-square object-cover rounded-md" 
+            className="h-full w-full aspect-square object-cover" 
           />
         </div>
         
-        {/* Delete button with pointer-events-auto to ensure clicks work */}
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon"
-          className="absolute top-1 right-1 h-5 w-5 z-20 pointer-events-auto"
-          onClick={handleDelete}
-        >
-          <X className="h-3 w-3" />
-        </Button>
+        {/* Controls overlay */}
+        <div className="absolute top-0 right-0 p-1 z-20">
+          {/* Delete button */}
+          <Button
+            type="button"
+            variant="destructive"
+            size="icon"
+            className="h-5 w-5 pointer-events-auto shadow-sm"
+            onClick={handleDelete}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
         
+        {/* Primary badge */}
         {index === 0 && (
           <Badge 
-            className={`absolute text-xs ${direction === 'vertical' ? 'bottom-1 left-7' : 'bottom-1 left-1'} z-20`} 
+            className="absolute bottom-1 left-1 z-20 text-xs" 
             variant="secondary"
           >
             Primary

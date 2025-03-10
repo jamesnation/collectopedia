@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useSupabase } from '@/utils/supabase/client'
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
+import { Loader2, Upload, Image as ImageIcon } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@clerk/nextjs"
 
@@ -94,28 +94,48 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
       })
     } finally {
       setUploading(false)
+      // Clear the file input
+      const fileInput = document.getElementById('image') as HTMLInputElement
+      if (fileInput) fileInput.value = ""
     }
   }
 
   return (
-    <div>
-      <Label htmlFor="image" className="text-sm font-medium text-purple-700">Item Images (Max 6MB each)</Label>
-      <div className="mt-1 flex items-center space-x-2">
+    <div className="space-y-2">
+      <div className="flex items-start">
+        <ImageIcon className="w-4 h-4 mr-2 mt-0.5 text-primary" />
+        <div>
+          <Label htmlFor="image" className="font-medium text-foreground">Upload Images</Label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Add high-quality photos of your item (max 6MB each)
+          </p>
+        </div>
+      </div>
+      
+      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
         <Button
           type="button"
           onClick={() => document.getElementById('image')?.click()}
-          className="bg-purple-100 text-purple-700 hover:bg-purple-200"
+          className="bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary flex items-center justify-center"
           disabled={uploading}
         >
           {uploading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Uploading...
+              <span>Uploading...</span>
             </>
           ) : (
-            'Choose Files'
+            <>
+              <Upload className="mr-2 h-4 w-4" />
+              <span>Select Images</span>
+            </>
           )}
         </Button>
+        
+        <p className="text-xs text-muted-foreground">
+          {uploading ? "Please wait while your images upload..." : "JPG, PNG or GIF files accepted"}
+        </p>
+        
         <input
           id="image"
           name="image"
@@ -123,7 +143,7 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
           accept="image/*"
           onChange={uploadImage}
           className="hidden"
-          multiple // Add this to allow multiple file selection
+          multiple
         />
       </div>
     </div>

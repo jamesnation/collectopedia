@@ -928,15 +928,17 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                 </PopoverTrigger>
                 <PopoverContent className="w-full max-w-[90vw] sm:max-w-[600px] dark:bg-black/90 dark:border-border">
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-semibold text-sm text-foreground">Edit Item Images</h4>
+                    <h4 className="font-semibold text-sm text-foreground">Edit Item Images</h4>
+                    
+                    {/* Image upload section with improved layout */}
+                    <div className="p-3 bg-muted/50 rounded-md">
                       <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
                     </div>
                     
                     {images.length > 0 && (
-                      <>
-                        <div className="flex items-center text-sm text-muted-foreground space-x-1 mb-2">
-                          <Info className="h-3 w-3" />
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm text-muted-foreground p-2 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-100 dark:border-blue-900/50">
+                          <Info className="h-3.5 w-3.5 mr-2 flex-shrink-0 text-blue-500" />
                           <span>Drag images to reorder. The first image will be used as the primary image.</span>
                         </div>
                         
@@ -945,7 +947,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                             items={images}
                             onReorder={handleImageReorder}
                             direction="horizontal"
-                            className="pb-4" // Add padding at bottom for ScrollArea
+                            className="pb-4 pt-1" // Add padding to provide more space
                             renderItem={({ image, index }: { image: SelectImage; index: number }) => (
                               <SortableImageItem
                                 key={image.id}
@@ -959,7 +961,13 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                           />
                           <ScrollBar orientation="horizontal" />
                         </ScrollArea>
-                      </>
+                      </div>
+                    )}
+                    
+                    {images.length === 0 && (
+                      <div className="text-center p-8 border border-dashed rounded-md bg-muted/30">
+                        <p className="text-muted-foreground">No images uploaded yet. Upload images to showcase your item.</p>
+                      </div>
                     )}
                   </div>
                 </PopoverContent>

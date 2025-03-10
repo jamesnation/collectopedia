@@ -1,5 +1,5 @@
 # Project Spec
-Collectopedia is a web application designed to help users manage their toy collection. It allows users to add, edit, delete, and view details of their toys, as well as fetch current market prices via the eBay API and sold prices via RapidAPI
+Collectopedia is a web application designed to help users manage their toy collection. It allows users to add, edit, delete, and view details of their toys, as well as fetch current market prices via the eBay API. 
 
 Each toy will have an associated image and separate detail page. 
 
