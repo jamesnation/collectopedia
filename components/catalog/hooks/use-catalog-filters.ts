@@ -202,8 +202,8 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     return filteredAndSortedItems.reduce((acc, item) => {
       acc.totalValue += showSold ? (item.soldPrice ?? 0) : item.value;
       acc.totalCost += item.cost;
-      acc.ebayListedValue += showSold ? 0 : (item.ebayListed ?? 0);
-      acc.ebaySoldValue += showSold ? 0 : (item.ebaySold ?? 0);
+      acc.ebayListedValue += (item.ebayListed ?? 0);
+      acc.ebaySoldValue += (item.ebaySold ?? 0);
       return acc;
     }, {
       totalValue: 0,
