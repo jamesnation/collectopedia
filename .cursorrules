@@ -27,3 +27,7 @@ Follow these rules:
 - All actions should go in `/actions` from the root and be named like `example-actions.ts` unless otherwise specified
 - All schemas should go in `/db/schema` from the root and be named like `example-schema.ts` unless otherwise specified
 - All queries should go in `/db/queries` from the root and be named like `example-queries.ts` unless otherwise specified
+
+
+## Building projects
+Never execute a terminal command that starts a development or production server (e.g., npm run dev, npm run preview). Instead, provide the exact command the user should run and instruct them to execute it manually. If testing requires running a local server, ask the user to start it themselves and provide any relevant console logs for debugging.

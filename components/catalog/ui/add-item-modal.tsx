@@ -57,7 +57,7 @@ export function AddItemModal({
         </Button>
       </SheetTrigger>
       <SheetContent 
-        className="w-full sm:max-w-xl overflow-y-auto dark:bg-black/95 dark:border-border dark:border-l-border flex flex-col"
+        className="w-full sm:max-w-xl overflow-y-auto dark:bg-black/95 dark:border-border dark:border-l-border flex flex-col [&_*:focus]:z-10"
         side="right"
       >
         <SheetHeader className="pb-4 text-left">

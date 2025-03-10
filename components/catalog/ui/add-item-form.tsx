@@ -180,7 +180,7 @@ export function AddItemForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 [&_*:focus]:z-10">
       <div className="space-y-2">
         <Label htmlFor="name" className="text-sm font-medium dark:text-foreground">Name</Label>
         <Input
@@ -202,7 +202,7 @@ export function AddItemForm({
               value={newItem.type} 
               onValueChange={handleTypeChange}
             >
-              <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary">
+              <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent className="dark:bg-black/90 dark:border-border">
@@ -234,7 +234,7 @@ export function AddItemForm({
               value={newItem.franchise || ""}
               onValueChange={handleFranchiseChange}
             >
-              <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary">
+              <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
                 <SelectValue placeholder="Select franchise" />
               </SelectTrigger>
               <SelectContent className="dark:bg-black/90 dark:border-border">
@@ -265,7 +265,7 @@ export function AddItemForm({
             value={newItem.brand || ""}
             onValueChange={handleBrandChange}
           >
-            <SelectTrigger className="flex-1 dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary">
+            <SelectTrigger className="flex-1 dark:bg-card/40 dark:border-border dark:text-foreground">
               <SelectValue placeholder="Select brand" />
             </SelectTrigger>
             <SelectContent className="dark:bg-black/90 dark:border-border">
@@ -299,7 +299,7 @@ export function AddItemForm({
           value={newItem.year?.toString() || ""}
           onValueChange={handleYearChange}
         >
-          <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary">
+          <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
             <SelectValue placeholder="Select year" />
           </SelectTrigger>
           <SelectContent className="dark:bg-black/90 dark:border-border">
@@ -321,7 +321,7 @@ export function AddItemForm({
           value={newItem.condition}
           onValueChange={handleConditionChange}
         >
-          <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary">
+          <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
             <SelectValue placeholder="Select condition" />
           </SelectTrigger>
           <SelectContent className="dark:bg-black/90 dark:border-border">
@@ -389,23 +389,49 @@ export function AddItemForm({
       
       <div className="space-y-2">
         <Label htmlFor="image" className="text-sm font-medium dark:text-foreground">Images</Label>
-        <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
-        <div className="grid grid-cols-3 gap-2 mt-2">
-          {newItemImages.map((image, index) => (
-            <div key={index} className="relative">
-              <Image src={image} alt={`Uploaded image ${index + 1}`} width={100} height={100} className="rounded-md" />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute top-0 right-0 h-6 w-6 dark:bg-destructive dark:hover:bg-destructive/80"
-                onClick={() => handleRemoveImage(index)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+        
+        {/* Enhanced image upload section with better layout */}
+        <div className="p-3 bg-muted/50 rounded-md">
+          <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
         </div>
+        
+        {newItemImages.length > 0 && (
+          <div className="mt-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
+              {newItemImages.map((image, index) => (
+                <div key={index} className="relative group bg-card border rounded-md overflow-hidden aspect-square">
+                  <Image 
+                    src={image} 
+                    alt={`Uploaded image ${index + 1}`} 
+                    fill
+                    className="object-cover" 
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200"></div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 opacity-80 hover:opacity-100 shadow-sm"
+                    onClick={() => handleRemoveImage(index)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                  {index === 0 && (
+                    <div className="absolute bottom-1 left-1 bg-primary/80 text-primary-foreground text-xs px-2 py-0.5 rounded-sm">
+                      Primary
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {newItemImages.length === 0 && (
+          <div className="text-center p-4 border border-dashed rounded-md bg-muted/30 text-muted-foreground text-sm">
+            No images uploaded yet. Upload images to showcase your item.
+          </div>
+        )}
       </div>
       
       {!hideSubmitButton && (
