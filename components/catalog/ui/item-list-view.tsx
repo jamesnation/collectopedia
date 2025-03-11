@@ -1,11 +1,12 @@
 /*
  * Updated: Removed the Actions column and delete functionality from the item list view.
  * The delete functionality is still available in the item details page.
+ * Added optimization to prevent image reloading when toggling between "show sold" views.
  */
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Trash2, RefreshCw, Loader2, ArrowUpDown, Eye, MoreHorizontal, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -69,25 +70,71 @@ export function ItemListView({
     hasCompletedLoading,
     hasImages 
   } = useImageCache();
+  
+  // NEW: Track previously loaded items to avoid redundant loading
+  const loadedItemsRef = useRef<Set<string>>(new Set());
+  
+  // NEW: Track the last showSold value to detect changes
+  const prevShowSoldRef = useRef<boolean>(showSold);
 
-  // Load images when items change - optimized for list view
+  // Load images when items change - optimized for list view and showSold toggle
   useEffect(() => {
     if (items.length > 0 && !isLoading) {
+      console.log('[LIST-VIEW] Items or filters changed, checking for new images to load');
+      
+      // Find items that haven't been loaded yet
+      const itemsToLoad = items
+        .map(item => item.id)
+        .filter(id => !loadedItemsRef.current.has(id));
+      
+      if (itemsToLoad.length === 0) {
+        console.log('[LIST-VIEW] All visible items already requested, skipping load');
+        return;
+      }
+      
+      console.log('[LIST-VIEW] Loading', itemsToLoad.length, 'new items');
+      
       // Load first 10 items immediately for faster initial render
-      const visibleItemIds = items.slice(0, 10).map(item => item.id);
+      const visibleItemIds = itemsToLoad.slice(0, 10);
       loadImages(visibleItemIds);
       
+      // Mark these items as loaded
+      visibleItemIds.forEach(id => loadedItemsRef.current.add(id));
+      
       // Load remaining items after a delay
-      if (items.length > 10) {
-        const remainingItemIds = items.slice(10).map(item => item.id);
+      if (itemsToLoad.length > 10) {
+        const remainingItemIds = itemsToLoad.slice(10);
         if ('requestIdleCallback' in window) {
-          (window as any).requestIdleCallback(() => loadImages(remainingItemIds));
+          (window as any).requestIdleCallback(() => {
+            loadImages(remainingItemIds);
+            // Mark these items as loaded too
+            remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
+          });
         } else {
-          setTimeout(() => loadImages(remainingItemIds), 100);
+          setTimeout(() => {
+            loadImages(remainingItemIds);
+            // Mark these items as loaded too
+            remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
+          }, 100);
         }
       }
     }
-  }, [items, isLoading, loadImages]);
+  // We use items.map(i => i.id).join() to create a stable dependency that only changes when the actual items change
+  // This prevents reloads when only showSold changes but the visible items remain the same
+  }, [
+    items.map(i => i.id).join(),
+    isLoading, 
+    loadImages
+  ]);
+  
+  // Update the previous showSold ref when it changes
+  useEffect(() => {
+    // Only log when the value actually changes
+    if (prevShowSoldRef.current !== showSold) {
+      console.log('[LIST-VIEW] showSold changed from', prevShowSoldRef.current, 'to', showSold);
+    }
+    prevShowSoldRef.current = showSold;
+  }, [showSold]);
 
   // Optimized image URL getter with thumbnail size
   const getItemPrimaryImage = useMemo(() => (itemId: string): string => {

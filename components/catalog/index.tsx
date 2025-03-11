@@ -6,7 +6,7 @@
 
 "use client"
 
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
 import { useTheme } from 'next-themes'
 import { useBackgroundUpdates } from '@/hooks/use-background-updates'
@@ -132,11 +132,12 @@ function CatalogInner({
   // State for view and filter
   const [view, setView] = useState<'list' | 'grid'>('grid');
 
-  // Add imageCache context
+  // Get imageCache context
   const { 
     imageCache, 
     isLoading: isLoadingImages, 
     loadImages,
+    preloadItemImages,
     invalidateCache,
     hasImages
   } = useImageCache();
@@ -418,150 +419,164 @@ function CatalogInner({
   }, [fetchItems, loadCustomTypes, loadCustomFranchises, loadCustomBrands]);
 
   const handleShowSoldChange = (show: boolean) => {
-    // Clear image loading state when toggling sold items to ensure they load properly
-    if (show) {
-      // Invalidate the cache for all items to force reloading of sold items
-      console.log('[CATALOG] Invalidating image cache for sold items');
-      invalidateCache();
-    }
+    console.log('[CATALOG] Toggling showSold to', show);
+    
+    // Preload images for both sold and unsold items before changing the filter
+    // This prevents the image reloading issue when toggling between views
+    const soldItems = items.filter((item: SelectItemType) => item.isSold).map((item: SelectItemType) => item.id);
+    const unsoldItems = items.filter((item: SelectItemType) => !item.isSold).map((item: SelectItemType) => item.id);
+    
+    console.log('[CATALOG] Preloading images for', soldItems.length, 'sold items and', unsoldItems.length, 'unsold items');
+    
+    // Use the new preloadItemImages function to load all images at once
+    preloadItemImages(soldItems, unsoldItems);
+    
+    // Then update the filter state
     setShowSold(show);
   };
 
   return (
-    <div className="min-h-screen text-foreground transition-colors duration-200 
-      bg-slate-50 dark:bg-black/30">
-      <main className="container mx-auto px-4 py-12">
-        {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
-          <h1 className="text-4xl font-serif text-foreground dark:text-foreground">Your Collection <span className="text-foreground dark:text-foreground">Catalog</span></h1>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline" 
-              size="icon"
-              onClick={toggleTheme}
-              className="rounded-full w-10 h-10 dark:bg-card/50 dark:text-foreground dark:border-border dark:hover:bg-card dark:hover:border-primary/40 mr-2"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-5 w-5 text-purple-400" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
-            
-            <AddItemModal
-              onAddItem={addItem}
-              customTypes={customTypes}
-              customFranchises={customFranchises}
-              customBrands={customBrands}
-              onLoadCustomTypes={loadCustomTypes}
-              onLoadCustomFranchises={loadCustomFranchises}
-              onLoadCustomBrands={loadCustomBrands}
-              isLoading={isLoading}
-            />
+    <>
+      {/* Add ImagePreloader inside the ImageCacheProvider context */}
+      <ImagePreloader items={items} />
+      
+      <div className="min-h-screen text-foreground transition-colors duration-200 
+        bg-slate-50 dark:bg-black/30">
+        <main className="container mx-auto px-4 py-12">
+          {/* Header Section */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
+            <h1 className="text-4xl font-serif text-foreground dark:text-foreground">Your Collection <span className="text-foreground dark:text-foreground">Catalog</span></h1>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline" 
+                size="icon"
+                onClick={toggleTheme}
+                className="rounded-full w-10 h-10 dark:bg-card/50 dark:text-foreground dark:border-border dark:hover:bg-card dark:hover:border-primary/40 mr-2"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-5 w-5 text-purple-400" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </Button>
+              
+              <AddItemModal
+                onAddItem={addItem}
+                customTypes={customTypes}
+                customFranchises={customFranchises}
+                customBrands={customBrands}
+                onLoadCustomTypes={loadCustomTypes}
+                onLoadCustomFranchises={loadCustomFranchises}
+                onLoadCustomBrands={loadCustomBrands}
+                isLoading={isLoading}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Summary Panel */}
-        <SummaryPanel
-          totalValue={summaryValues.totalValue}
-          totalCost={summaryValues.totalCost}
-          totalItems={filteredAndSortedItems.length}
-          ebayListedValue={summaryValues.ebayListedValue}
-          ebaySoldValue={summaryValues.ebaySoldValue}
-          showSold={showSold}
-          unsoldTotalCost={summaryValues.unsoldTotalCost}
-        />
+          {/* Summary Panel */}
+          <SummaryPanel
+            totalValue={summaryValues.totalValue}
+            totalCost={summaryValues.totalCost}
+            totalItems={filteredAndSortedItems.length}
+            ebayListedValue={summaryValues.ebayListedValue}
+            ebaySoldValue={summaryValues.ebaySoldValue}
+            showSold={showSold}
+            unsoldTotalCost={summaryValues.unsoldTotalCost}
+          />
 
-        {/* Filter Bar */}
-        <FilterBar
-          view={view}
-          setView={setView}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          typeFilter={typeFilter}
-          setTypeFilter={setTypeFilter}
-          franchiseFilter={franchiseFilter}
-          setFranchiseFilter={setFranchiseFilter}
-          yearFilter={yearFilter}
-          setYearFilter={setYearFilter}
-          showSold={showSold}
-          setShowSold={handleShowSoldChange}
-          soldYearFilter={soldYearFilter}
-          setSoldYearFilter={setSoldYearFilter}
-          availableYears={availableYears}
-          availableSoldYears={availableSoldYears}
-          defaultTypeOptions={itemTypeEnum.enumValues}
-          customTypes={customTypes}
-          defaultFranchiseOptions={franchiseEnum.enumValues}
-          customFranchises={customFranchises}
-          showWithImages={showWithImages}
-          setShowWithImages={setShowWithImages}
-        />
+          {/* Filter Bar */}
+          <FilterBar
+            view={view}
+            setView={setView}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            typeFilter={typeFilter}
+            setTypeFilter={setTypeFilter}
+            franchiseFilter={franchiseFilter}
+            setFranchiseFilter={setFranchiseFilter}
+            yearFilter={yearFilter}
+            setYearFilter={setYearFilter}
+            showSold={showSold}
+            setShowSold={handleShowSoldChange}
+            soldYearFilter={soldYearFilter}
+            setSoldYearFilter={setSoldYearFilter}
+            availableYears={availableYears}
+            availableSoldYears={availableSoldYears}
+            defaultTypeOptions={itemTypeEnum.enumValues}
+            customTypes={customTypes}
+            defaultFranchiseOptions={franchiseEnum.enumValues}
+            customFranchises={customFranchises}
+            showWithImages={showWithImages}
+            setShowWithImages={setShowWithImages}
+          />
 
-        {/* If showWithImages is true and we have itemIds to check, use an inner component to handle image loading */}
-        {showWithImages && itemsNeedingImageCheck.length > 0 && (
-          <ImageLoaderComponent itemIds={itemsNeedingImageCheck} />
-        )}
-        
-        <div className="mt-6">
-          {view === 'list' ? (
-            <ItemListView
-              items={filteredAndSortedItems}
-              isLoading={isLoading}
-              onEbayRefresh={handleEbayRefresh}
-              loadingListedItemId={loadingListedItemId}
-              loadingSoldItemId={loadingSoldItemId}
-              loadingItemId={loadingItemId}
-              onSort={handleSort}
-              sortDescriptor={sortDescriptor}
-              showSold={showSold}
-            />
-          ) : (
-            <ItemGridView
-              items={filteredAndSortedItems}
-              isLoading={isLoading}
-              onDelete={deleteItem}
-              showSold={showSold}
-              loadingItemId={loadingItemId}
-            />
+          {/* If showWithImages is true and we have itemIds to check, use an inner component to handle image loading */}
+          {showWithImages && itemsNeedingImageCheck.length > 0 && !isLoading && (
+            <div key="image-loader-wrapper">
+              <ImageLoaderComponent key={`image-loader-${Date.now()}`} itemIds={itemsNeedingImageCheck} />
+            </div>
           )}
-        </div>
-
-        {/* Empty state */}
-        {!isLoading && filteredAndSortedItems.length === 0 && (
-          <div className="bg-card dark:bg-card/60 dark:border-border dark:border-l-primary/30 dark:border-l-4 p-8 rounded-lg border border-border mt-6 text-center">
-            <h3 className="text-lg font-medium mb-2 dark:text-foreground">No items found</h3>
-            <p className="text-muted-foreground dark:text-muted-foreground mb-4">
-              {showSold 
-                ? "You don't have any sold items matching your filters." 
-                : "Your collection is empty or no items match your current filters."}
-            </p>
-            <AddItemModal
-              onAddItem={addItem}
-              customTypes={customTypes}
-              customFranchises={customFranchises}
-              customBrands={customBrands}
-              onLoadCustomTypes={loadCustomTypes}
-              onLoadCustomFranchises={loadCustomFranchises}
-              onLoadCustomBrands={loadCustomBrands}
-              isLoading={isLoading}
-            />
+          
+          <div className="mt-6">
+            {view === 'list' ? (
+              <ItemListView
+                items={filteredAndSortedItems}
+                isLoading={isLoading}
+                onEbayRefresh={handleEbayRefresh}
+                loadingListedItemId={loadingListedItemId}
+                loadingSoldItemId={loadingSoldItemId}
+                loadingItemId={loadingItemId}
+                onSort={handleSort}
+                sortDescriptor={sortDescriptor}
+                showSold={showSold}
+              />
+            ) : (
+              <ItemGridView
+                items={filteredAndSortedItems}
+                isLoading={isLoading}
+                onDelete={deleteItem}
+                showSold={showSold}
+                loadingItemId={loadingItemId}
+              />
+            )}
           </div>
-        )}
 
-        {/* Items count footer */}
-        <div className="mt-6 text-sm text-muted-foreground dark:text-muted-foreground text-center">
-          {isLoading ? 'Loading items...' : `Showing ${totalCount} ${totalCount === 1 ? 'item' : 'items'}`}
-        </div>
-      </main>
+          {/* Empty state */}
+          {!isLoading && filteredAndSortedItems.length === 0 && (
+            <div className="bg-card dark:bg-card/60 dark:border-border dark:border-l-primary/30 dark:border-l-4 p-8 rounded-lg border border-border mt-6 text-center">
+              <h3 className="text-lg font-medium mb-2 dark:text-foreground">No items found</h3>
+              <p className="text-muted-foreground dark:text-muted-foreground mb-4">
+                {showSold 
+                  ? "You don't have any sold items matching your filters." 
+                  : "Your collection is empty or no items match your current filters."}
+              </p>
+              <AddItemModal
+                onAddItem={addItem}
+                customTypes={customTypes}
+                customFranchises={customFranchises}
+                customBrands={customBrands}
+                onLoadCustomTypes={loadCustomTypes}
+                onLoadCustomFranchises={loadCustomFranchises}
+                onLoadCustomBrands={loadCustomBrands}
+                isLoading={isLoading}
+              />
+            </div>
+          )}
 
-      <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border dark:border-border">
-        <div className="text-center text-sm text-muted-foreground dark:text-muted-foreground">
-          © 2024 <span className="dark:text-purple-400">Collectopedia</span>. All rights reserved.
-        </div>
-      </footer>
-    </div>
+          {/* Items count footer */}
+          <div className="mt-6 text-sm text-muted-foreground dark:text-muted-foreground text-center">
+            {isLoading ? 'Loading items...' : `Showing ${totalCount} ${totalCount === 1 ? 'item' : 'items'}`}
+          </div>
+        </main>
+
+        <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border dark:border-border">
+          <div className="text-center text-sm text-muted-foreground dark:text-muted-foreground">
+            © 2024 <span className="dark:text-purple-400">Collectopedia</span>. All rights reserved.
+          </div>
+        </footer>
+      </div>
+    </>
   );
 }
 
@@ -569,9 +584,12 @@ function CatalogInner({
 function ImageLoaderComponent({ itemIds }: { itemIds: string[] }) {
   const { loadImages, imageCache, hasCompletedLoading } = useImageCache();
   
-  // Add diagnostic logging
+  // Store itemIds in a ref to prevent dependency changes that cause re-renders
+  const itemIdsRef = useRef<string[]>(itemIds);
+  
+  // Add diagnostic logging - only run once when mounted
   useEffect(() => {
-    console.log('[IMAGE LOADER] Component mounted with', itemIds.length, 'items to check');
+    console.log('[IMAGE LOADER] Component mounted with', itemIdsRef.current.length, 'items to check');
     
     // Log the current state of the image cache
     console.log('[IMAGE LOADER] Current image cache state:', {
@@ -579,13 +597,11 @@ function ImageLoaderComponent({ itemIds }: { itemIds: string[] }) {
       completedLoadingKeys: Object.keys(hasCompletedLoading).length,
       itemsWithImages: Object.keys(imageCache).filter((id: string) => imageCache[id]?.length > 0).length
     });
-  }, [itemIds.length, imageCache, hasCompletedLoading]);
-  
-  // Load images for these items when the component mounts
-  useEffect(() => {
-    if (itemIds.length > 0) {
-      console.log('[IMAGE LOADER] Loading images for items with "Has Images" filter:', itemIds.length);
-      loadImages(itemIds);
+    
+    // Only load images once when the component mounts
+    if (itemIdsRef.current.length > 0) {
+      console.log('[IMAGE LOADER] Loading images for items with "Has Images" filter:', itemIdsRef.current.length);
+      loadImages(itemIdsRef.current);
       
       // Add a timeout to log cache state after images have had time to load
       const timer = setTimeout(() => {
@@ -598,8 +614,31 @@ function ImageLoaderComponent({ itemIds }: { itemIds: string[] }) {
       
       return () => clearTimeout(timer);
     }
-  }, [itemIds, loadImages, imageCache, hasCompletedLoading]);
+  // Empty dependency array to ensure this only runs once when mounted
+  }, []);
   
   // This is just a loading handler, doesn't render anything
+  return null;
+}
+
+// Updated ImagePreloader to use the context directly
+function ImagePreloader({ items }: { items: SelectItemType[] }) {
+  // Get the preloadItemImages function from the context
+  const { preloadItemImages } = useImageCache();
+  
+  // Only run this effect once when the component mounts
+  useEffect(() => {
+    if (items.length > 0) {
+      console.log('[PRELOADER] Preloading images for all items on initial load');
+      
+      const soldItems = items.filter((item: SelectItemType) => item.isSold).map((item: SelectItemType) => item.id);
+      const unsoldItems = items.filter((item: SelectItemType) => !item.isSold).map((item: SelectItemType) => item.id);
+      
+      // Preload all images at once
+      preloadItemImages(soldItems, unsoldItems);
+    }
+  }, [items.length, preloadItemImages]); // Add preloadItemImages to dependencies
+
+  // This component doesn't render anything visible
   return null;
 } 

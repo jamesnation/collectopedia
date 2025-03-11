@@ -9,6 +9,7 @@ interface ImageCacheContextType {
   imageCache: Record<string, SelectImage[]>;
   isLoading: Record<string, boolean>;
   loadImages: (itemIds: string[]) => void;
+  preloadItemImages: (soldItemIds: string[], unsoldItemIds: string[]) => void;
   invalidateCache: (itemId?: string) => void;
   // New helper to determine if an item has actual images
   hasImages: (itemId: string) => boolean;
@@ -22,6 +23,7 @@ const ImageCacheContext = createContext<ImageCacheContextType>({
   isLoading: {},
   hasCompletedLoading: {},
   loadImages: () => {},
+  preloadItemImages: () => {},
   invalidateCache: () => {},
   hasImages: () => false,
 });
@@ -47,8 +49,10 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     
     return {};
   });
-  
+
+  // Track items that are currently loading
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
+  
   // Initialize completed loading state based on cached images
   const [hasCompletedLoading, setHasCompletedLoading] = useState<Record<string, boolean>>(() => {
     return Object.keys(imageCache).reduce((acc, id) => ({
@@ -56,6 +60,9 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       [id]: true
     }), {});
   });
+
+  // Track the most recently requested batch of items for debugging
+  const [lastRequestedItems, setLastRequestedItems] = useState<string[]>([]);
   
   // Save cache to localStorage when it changes
   useEffect(() => {
@@ -83,7 +90,10 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     
     console.log('[CACHE] loadImages called with', itemIds.length, 'items');
     
-    // Filter out items that are already loading
+    // Store the last requested items for debugging
+    setLastRequestedItems(itemIds);
+
+    // Filter out items that are already loading to avoid double loading
     const idsToLoad = itemIds.filter(id => !isLoading[id]);
     
     // Even if an item has completed loading before, we should reload it 
@@ -94,12 +104,13 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     }
     
     // If not forcing reload, further filter out items that have already completed loading
+    // This is key to preventing reloads when toggling filters
     const filteredIdsToLoad = shouldForceReload 
       ? idsToLoad 
       : idsToLoad.filter(id => !hasCompletedLoading[id]);
     
     if (!filteredIdsToLoad.length) {
-      console.log('[CACHE] All requested images already cached or loading');
+      console.log('[CACHE] All requested images already cached or loading - no new loads needed');
       return;
     }
     
@@ -172,6 +183,31 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     console.log('[CACHE] Completed loading all image batches');
   };
 
+  // NEW FUNCTION: Preload both sold and unsold item images at once
+  // This ensures images are loaded once regardless of filter changes
+  const preloadItemImages = async (soldItemIds: string[], unsoldItemIds: string[]) => {
+    console.log('[CACHE] preloadItemImages called with', soldItemIds.length, 'sold items and', unsoldItemIds.length, 'unsold items');
+    
+    // Combine both arrays and deduplicate using Set
+    const allItemIds = [...new Set([...soldItemIds, ...unsoldItemIds])];
+    
+    // Skip items that are already loading or completed
+    const filteredItemIds = allItemIds.filter(id => 
+      !isLoading[id] && !hasCompletedLoading[id]
+    );
+    
+    console.log('[CACHE] Combined unique items to load:', allItemIds.length);
+    console.log('[CACHE] After filtering already loaded items:', filteredItemIds.length);
+    
+    if (filteredItemIds.length === 0) {
+      console.log('[CACHE] All items already cached or loading, no additional loading needed');
+      return;
+    }
+    
+    // Call the existing loadImages function with filtered IDs
+    loadImages(filteredItemIds);
+  };
+
   const invalidateCache = (itemId?: string) => {
     if (itemId) {
       console.log('[CACHE] Invalidating cache for item', itemId);
@@ -202,7 +238,8 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     <ImageCacheContext.Provider value={{ 
       imageCache, 
       isLoading, 
-      loadImages, 
+      loadImages,
+      preloadItemImages,
       invalidateCache,
       hasImages,
       hasCompletedLoading

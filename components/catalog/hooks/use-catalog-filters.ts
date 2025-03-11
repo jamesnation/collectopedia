@@ -242,6 +242,16 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     )).sort((a, b) => b - a);
   }, [items]);
 
+  // Memoize the items needing image check to prevent unnecessary recalculations
+  const itemsNeedingImageCheck = useMemo(() => {
+    if (!showWithImages) return [];
+    
+    // Only return IDs for items that haven't completed loading yet
+    return items
+      .map(item => item.id)
+      .filter(id => !hasCompletedLoading[id]);
+  }, [items, showWithImages, hasCompletedLoading]);
+
   return {
     // View state
     view,
@@ -279,6 +289,6 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     totalCount: filteredAndSortedItems.length,
     
     // Helper data for image filtering
-    itemsNeedingImageCheck: showWithImages ? items.map(item => item.id) : [],
+    itemsNeedingImageCheck,
   };
 } 

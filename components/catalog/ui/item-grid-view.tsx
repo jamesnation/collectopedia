@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Loader2, Eye, ImageOff } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,27 +36,70 @@ export function ItemGridView({
     hasImages
   } = useImageCache();
   const { formatCurrency } = useRegionContext();
+  
+  // NEW: Track previously loaded items to avoid redundant loading
+  const loadedItemsRef = useRef<Set<string>>(new Set());
+  
+  // NEW: Track the last showSold value to detect changes
+  const prevShowSoldRef = useRef<boolean>(showSold);
 
-  // Load images when items change
+  // Load images when items change - optimized for grid view
   useEffect(() => {
     if (items.length > 0 && !isLoading) {
-      const itemIds = items.map(item => item.id);
-      const visibleItemIds = itemIds.slice(0, 20); // Load first 20 items immediately
+      console.log('[GRID-VIEW] Items or filters changed, checking for new images to load');
+      
+      // Find items that haven't been loaded yet
+      const itemsToLoad = items
+        .map(item => item.id)
+        .filter(id => !loadedItemsRef.current.has(id));
+      
+      if (itemsToLoad.length === 0) {
+        console.log('[GRID-VIEW] All visible items already requested, skipping load');
+        return;
+      }
+      
+      console.log('[GRID-VIEW] Loading', itemsToLoad.length, 'new items');
+      
+      const visibleItemIds = itemsToLoad.slice(0, 20); // Load first 20 items immediately
       
       // Load visible items first
       loadImages(visibleItemIds);
       
+      // Mark these items as loaded
+      visibleItemIds.forEach(id => loadedItemsRef.current.add(id));
+      
       // Load remaining items after a delay
-      if (itemIds.length > visibleItemIds.length) {
-        const remainingItemIds = itemIds.slice(20);
+      if (itemsToLoad.length > visibleItemIds.length) {
+        const remainingItemIds = itemsToLoad.slice(20);
         if ('requestIdleCallback' in window) {
-          (window as any).requestIdleCallback(() => loadImages(remainingItemIds));
+          (window as any).requestIdleCallback(() => {
+            loadImages(remainingItemIds);
+            // Mark these items as loaded too
+            remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
+          });
         } else {
-          setTimeout(() => loadImages(remainingItemIds), 300);
+          setTimeout(() => {
+            loadImages(remainingItemIds);
+            // Mark these items as loaded too
+            remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
+          }, 300);
         }
       }
     }
-  }, [items, isLoading, loadImages]);
+  }, [
+    items.map(i => i.id).join(),
+    isLoading, 
+    loadImages
+  ]);
+  
+  // Update the previous showSold ref when it changes
+  useEffect(() => {
+    // Only log when the value actually changes
+    if (prevShowSoldRef.current !== showSold) {
+      console.log('[GRID-VIEW] showSold changed from', prevShowSoldRef.current, 'to', showSold);
+    }
+    prevShowSoldRef.current = showSold;
+  }, [showSold]);
 
   // Get optimized image URL for an item
   const getItemImage = useMemo(() => (itemId: string): string => {
@@ -197,4 +240,4 @@ export function ItemGridView({
       )}
     </div>
   );
-} 
+}
