@@ -11,6 +11,8 @@ import { useImageCache } from '../context/image-cache-context';
 import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image';
 import { useRegionContext } from '@/contexts/region-context';
 import { getResponsiveImageUrl } from '../utils/image-loader';
+import { OptimizedImage } from '@/components/ui/optimized-image';
+import { useImageService } from '@/services/image-service';
 
 interface ItemGridViewProps {
   items: CatalogItem[];
@@ -36,11 +38,12 @@ export function ItemGridView({
     hasImages
   } = useImageCache();
   const { formatCurrency } = useRegionContext();
+  const imageService = useImageService();
   
-  // NEW: Track previously loaded items to avoid redundant loading
+  // Track previously loaded items to avoid redundant loading
   const loadedItemsRef = useRef<Set<string>>(new Set());
   
-  // NEW: Track the last showSold value to detect changes
+  // Track the last showSold value to detect changes
   const prevShowSoldRef = useRef<boolean>(showSold);
 
   // Load images when items change - optimized for grid view
@@ -104,12 +107,12 @@ export function ItemGridView({
   // Get optimized image URL for an item
   const getItemImage = useMemo(() => (itemId: string): string => {
     if (imageCache[itemId]?.length > 0) {
-      return getResponsiveImageUrl(imageCache[itemId][0].url, 'thumbnail');
+      return imageCache[itemId][0].url;
     }
     
     const item = items.find(i => i.id === itemId);
     if (item?.image) {
-      return getResponsiveImageUrl(item.image, 'thumbnail');
+      return item.image;
     }
     
     return placeholderImage;
@@ -122,61 +125,81 @@ export function ItemGridView({
     }));
   };
 
-  const renderImage = (item: CatalogItem) => {
+  // New function to get all images for an item for prefetching
+  const getItemImageUrls = (itemId: string): string[] => {
+    const urls: string[] = [];
+    
+    if (imageCache[itemId]?.length > 0) {
+      imageCache[itemId].forEach(image => urls.push(image.url));
+    }
+    
+    return urls;
+  };
+
+  // Prefetch nearby images for better UX when hovering or viewing
+  const prefetchNearbyImages = (currentItemId: string, index: number) => {
+    // Get the 3 items before and after the current one
+    const startIdx = Math.max(0, index - 3);
+    const endIdx = Math.min(items.length - 1, index + 3);
+    
+    const nearbyItemIds = items
+      .slice(startIdx, endIdx + 1)
+      .filter(item => item.id !== currentItemId)
+      .map(item => item.id);
+    
+    // Gather URLs for these items
+    const nearbyUrls: string[] = [];
+    nearbyItemIds.forEach(id => {
+      if (imageCache[id]?.length > 0) {
+        nearbyUrls.push(getItemImage(id));
+      }
+    });
+    
+    // Use image service to prioritize loading these
+    if (nearbyUrls.length > 0) {
+      nearbyUrls.forEach(url => {
+        imageService.preloadImage(url, 80); // Use NEAR_VIEWPORT priority
+      });
+    }
+  };
+
+  const renderImage = (item: CatalogItem, index: number) => {
     const itemId = item.id;
     const hasActualImage = hasImages(itemId) || (item.image !== null && item.image !== undefined);
-    const isItemLoading = isLoadingImages[itemId];
-    const isCompleted = hasCompletedLoading[itemId];
-    const isImageLoaded = loadedImages[itemId];
-    const isPriority = items.findIndex(i => i.id === itemId) < 4;
-
-    // Show loading state
-    if (isItemLoading || (!isCompleted && !hasActualImage)) {
+    const imageUrl = getItemImage(itemId);
+    const isPriority = index < 8; // Prioritize first 8 items
+    
+    // No image available
+    if (!hasActualImage || !imageUrl) {
       return (
-        <div className="flex items-center justify-center h-60 w-full bg-muted dark:bg-card/40">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
+        <div className="rounded-md overflow-hidden w-full h-60">
+          <PlaceholderImage className="w-full h-full" />
         </div>
       );
     }
 
-    // Show actual image
-    if (hasActualImage) {
-      return (
-        <div className="relative h-60 w-full overflow-hidden">
-          <div className="absolute inset-0 bg-muted dark:bg-gray-800" />
-          
-          {!isImageLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center bg-muted/70 dark:bg-card/50 z-10">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
-            </div>
-          )}
-          
-          <Image
-            src={getItemImage(itemId)}
-            alt={item.name || 'Item image'}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            style={{ objectFit: 'contain', objectPosition: 'center' }}
-            className={`transition-all duration-500 ${isImageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.97]'}`}
-            onLoadingComplete={() => handleImageLoad(itemId)}
-            priority={isPriority}
-            loading={isPriority ? 'eager' : 'lazy'}
-            quality={75}
-          />
-          
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 z-20">
-            <Button variant="secondary" size="sm" className="gap-1 dark:bg-primary dark:text-foreground dark:hover:bg-primary/80">
-              <Eye className="h-4 w-4" /> View Details
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    // Show placeholder
+    // Use our OptimizedImage component
     return (
-      <div className="rounded-md overflow-hidden w-full h-60">
-        <PlaceholderImage className="w-full h-full" />
+      <div className="relative h-60 w-full overflow-hidden group">
+        <OptimizedImage
+          src={imageUrl}
+          alt={item.name || 'Item image'}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          className="object-contain transition-all duration-500"
+          priority={isPriority}
+          size="medium"
+          onLoad={() => handleImageLoad(itemId)}
+          containerClassName="w-full h-full"
+        />
+        
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 z-20"
+          onMouseEnter={() => prefetchNearbyImages(itemId, index)}
+        >
+          <Button variant="secondary" size="sm" className="gap-1 dark:bg-primary dark:text-foreground dark:hover:bg-primary/80">
+            <Eye className="h-4 w-4" /> View Details
+          </Button>
+        </div>
       </div>
     );
   };
@@ -200,11 +223,14 @@ export function ItemGridView({
           </Card>
         ))
       ) : (
-        items.map((item) => (
+        items.map((item, index) => (
           <Card key={item.id} className="bg-card border-border dark:bg-card/60 dark:border-border relative flex flex-col overflow-hidden">
-            <div className="relative">
+            <div 
+              className="relative"
+              data-item-id={item.id} // Add data attribute for intersection observer
+            >
               <Link href={`/item/${item.id}`}>
-                {renderImage(item)}
+                {renderImage(item, index)}
               </Link>
             </div>
 
