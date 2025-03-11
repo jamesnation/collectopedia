@@ -8,6 +8,7 @@ import Sidebar from "@/components/sidebar";
 import { auth } from "@clerk/nextjs/server";
 import { getProfileByUserIdAction } from "@/actions/profiles-actions";
 import { createProfile } from "@/db/queries/profiles-queries";
+import { cookies } from "next/headers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,6 +17,25 @@ export const metadata: Metadata = {
   description: "Manage your collection with ease",
 };
 
+// This function is optimized to check for profiles only once per session
+async function ensureUserProfile(userId: string) {
+  const profileChecked = cookies().get('profile-checked');
+  
+  if (!profileChecked) {
+    const res = await getProfileByUserIdAction(userId);
+    
+    if (!res.data) {
+      await createProfile({ userId });
+    }
+    
+    // Set a cookie to avoid checking on every page load
+    cookies().set('profile-checked', 'true', { 
+      maxAge: 60 * 60 * 24, // 24 hours
+      path: '/' 
+    });
+  }
+}
+
 export default async function RootLayout({
   children,
 }: {
@@ -23,21 +43,11 @@ export default async function RootLayout({
 }) {
   const { userId } = auth();
   
-  console.log("Root Layout - User ID:", userId);
-
   if (userId) {
     try {
-      console.log("Checking for existing profile...");
-      const res = await getProfileByUserIdAction(userId);
-      console.log("Profile check result:", res);
-      
-      if (!res.data) {
-        console.log("No profile found, creating new profile...");
-        const newProfile = await createProfile({ userId });
-        console.log("New profile created:", newProfile);
-      }
+      await ensureUserProfile(userId);
     } catch (error) {
-      console.error("Error in profile creation flow:", error);
+      // Silent fail, will retry on next page load
     }
   }
 

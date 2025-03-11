@@ -19,7 +19,7 @@ const nextConfig = {
       },
     ],
   },
-  // Add additional experimental features if needed
+  // Add additional experimental features for performance
   experimental: {
     optimizeCss: true,
     // Enable more aggressive optimizations
@@ -28,7 +28,24 @@ const nextConfig = {
     },
     // Improve image optimization
     largePageDataBytes: 128 * 1000, // 128KB
+    // New optimizations for improved navigation performance
+    ppr: true, // Enable Partial Prerendering for faster initial page loads
+    serverComponentsExternalPackages: [],
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
   },
+  // Optimize static site generation
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+  // Performance-focused settings for production
+  swcMinify: true,
+  reactStrictMode: true,
+  poweredByHeader: false,
+  compress: true,
 }
 
 export default nextConfig

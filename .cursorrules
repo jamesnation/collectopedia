@@ -31,3 +31,8 @@ Follow these rules:
 
 ## Building projects
 Never execute a terminal command that starts a development or production server (e.g., npm run dev, npm run preview). Instead, provide the exact command the user should run and instruct them to execute it manually. If testing requires running a local server, ask the user to start it themselves and provide any relevant console logs for debugging.
+
+## Maintaining projects
+When you create a new file, make sure to add a comment at the top of the file with the changes you made.
+
+When you update/make changes to a file, make sure to rewrite the comment at the top of the file with the changes you made. If there is no comment, then add one.

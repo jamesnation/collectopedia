@@ -10,11 +10,13 @@ export default async function CatalogPage() {
   // Get the current user ID from the auth sessions
   const { userId } = auth();
   
-  // Fetch the initial data
-  const itemsResult = await getItemsByUserIdAction(userId as string);
-  const typesResult = await getCustomTypesAction();
-  const franchisesResult = await getCustomFranchisesAction();
-  const brandsResult = await getCustomBrandsAction();
+  // Fetch the initial data in parallel
+  const [itemsResult, typesResult, franchisesResult, brandsResult] = await Promise.all([
+    getItemsByUserIdAction(userId as string),
+    getCustomTypesAction(),
+    getCustomFranchisesAction(),
+    getCustomBrandsAction()
+  ]);
 
   // Ensure we always pass arrays, even if the fetch fails
   const initialItems = itemsResult.isSuccess && itemsResult.data ? itemsResult.data : [];

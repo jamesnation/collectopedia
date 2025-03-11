@@ -17,8 +17,7 @@ export default function Sidebar() {
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
-  const handleNavClick = (href: string) => {
-    router.push(href);
+  const closeMobileSidebar = () => {
     if (isMobile) {
       setIsOpen(false);
     }
@@ -27,14 +26,14 @@ export default function Sidebar() {
   const SidebarContent = () => (
     <>
       <nav className="space-y-1 flex-grow">
-        <button onClick={() => handleNavClick('/my-collection')} className="flex items-center space-x-2 p-2 rounded hover:bg-muted w-full text-left text-foreground hover:text-purple-400 transition-colors">
+        <Link href="/my-collection" prefetch={true} onClick={closeMobileSidebar} className="flex items-center space-x-2 p-2 rounded hover:bg-muted w-full text-left text-foreground hover:text-purple-400 transition-colors">
           <Package className="h-4 w-4" />
           <span>My Collection</span>
-        </button>
-        <button onClick={() => handleNavClick('/settings')} className="flex items-center space-x-2 p-2 rounded hover:bg-muted w-full text-left text-foreground hover:text-purple-400 transition-colors">
+        </Link>
+        <Link href="/settings" prefetch={true} onClick={closeMobileSidebar} className="flex items-center space-x-2 p-2 rounded hover:bg-muted w-full text-left text-foreground hover:text-purple-400 transition-colors">
           <Settings className="h-4 w-4" />
           <span>Settings</span>
-        </button>
+        </Link>
       </nav>
       
       <div className="mt-auto space-y-2">
@@ -60,11 +59,10 @@ export default function Sidebar() {
               </Button>
             </SignInButton>
             {isMobile && (
-              <Link href="/signup" className="block md:hidden">
+              <Link href="/signup" prefetch={true} className="block md:hidden" onClick={closeMobileSidebar}>
                 <Button
                   variant="default"
                   className="w-full bg-primary/70 text-primary-foreground hover:bg-primary/50"
-                  onClick={() => setIsOpen(false)}
                 >
                   Sign Up
                 </Button>
@@ -82,7 +80,7 @@ export default function Sidebar() {
         <>
           {/* Mobile Header */}
           <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-card shadow-sm border-b border-border flex items-center justify-between px-4">
-            <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
+            <Link href="/" prefetch={true} className="flex items-center" onClick={closeMobileSidebar}>
               <Package className="h-6 w-6 text-purple-400" />
               <span className="text-lg font-bold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
             </Link>
@@ -110,7 +108,7 @@ export default function Sidebar() {
       ) : (
         // Desktop Sidebar
         <aside className="hidden md:flex flex-col w-64 bg-card text-foreground p-4 h-screen text-sm border-r border-border">
-          <Link href="/" className="flex items-center mb-8">
+          <Link href="/" prefetch={true} className="flex items-center mb-8">
             <Package className="h-6 w-6 text-purple-400" />
             <span className="text-lg font-bold ml-3 bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">Collectopedia</span>
           </Link>

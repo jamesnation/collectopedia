@@ -16,12 +16,34 @@ type ActionResult<T> = {
   error?: string;
 };
 
+// Cache store to avoid redundant fetches during a request
+const itemsCache = new Map<string, { items: SelectItem[], timestamp: number }>();
+const CACHE_EXPIRY_MS = 30 * 1000; // 30 seconds cache
+
 export const getItemsByUserIdAction = async (userId: string): Promise<ActionResult<SelectItem[]>> => {
   try {
+    // Check cache first
+    const cacheKey = `items-${userId}`;
+    const now = Date.now();
+    const cachedData = itemsCache.get(cacheKey);
+    
+    // Return cached data if it's still fresh
+    if (cachedData && (now - cachedData.timestamp < CACHE_EXPIRY_MS)) {
+      return { isSuccess: true, data: cachedData.items };
+    }
+    
+    // Fetch fresh data
     const items = await getItemsByUserId(userId);
+    
+    // Update cache with new data
+    itemsCache.set(cacheKey, { items, timestamp: now });
+    
     return { isSuccess: true, data: items };
   } catch (error) {
-    console.error("Failed to get items:", error);
+    // Only log errors in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.error("Failed to get items:", error);
+    }
     return { isSuccess: false, error: "Failed to get items" };
   }
 };
