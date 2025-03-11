@@ -21,6 +21,7 @@ import { SelectImage } from '@/db/schema/images-schema';
 import { useImageCache } from '../context/image-cache-context';
 import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image';
 import { useRegionContext } from '@/contexts/region-context';
+import { getResponsiveImageUrl } from '../utils/image-loader';
 
 interface ItemListViewProps {
   items: CatalogItem[];
@@ -69,84 +70,68 @@ export function ItemListView({
     hasImages 
   } = useImageCache();
 
-  // Load images when items change
+  // Load images when items change - optimized for list view
   useEffect(() => {
     if (items.length > 0 && !isLoading) {
-      // Extract all item IDs for batch loading
-      const itemIds = items.map(item => item.id);
-      loadImages(itemIds);
+      // Load first 10 items immediately for faster initial render
+      const visibleItemIds = items.slice(0, 10).map(item => item.id);
+      loadImages(visibleItemIds);
+      
+      // Load remaining items after a delay
+      if (items.length > 10) {
+        const remainingItemIds = items.slice(10).map(item => item.id);
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(() => loadImages(remainingItemIds));
+        } else {
+          setTimeout(() => loadImages(remainingItemIds), 100);
+        }
+      }
     }
   }, [items, isLoading, loadImages]);
 
-  // Helper function to get the primary image for an item
+  // Optimized image URL getter with thumbnail size
   const getItemPrimaryImage = useMemo(() => (itemId: string): string => {
-    // If we have images from the cache, use the first one
-    if (imageCache[itemId] && imageCache[itemId].length > 0) {
-      return imageCache[itemId][0].url;
+    if (imageCache[itemId]?.length > 0) {
+      return getResponsiveImageUrl(imageCache[itemId][0].url, 'thumbnail');
     }
     
-    // Fall back to the item.image field if present
     const item = items.find(i => i.id === itemId);
-    if (item && item.image) {
-      return item.image;
+    if (item?.image) {
+      return getResponsiveImageUrl(item.image, 'thumbnail');
     }
     
-    // Use placeholder if no image is available
     return placeholderImage;
   }, [imageCache, items]);
 
   const handleImageLoad = (id: string) => {
-    console.log(`[LIST] Image loaded for item ${id}`);
     setLoadedImages(prev => ({
       ...prev,
       [id]: true
     }));
   };
 
-  // Add a diagnostic effect to log state changes
-  useEffect(() => {
-    if (items.length > 0) {
-      console.log('[LIST] Items changed, count:', items.length);
-    }
-  }, [items]);
-
-  useEffect(() => {
-    console.log('[LIST] LoadedImages state updated:', Object.keys(loadedImages).length, 'items loaded');
-  }, [loadedImages]);
-
-  // Add rendering diagnostics
   const renderImage = (item: CatalogItem) => {
     const itemId = item.id;
-    // Use the new hasImages helper from context
     const hasActualImage = hasImages(itemId) || (item.image !== null && item.image !== undefined);
     const isItemLoading = isLoadingImages[itemId];
     const isCompleted = hasCompletedLoading[itemId];
     const isImageLoaded = loadedImages[itemId];
+    const isPriority = items.indexOf(item) < 5; // Prioritize first 5 items
 
-    console.log(`[LIST] Rendering image for ${itemId}:`, { 
-      hasActualImage, 
-      isItemLoading, 
-      isImageLoaded,
-      isCompleted,
-      imageSource: hasActualImage ? 'actual' : 'placeholder'
-    });
-
-    // Still loading and not yet determined if has images
     if (isItemLoading || (!isCompleted && !hasActualImage)) {
       return (
         <div className="absolute inset-0 flex items-center justify-center bg-muted dark:bg-card/30">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground dark:text-primary" />
         </div>
       );
     }
     
-    // Loading completed and we know we have an actual image
     if (hasActualImage) {
       return (
         <>
           {!isImageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted dark:bg-card/30 z-10">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground dark:text-primary" />
             </div>
           )}
           <Image
@@ -155,18 +140,23 @@ export function ItemListView({
             width={80}
             height={80}
             style={{ objectFit: 'cover' }}
-            className={`rounded-md cursor-pointer transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`rounded-md cursor-pointer transition-all duration-300 ${
+              isImageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            }`}
             onLoad={() => handleImageLoad(itemId)}
+            priority={isPriority}
+            loading={isPriority ? 'eager' : 'lazy'}
+            quality={75}
           />
         </>
       );
     }
     
-    // Loading completed and we know we don't have an image - show placeholder
     return (
       <PlaceholderImage 
         width={80} 
         height={80}
+        className="rounded-md"
       />
     );
   };

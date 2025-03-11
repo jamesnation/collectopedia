@@ -7,12 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CatalogItem } from '../utils/schema-adapter';
 import { Button } from '@/components/ui/button';
-import { getImagesByItemIdAction } from '@/actions/images-actions';
-import { SelectImage } from '@/db/schema/images-schema';
 import { useImageCache } from '../context/image-cache-context';
 import { PlaceholderImage, PLACEHOLDER_IMAGE_PATH } from '@/components/ui/placeholder-image';
 import { useRegionContext } from '@/contexts/region-context';
-import { vercelImageLoader } from '../utils/image-loader';
+import { getResponsiveImageUrl } from '../utils/image-loader';
 
 interface ItemGridViewProps {
   items: CatalogItem[];
@@ -22,7 +20,6 @@ interface ItemGridViewProps {
   loadingItemId?: string | null;
 }
 
-// Replace the old placeholder with the new constant
 const placeholderImage = PLACEHOLDER_IMAGE_PATH;
 
 export function ItemGridView({
@@ -30,7 +27,6 @@ export function ItemGridView({
   isLoading,
   showSold
 }: ItemGridViewProps) {
-  // State to track image loading status
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const { 
     imageCache, 
@@ -44,99 +40,54 @@ export function ItemGridView({
   // Load images when items change
   useEffect(() => {
     if (items.length > 0 && !isLoading) {
-      // Extract all item IDs for batch loading
       const itemIds = items.map(item => item.id);
+      const visibleItemIds = itemIds.slice(0, 20); // Load first 20 items immediately
       
-      console.log(`[GRID] Loading images for ${itemIds.length} items${showSold ? ' (including sold items)' : ''}`);
-      
-      // Increase the number of priority items for faster initial loading
-      const visibleItemIds = itemIds.slice(0, 20); // Load more items initially
-      
-      // Load all visible items immediately
+      // Load visible items first
       loadImages(visibleItemIds);
       
-      // Load the rest after the visible items are processed
+      // Load remaining items after a delay
       if (itemIds.length > visibleItemIds.length) {
         const remainingItemIds = itemIds.slice(20);
-        // Use requestIdleCallback or setTimeout to defer loading of non-visible items
-        const loadRemaining = () => {
-          console.log('[GRID] Loading remaining', remainingItemIds.length, 'items');
-          loadImages(remainingItemIds);
-        };
-        
         if ('requestIdleCallback' in window) {
-          (window as any).requestIdleCallback(loadRemaining);
+          (window as any).requestIdleCallback(() => loadImages(remainingItemIds));
         } else {
-          // Reduce timeout to 300ms for faster loading of remaining items
-          setTimeout(loadRemaining, 300);
+          setTimeout(() => loadImages(remainingItemIds), 300);
         }
       }
     }
-  }, [items, isLoading, loadImages, showSold]);
+  }, [items, isLoading, loadImages]);
 
-  // Helper function to get the primary image for an item - simplified for performance
-  const getItemPrimaryImage = useMemo(() => (itemId: string): string => {
-    // If we have images from the cache, use the first one
-    if (imageCache[itemId] && imageCache[itemId].length > 0) {
-      // Get the base URL from Supabase - directly use the URL without modification
-      return imageCache[itemId][0].url;
+  // Get optimized image URL for an item
+  const getItemImage = useMemo(() => (itemId: string): string => {
+    if (imageCache[itemId]?.length > 0) {
+      return getResponsiveImageUrl(imageCache[itemId][0].url, 'thumbnail');
     }
     
-    // Fall back to the item.image field if present
     const item = items.find(i => i.id === itemId);
-    if (item && item.image) {
-      return item.image;
+    if (item?.image) {
+      return getResponsiveImageUrl(item.image, 'thumbnail');
     }
     
-    // Use placeholder if no image is available
     return placeholderImage;
   }, [imageCache, items]);
 
   const handleImageLoad = (id: string) => {
-    console.log(`[GRID] Image loaded for item ${id}`);
     setLoadedImages(prev => ({
       ...prev,
       [id]: true
     }));
   };
 
-  // Add diagnostic effects
-  useEffect(() => {
-    if (items.length > 0) {
-      console.log('[GRID] Items changed, count:', items.length);
-    }
-  }, [items]);
-
-  useEffect(() => {
-    console.log('[GRID] LoadedImages state updated:', Object.keys(loadedImages).length, 'items loaded');
-  }, [loadedImages]);
-
-  // Add rendering diagnostics
   const renderImage = (item: CatalogItem) => {
     const itemId = item.id;
-    // Use the new hasImages helper from context
     const hasActualImage = hasImages(itemId) || (item.image !== null && item.image !== undefined);
     const isItemLoading = isLoadingImages[itemId];
     const isCompleted = hasCompletedLoading[itemId];
     const isImageLoaded = loadedImages[itemId];
-    
-    // Track if this is a sold item for logging
-    const isSold = item.isSold;
-
-    // Determine if this is a priority image (first 4 items, likely above the fold)
     const isPriority = items.findIndex(i => i.id === itemId) < 4;
 
-    console.log(`[GRID] Rendering image for ${itemId}:`, { 
-      hasActualImage, 
-      isItemLoading, 
-      isImageLoaded,
-      isCompleted,
-      imageSource: hasActualImage ? 'actual' : 'placeholder',
-      isPriority,
-      isSold
-    });
-
-    // Still loading and not yet determined if has images
+    // Show loading state
     if (isItemLoading || (!isCompleted && !hasActualImage)) {
       return (
         <div className="flex items-center justify-center h-60 w-full bg-muted dark:bg-card/40">
@@ -145,23 +96,20 @@ export function ItemGridView({
       );
     }
 
-    // Loading completed and we know we have an actual image
+    // Show actual image
     if (hasActualImage) {
       return (
         <div className="relative h-60 w-full overflow-hidden">
-          {/* Stable placeholder background during loading to prevent layout shift */}
-          <div className="absolute inset-0 bg-muted dark:bg-gray-800"></div>
+          <div className="absolute inset-0 bg-muted dark:bg-gray-800" />
           
-          {/* Loading spinner on top while image is still loading */}
           {!isImageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted/70 dark:bg-card/50 z-10">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-primary" />
             </div>
           )}
           
-          {/* The actual image with smoother transitions */}
           <Image
-            src={getItemPrimaryImage(itemId)}
+            src={getItemImage(itemId)}
             alt={item.name || 'Item image'}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -171,10 +119,8 @@ export function ItemGridView({
             priority={isPriority}
             loading={isPriority ? 'eager' : 'lazy'}
             quality={75}
-            unoptimized={false}
           />
           
-          {/* Hover overlay */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 z-20">
             <Button variant="secondary" size="sm" className="gap-1 dark:bg-primary dark:text-foreground dark:hover:bg-primary/80">
               <Eye className="h-4 w-4" /> View Details
@@ -184,12 +130,10 @@ export function ItemGridView({
       );
     }
 
-    // Loading completed and we know we don't have an image - show placeholder with consistent size
+    // Show placeholder
     return (
       <div className="rounded-md overflow-hidden w-full h-60">
-        <PlaceholderImage 
-          className="w-full h-full" 
-        />
+        <PlaceholderImage className="w-full h-full" />
       </div>
     );
   };

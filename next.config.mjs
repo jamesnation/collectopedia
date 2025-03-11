@@ -9,8 +9,6 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     // Enable formats like WebP and AVIF for better compression
     formats: ['image/webp', 'image/avif'],
-    // Disable the remote pattern check for faster loading
-    dangerouslyAllowSVG: true,
     // Remove image size limit for large images
     remotePatterns: [
       {
