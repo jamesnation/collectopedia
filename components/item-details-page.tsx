@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X, RefreshCw, BarChart4, Percent, ExternalLink, Info } from "lucide-react"
-import { getItemByIdAction, updateItemAction } from "@/actions/items-actions"
+import { ArrowLeft, Edit, Loader2, Save, ChevronLeft, ChevronRight, X, RefreshCw, BarChart4, Percent, ExternalLink, Info, Trash2 } from "lucide-react"
+import { getItemByIdAction, updateItemAction, deleteItemAction } from "@/actions/items-actions"
 import { createSoldItemAction, getSoldItemByItemIdAction, updateSoldItemAction } from "@/actions/sold-items-actions"
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
 import { SelectSoldItem } from "@/db/schema/sold-items-schema"
@@ -35,6 +35,7 @@ import { franchiseEnum, itemTypeEnum } from "@/db/schema/items-schema"
 import { GripVertical } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { arrayMove } from '@dnd-kit/sortable'; // Keep arrayMove for the handleImageReorder function
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 
 // Create dynamic imports for our DnD components
 const DndWrapper = dynamic(() => import('./dnd-wrapper'), { 
@@ -876,6 +877,32 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     e.preventDefault();
     console.log('Sold price form submitted with value:', soldPrice);
     handleEditSave();
+  };
+
+  const handleDelete = async () => {
+    if (item) {
+      try {
+        const result = await deleteItemAction(item.id);
+        
+        if (result.isSuccess) {
+          toast({
+            title: "Item deleted",
+            description: "The item has been deleted successfully.",
+          });
+          // Navigate back to the collection page
+          router.push('/my-collection');
+        } else {
+          throw new Error(result.error || 'Failed to delete item');
+        }
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete item. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   if (isLoading) {
@@ -1766,6 +1793,30 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                   </div>
                 )}
               </CardContent>
+              <CardFooter className="border-t pt-6 flex justify-end">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive" size="sm">
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      <span className="text-xs">Delete</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="dark:bg-card dark:border-border">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure you want to delete this item?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the item from your collection.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="dark:bg-card dark:border-border dark:text-foreground dark:hover:bg-muted/40">Cancel</AlertDialogCancel>
+                      <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardFooter>
             </Card>
           </div>
         </div>
