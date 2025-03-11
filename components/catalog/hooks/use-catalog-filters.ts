@@ -168,6 +168,9 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
         case 'soldPrice':
           comparison = (showSold ? (a.soldPrice ?? 0) - (b.soldPrice ?? 0) : a.value - b.value);
           break;
+        case 'ebayListed':
+          comparison = (a.ebayListed ?? 0) - (b.ebayListed ?? 0);
+          break;
         case 'soldDate':
           if (a.soldDate && b.soldDate) {
             comparison = new Date(a.soldDate).getTime() - new Date(b.soldDate).getTime();
