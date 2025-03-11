@@ -1,3 +1,8 @@
+/*
+ * Updated: Removed the Actions column and delete functionality from the item list view.
+ * The delete functionality is still available in the item details page.
+ */
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
@@ -22,7 +27,6 @@ interface ItemListViewProps {
   isLoading: boolean;
   sortDescriptor: SortDescriptor;
   onSort: (column: string) => void;
-  onDelete: (id: string) => void;
   onEbayRefresh?: (id: string, name: string, type: 'sold' | 'listed') => void;
   showSold: boolean;
   loadingItemId?: string | null;
@@ -48,7 +52,6 @@ export function ItemListView({
   isLoading,
   sortDescriptor,
   onSort,
-  onDelete,
   onEbayRefresh,
   showSold,
   loadingItemId,
@@ -230,7 +233,6 @@ export function ItemListView({
                 </Button>
               </TableHead>
             )}
-            <TableHead className="w-24 text-left pl-4">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -290,32 +292,6 @@ export function ItemListView({
                 {showSold && (
                   <TableCell className="dark:text-foreground pl-4">{item.soldDate ? formatDate(item.soldDate) : 'N/A'}</TableCell>
                 )}
-                <TableCell className="actions-cell pl-4">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20 dark:text-destructive dark:hover:text-destructive-foreground dark:hover:bg-destructive/20"
-                        disabled={loadingItemId === item.id}
-                      >
-                        {loadingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="dark:bg-card dark:border-border">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="dark:text-foreground">Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription className="dark:text-muted-foreground">
-                          This action cannot be undone. This will permanently delete the item from your collection.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="dark:bg-card/50 dark:text-foreground dark:hover:bg-card/80 dark:border-border">Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDelete(item.id)} className="dark:bg-primary dark:hover:bg-primary/80">Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </TableCell>
               </TableRow>
             ))
           )}

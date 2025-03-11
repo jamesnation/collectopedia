@@ -1,3 +1,9 @@
+/*
+ * Updated: Removed the onDelete prop from the ItemListView component since the 
+ * delete functionality has been removed from the list view.
+ * The delete functionality is still available in the item details page.
+ */
+
 "use client"
 
 import React, { useEffect, useState, useCallback } from 'react'
@@ -503,7 +509,6 @@ function CatalogInner({
             <ItemListView
               items={filteredAndSortedItems}
               isLoading={isLoading}
-              onDelete={deleteItem}
               onEbayRefresh={handleEbayRefresh}
               loadingListedItemId={loadingListedItemId}
               loadingSoldItemId={loadingSoldItemId}
