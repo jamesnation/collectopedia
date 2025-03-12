@@ -169,13 +169,13 @@ export function CollectionsTab() {
             AI Vision Price Refresh
           </CardTitle>
           <CardDescription className="dark:text-muted-foreground">
-            Refresh all eBay values using AI Vision technology
+            Refresh all values using AI Vision technology
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              AI Vision analyzes both the images and titles of your items to find the most accurate prices on eBay.
+              AI Vision analyzes both the images and titles of your items to find the most accurate prices.
               Use this button to refresh all values at once.
             </p>
             
@@ -192,36 +192,38 @@ export function CollectionsTab() {
                 </div>
               </div>
             ) : (
-              <Button 
-                onClick={refreshAllEbayValues}
-                className="w-full"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh All Prices with AI Vision
-              </Button>
+              <div className="flex justify-start">
+                <Button 
+                  onClick={refreshAllEbayValues}
+                  className="px-6"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh All Prices with AI Vision
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Data Import/Export Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <CSVImport
-          onAddItem={handleAddItem}
-          onCreateCustomType={handleCreateCustomType}
-          onCreateCustomFranchise={handleCreateCustomFranchise}
-          onCreateCustomBrand={handleCreateCustomBrand}
-          onLoadCustomTypes={loadCustomTypes}
-          onLoadCustomFranchises={loadCustomFranchises}
-          onLoadCustomBrands={loadCustomBrands}
-          defaultTypeOptions={itemTypeEnum.enumValues}
-          defaultFranchiseOptions={franchiseEnum.enumValues}
-          defaultBrandOptions={DEFAULT_BRANDS}
-        />
-        
-        <CSVExport />
-      </div>
+      {/* CSV Import Component - Now in single column */}
+      <CSVImport
+        onAddItem={handleAddItem}
+        onCreateCustomType={handleCreateCustomType}
+        onCreateCustomFranchise={handleCreateCustomFranchise}
+        onCreateCustomBrand={handleCreateCustomBrand}
+        onLoadCustomTypes={loadCustomTypes}
+        onLoadCustomFranchises={loadCustomFranchises}
+        onLoadCustomBrands={loadCustomBrands}
+        defaultTypeOptions={itemTypeEnum.enumValues}
+        defaultFranchiseOptions={franchiseEnum.enumValues}
+        defaultBrandOptions={DEFAULT_BRANDS}
+      />
       
+      {/* CSV Export Component - Now in single column */}
+      <CSVExport />
+      
+      {/* Danger Zone Card */}
       <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive dark:text-red-400">

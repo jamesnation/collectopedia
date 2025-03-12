@@ -34,8 +34,6 @@ interface CatalogProps {
   initialTypes: { id: string; name: string }[];
   initialFranchises: { id: string; name: string }[];
   initialBrands: { id: string; name: string }[];
-  theme?: string;
-  setTheme?: (theme: string) => void;
 }
 
 export default function Catalog({
@@ -43,8 +41,6 @@ export default function Catalog({
   initialTypes = [],
   initialFranchises = [],
   initialBrands = [],
-  theme,
-  setTheme
 }: CatalogProps) {
   const { userId } = useAuth();
 
@@ -92,8 +88,6 @@ export default function Catalog({
         loadCustomFranchises={loadCustomFranchises}
         customBrands={customBrands}
         loadCustomBrands={loadCustomBrands}
-        theme={theme}
-        setTheme={setTheme}
       />
     </ImageCacheProvider>
   );
@@ -116,8 +110,6 @@ function CatalogInner({
   loadCustomFranchises,
   customBrands,
   loadCustomBrands,
-  theme,
-  setTheme
 }: {
   userId: string | null | undefined;
 } & Record<string, any>) {
@@ -172,13 +164,6 @@ function CatalogInner({
     setShowWithImages,
     itemsNeedingImageCheck
   } = useCatalogFilters({ items });
-
-  // Toggle theme handler
-  const toggleTheme = () => {
-    if (setTheme) {
-      setTheme(theme === 'dark' ? 'light' : 'dark');
-    }
-  };
 
   // Map catalog items to image map for the new ImageLoader
   const createImagesMap = useCallback(() => {
@@ -251,20 +236,6 @@ function CatalogInner({
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
             <h1 className="text-4xl font-serif text-foreground dark:text-foreground">Your Collection <span className="text-foreground dark:text-foreground">Catalog</span></h1>
             <div className="flex items-center space-x-2">
-              <Button
-                variant="outline" 
-                size="icon"
-                onClick={toggleTheme}
-                className="rounded-full w-10 h-10 dark:bg-card/50 dark:text-foreground dark:border-border dark:hover:bg-card dark:hover:border-primary/40 mr-2"
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="h-5 w-5 text-purple-400" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-              </Button>
-              
               <AddItemModal
                 onAddItem={addItem}
                 customTypes={customTypes}

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react'
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
 import Catalog from './catalog'
-import { useTheme } from 'next-themes'
 import { useBackgroundUpdates } from '@/hooks/use-background-updates'
 
 interface CatalogPageProps {
@@ -19,19 +18,18 @@ export default function CatalogPage({
   initialFranchises,
   initialItems
 }: CatalogPageProps) {
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // Trigger background eBay price updates once per day
   useBackgroundUpdates();
 
-  // After mounting, we can safely show the UI that depends on the theme
+  // After mounting, we can safely show the UI
   useEffect(() => {
     setMounted(true);
   }, []);
 
   if (!mounted) {
-    return null; // Avoid rendering theme-dependent UI until mounted
+    return null; // Avoid rendering until mounted
   }
 
   return (
@@ -42,8 +40,6 @@ export default function CatalogPage({
           initialTypes={initialTypes}
           initialFranchises={initialFranchises}
           initialBrands={initialBrands}
-          theme={theme}
-          setTheme={setTheme}
         />
       </div>
     </div>

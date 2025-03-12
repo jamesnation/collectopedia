@@ -45,11 +45,6 @@ export default function SettingsPage() {
     setMounted(true);
   }, []);
 
-  // Function to toggle theme
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
-
   // Function to test item creation with hardcoded data
   const testItemCreation = async () => {
     if (!userId) {
@@ -276,19 +271,6 @@ export default function SettingsPage() {
       bg-white dark:bg-black/30 dark:text-foreground transition-colors duration-200">
       <div className="flex items-center justify-between">
         <h1 className="font-semibold text-lg md:text-2xl dark:text-foreground">Settings</h1>
-        <Button
-          variant="outline" 
-          size="icon"
-          onClick={toggleTheme}
-          className="rounded-full w-10 h-10 dark:bg-card/50 dark:text-foreground dark:border-border dark:hover:bg-card/80 dark:hover:border-primary/40"
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? (
-            <Sun className="h-5 w-5 text-purple-400" />
-          ) : (
-            <Moon className="h-5 w-5" />
-          )}
-        </Button>
       </div>
       
       <Tabs defaultValue="customization" className="flex-1 h-full">

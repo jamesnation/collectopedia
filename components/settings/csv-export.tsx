@@ -66,23 +66,25 @@ export function CSVExport() {
           <p className="text-sm text-muted-foreground dark:text-muted-foreground">
             Export all your collection data to a CSV file. The file will include all item details including the AI estimate values.
           </p>
-          <Button
-            onClick={handleExport}
-            disabled={isExporting}
-            className="w-full flex items-center gap-2 dark:bg-primary/70 dark:text-white dark:hover:bg-primary/60"
-          >
-            {isExporting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4" />
-                Export Collection as CSV
-              </>
-            )}
-          </Button>
+          <div className="flex justify-start">
+            <Button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="px-6 flex items-center gap-2 dark:bg-primary/70 dark:text-white dark:hover:bg-primary/60"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Export Collection as CSV
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

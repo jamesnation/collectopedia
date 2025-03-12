@@ -1,6 +1,6 @@
 "use client"
 
-import { BugIcon, ImageIcon, GlobeIcon } from "lucide-react"
+import { BugIcon, ImageIcon, GlobeIcon, MoonIcon, SunIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -9,22 +9,70 @@ import { useRegionPreference, RegionCode, REGIONS } from "@/hooks/use-region-pre
 import { Separator } from "@/components/ui/separator"
 import { useEffect } from "react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { useTheme } from "next-themes"
 
 export function PreferencesTab() {
   const { isDebugMode, isInitialized, toggleDebugMode } = useEbayDebugMode();
   const { region, regionData, isInitialized: isRegionInitialized, changeRegion } = useRegionPreference();
+  const { theme, setTheme, systemTheme } = useTheme();
 
   useEffect(() => {
     console.log('PreferencesTab - Debug mode status:', { isDebugMode, isInitialized });
     console.log('PreferencesTab - Region status:', { region, isRegionInitialized });
-  }, [isDebugMode, isInitialized, region, isRegionInitialized]);
+    console.log('PreferencesTab - Theme status:', { theme, systemTheme });
+  }, [isDebugMode, isInitialized, region, isRegionInitialized, theme, systemTheme]);
 
   const handleRegionChange = (value: string) => {
     changeRegion(value as RegionCode);
   };
 
+  const handleThemeChange = (checked: boolean) => {
+    setTheme(checked ? 'dark' : 'light');
+  };
+
+  const isDarkMode = theme === 'dark';
+
   return (
     <div className="space-y-6">
+      <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 dark:text-foreground">
+            {isDarkMode ? (
+              <MoonIcon className="h-5 w-5 text-purple-400" />
+            ) : (
+              <SunIcon className="h-5 w-5 text-amber-400" />
+            )}
+            Appearance
+          </CardTitle>
+          <CardDescription className="dark:text-muted-foreground">
+            Customize the appearance of the application
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="dark-mode" className="flex items-center gap-2">
+                Dark Mode
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Switch between light and dark themes
+              </p>
+            </div>
+            <Switch
+              id="dark-mode"
+              checked={isDarkMode}
+              onCheckedChange={handleThemeChange}
+            />
+          </div>
+
+          <Separator className="my-4" />
+          
+          <p className="text-xs text-muted-foreground">
+            Theme preferences are stored locally in your browser.
+          </p>
+        </CardContent>
+      </Card>
+
       <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 dark:text-foreground">
