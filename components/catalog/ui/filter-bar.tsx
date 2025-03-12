@@ -112,13 +112,10 @@ export function FilterBar({
                   onCheckedChange={setShowWithImages}
                   className="data-[state=checked]:dark:bg-purple-600"
                 />
-                <Label htmlFor="show-with-images" className="dark:text-white">Has Images Only</Label>
+                <Label htmlFor="show-with-images" className="dark:text-white">Items with images</Label>
               </div>
               
-              <div className="text-xs text-muted-foreground dark:text-gray-400 ml-6 -mt-1 mb-3">
-                Show only items with uploaded images
-              </div>
-              
+          
               <div className="space-y-1">
                 <Label htmlFor="type-filter" className="dark:text-white">Type</Label>
                 <Select
