@@ -297,6 +297,8 @@ function CatalogInner({
               sortDescriptor={sortDescriptor}
               onSort={handleSort}
               showSold={showSold}
+              onAddItem={addItem}
+              deleteItem={deleteItem}
             />
           ) : (
             <ItemGridView
