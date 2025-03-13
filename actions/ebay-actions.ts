@@ -891,9 +891,9 @@ export async function refreshAllItemPricesEnhanced(
           }, true); // Enable debug mode to help diagnose issues
           
           // Extract the best price (prefer combined, then image-based, then text-based)
-          const bestPrice = result.combined?.median || 
-                            result.imageBased?.median || 
-                            result.textBased?.median;
+          const bestPrice = result.imageBased?.median || 
+                            result.textBased?.median || 
+                            result.combined?.median;
           
           if (bestPrice) {
             // Update the item in the database

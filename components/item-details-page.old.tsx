@@ -1,4 +1,5 @@
 "use client"
+// Updated with full eBay Image Search Debug feature implementation
 
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'

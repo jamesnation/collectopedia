@@ -6,3 +6,4 @@ export * from "./custom-types-schema";
 export * from "./custom-franchises-schema";
 export * from "./custom-brands-schema";
 export * from "./ebay-history-schema";
+export * from "./item-history-schema";
