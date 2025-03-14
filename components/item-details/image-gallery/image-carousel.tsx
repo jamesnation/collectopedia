@@ -140,7 +140,7 @@ export function ImageCarousel({
   
   if (images.length === 0) {
     return (
-      <Card className="relative aspect-square w-full flex items-center justify-center">
+      <div className="relative w-full h-[650px] flex items-center justify-center bg-muted/10 rounded-lg">
         <div className="text-center">
           <PlaceholderImage className="w-32 h-32 mx-auto" />
           <p className="mt-4 text-muted-foreground">No images available</p>
@@ -151,14 +151,14 @@ export function ImageCarousel({
             </Button>
           )}
         </div>
-      </Card>
+      </div>
     );
   }
 
   // Handle cases where all images fail to load but array is not empty
   if (allImagesHaveErrors) {
     return (
-      <Card className="relative aspect-square w-full flex items-center justify-center bg-muted/20">
+      <div className="relative w-full h-[650px] flex items-center justify-center bg-muted/10 rounded-lg">
         <div className="text-center p-6">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
           <p className="mb-2 font-medium text-destructive">Failed to load images</p>
@@ -167,15 +167,15 @@ export function ImageCarousel({
             <Button onClick={onAddImages} className="mt-2">Try Adding New Images</Button>
           )}
         </div>
-      </Card>
+      </div>
     );
   }
   
   return (
     <div className="space-y-4">
-      {/* Main image - Made larger with aspect-video */}
-      <Card className="overflow-hidden rounded-lg shadow-md border dark:border-border relative aspect-video">
-        <div className="w-full h-full relative flex items-center justify-center">
+      {/* Main image - Made larger with floating design and no card background */}
+      <div className="relative w-full h-[650px] rounded-lg overflow-hidden">
+        <div className="w-full h-full relative flex items-center justify-center bg-transparent">
           {!imageErrors[images[currentIndex]?.id] ? (
             <Image
               src={images[currentIndex]?.url}
@@ -217,7 +217,7 @@ export function ImageCarousel({
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
-      </Card>
+      </div>
       
       {/* Thumbnails */}
       {images.length > 1 && (
