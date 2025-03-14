@@ -87,14 +87,22 @@ export function ImageCarousel({
   const hasNext = currentIndex < images.length - 1;
   
   const handlePrevious = () => {
-    if (hasPrevious) {
+    // Implement circular navigation - when at first image, go to last image
+    if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
+    } else {
+      // Go to the last image
+      setCurrentIndex(images.length - 1);
     }
   };
   
   const handleNext = () => {
-    if (hasNext) {
+    // Implement circular navigation - when at last image, go to first image
+    if (currentIndex < images.length - 1) {
       setCurrentIndex(currentIndex + 1);
+    } else {
+      // Go back to the first image
+      setCurrentIndex(0);
     }
   };
   
@@ -197,11 +205,8 @@ export function ImageCarousel({
         <Button
           variant="secondary"
           size="icon"
-          className={`absolute left-2 top-1/2 transform -translate-y-1/2 opacity-80 hover:opacity-100 ${
-            !hasPrevious && 'opacity-40 pointer-events-none'
-          }`}
+          className="absolute left-2 top-1/2 transform -translate-y-1/2 opacity-80 hover:opacity-100"
           onClick={handlePrevious}
-          disabled={!hasPrevious}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -209,11 +214,8 @@ export function ImageCarousel({
         <Button
           variant="secondary"
           size="icon"
-          className={`absolute right-2 top-1/2 transform -translate-y-1/2 opacity-80 hover:opacity-100 ${
-            !hasNext && 'opacity-40 pointer-events-none'
-          }`}
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 opacity-80 hover:opacity-100"
           onClick={handleNext}
-          disabled={!hasNext}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
