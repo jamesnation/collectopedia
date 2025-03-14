@@ -90,7 +90,7 @@ export function ItemGridView({
       }
     }
   }, [
-    items.map(i => i.id).join(),
+    items,
     isLoading, 
     loadImages
   ]);

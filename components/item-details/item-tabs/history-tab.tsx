@@ -69,7 +69,7 @@ export function HistoryTab({ events, isLoading = false }: HistoryTabProps) {
       case 'updated':
         return (
           <p className="text-sm text-muted-foreground">
-            {event.details.field} changed from "{event.details.oldValue}" to "{event.details.newValue}"
+            {event.details.field} changed from &quot;{event.details.oldValue}&quot; to &quot;{event.details.newValue}&quot;
           </p>
         );
       case 'priceChange':
@@ -78,8 +78,8 @@ export function HistoryTab({ events, isLoading = false }: HistoryTabProps) {
             Market value {event.details.oldValue && event.details.newValue && 
               Number(event.details.newValue) > Number(event.details.oldValue) 
                 ? "increased" 
-                : "decreased"} 
-            from ${event.details.oldValue} to ${event.details.newValue}
+                : "decreased"} from ${event.details.oldValue || 0} to ${event.details.newValue || 0}
+            {event.details.note && <span className="block italic text-xs">{event.details.note}</span>}
           </p>
         );
       case 'sold':
@@ -89,7 +89,7 @@ export function HistoryTab({ events, isLoading = false }: HistoryTabProps) {
       case 'statusChange':
         return (
           <p className="text-sm text-muted-foreground">
-            Status changed from "{event.details.oldValue}" to "{event.details.newValue}"
+            Status changed from &quot;{event.details.oldValue}&quot; to &quot;{event.details.newValue}&quot;
           </p>
         );
       default:
@@ -115,38 +115,49 @@ export function HistoryTab({ events, isLoading = false }: HistoryTabProps) {
     );
   }
 
+  if (!events || events.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <CalendarIcon className="h-8 w-8 mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">No history events available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>History</CardTitle>
       </CardHeader>
       <CardContent>
-        {events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <CalendarIcon className="h-8 w-8 mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">No history events available</p>
-          </div>
-        ) : (
-          <ScrollArea className="h-[400px] rounded-md border p-4">
-            <div className="space-y-6">
-              {events.map((event) => (
-                <div key={event.id} className="flex gap-4 items-start">
-                  <div className="mt-1">{getEventIcon(event.type)}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">{event.type.charAt(0).toUpperCase() + event.type.slice(1)}</h4>
-                      <span className="text-xs text-muted-foreground">{formatDate(event.timestamp)}</span>
-                    </div>
-                    {renderEventDetails(event)}
-                    {event.details.note && (
-                      <p className="text-xs italic mt-1 text-muted-foreground">"{event.details.note}"</p>
-                    )}
-                  </div>
+        <ScrollArea className="h-[400px] rounded-md border">
+          <div className="p-4">
+            {events.map((event) => (
+              <div key={event.id} className="flex items-start pb-4 last:pb-0 mb-4 last:mb-0 border-b last:border-0">
+                <div className="mr-2 bg-secondary h-8 w-8 rounded-full flex items-center justify-center">
+                  {getEventIcon(event.type)}
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium">{event.type.charAt(0).toUpperCase() + event.type.slice(1)}</h4>
+                    <span className="text-xs text-muted-foreground">{formatDate(event.timestamp)}</span>
+                  </div>
+                  {renderEventDetails(event)}
+                  {event.details.note && (
+                    <p className="text-xs italic mt-1 text-muted-foreground">&quot;{event.details.note}&quot;</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );

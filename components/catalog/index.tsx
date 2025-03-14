@@ -195,7 +195,7 @@ function CatalogInner({
         imageService.preloadItemImages(allItemIds, imagesMap);
       }
     }
-  }, [items.length, isLoading, imageService, createImagesMap]);
+  }, [items, items.length, isLoading, imageService, createImagesMap]);
 
   const handleShowSoldChange = (show: boolean) => {
     console.log('[CATALOG] Toggling showSold to', show);
