@@ -27,7 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Loader2, ExternalLink } from "lucide-react";
+import { ArrowLeft, Loader2, ExternalLink, ImagePlus } from "lucide-react";
 import { ItemCondition } from "@/types/item-types";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
@@ -206,10 +206,34 @@ export function ItemDetailsPage({
     if (!item) return;
     
     setImageLoading(true);
+    console.log("Fetching images for item:", item.id);
+    console.log("Item images data:", item.images);
+    
     try {
-      // Simulate fetching images - in a real app, this would be an API call
-      // Here we're just using the images already on the item for demonstration
+      // First attempt to fetch images from the API
+      try {
+        // Import the action dynamically to avoid server component issues
+        const { getImagesByItemIdAction } = await import("@/actions/images-actions");
+        
+        console.log("Fetching images from API for item:", item.id);
+        const imagesResult = await getImagesByItemIdAction(item.id);
+        
+        if (imagesResult.isSuccess && imagesResult.data && imagesResult.data.length > 0) {
+          console.log("Successfully fetched images from API:", imagesResult.data.length);
+          setImages(imagesResult.data);
+          return; // Exit early as we have images from API
+        } else {
+          console.log("No images found from API, falling back to item.images");
+        }
+      } catch (apiError) {
+        console.error("Error fetching images from API:", apiError);
+        console.log("Falling back to item.images");
+      }
+      
+      // Fallback: Use images from the item object
       if (item.images && item.images.length > 0) {
+        console.log("Using images from item object:", item.images.length);
+        
         // Convert to ImageType[] with required properties
         const convertedImages: ImageType[] = item.images.map(img => ({
           id: img.id,
@@ -218,12 +242,16 @@ export function ItemDetailsPage({
           itemId: item.id,
           userId: 'current-user' // Placeholder, would normally be the actual user ID
         }));
+        
+        console.log("Converted images:", convertedImages);
         setImages(convertedImages);
       } else {
+        console.log("No images available for this item");
         setImages([]);
       }
     } catch (error) {
       console.error("Error loading images:", error);
+      setImages([]); // Ensure we set an empty array on error
     } finally {
       setImageLoading(false);
     }
@@ -322,11 +350,23 @@ export function ItemDetailsPage({
   
   // Handle image upload completion
   const handleImageUpload = async (url: string) => {
-    if (!item || !userId) return;
+    if (!item || !userId) {
+      console.error("Cannot upload image - missing item or userId");
+      toast({
+        title: "Error",
+        description: "Unable to upload image - missing required information.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log("Handling image upload with URL:", url);
     
     try {
       // Import the createImageAction dynamically to avoid server component issues
       const { createImageAction } = await import("@/actions/images-actions");
+      
+      console.log("Creating image record for item:", item.id, "userId:", userId);
       
       // Create a new image entry
       const imageResult = await createImageAction({
@@ -338,13 +378,18 @@ export function ItemDetailsPage({
       if (imageResult.isSuccess && imageResult.data) {
         // Update both images state and item state
         const newImage = imageResult.data;
+        console.log("Successfully created image entry:", newImage);
         
-        setImages(prevImages => [...prevImages, newImage]);
+        setImages(prevImages => {
+          const updatedImages = [...prevImages, newImage];
+          console.log("Updated images array:", updatedImages);
+          return updatedImages;
+        });
         
         setItem(prevItem => {
           if (!prevItem) return null;
           
-          return {
+          const updatedItem = {
             ...prevItem,
             images: [...prevItem.images, {
               id: newImage.id,
@@ -352,6 +397,8 @@ export function ItemDetailsPage({
               alt: `${prevItem.name} image ${prevItem.images.length + 1}`
             }]
           };
+          console.log("Updated item with new image:", updatedItem);
+          return updatedItem;
         });
         
         toast({
@@ -359,7 +406,8 @@ export function ItemDetailsPage({
           description: "Image uploaded and added to the item successfully."
         });
       } else {
-        throw new Error("Failed to create image entry");
+        console.error("Failed to create image entry:", imageResult.error);
+        throw new Error(imageResult.error || "Failed to create image entry");
       }
     } catch (err) {
       console.error("Error adding image:", err);
@@ -371,6 +419,9 @@ export function ItemDetailsPage({
     } finally {
       // Close the upload dialog when done
       setIsImageUploadOpen(false);
+      
+      // Refresh images after upload attempt, regardless of outcome
+      fetchImages();
     }
   };
   
@@ -1160,12 +1211,37 @@ export function ItemDetailsPage({
     );
   }
   
-  // Map DB images to the format expected by ImageCarousel
-  const carouselImages = images.map(img => ({
-    id: img.id,
-    url: img.url,
-    alt: `${item.name} image`
-  }));
+  // Map DB images to the format expected by ImageCarousel with better error handling
+  const carouselImages = images && images.length > 0 
+    ? images.map(img => {
+        // Ensure the image URL is valid and formatted correctly
+        let imageUrl = img.url;
+        
+        // Check if URL is valid or needs to be adjusted
+        if (imageUrl) {
+          // If URL doesn't start with http/https and doesn't look like a data URL, assume it's a relative path
+          if (!imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
+            // If it doesn't start with a slash, add one
+            if (!imageUrl.startsWith('/')) {
+              imageUrl = `/${imageUrl}`;
+            }
+          }
+          
+          console.log(`Processing image ${img.id}: ${imageUrl.substring(0, 50)}...`);
+        } else {
+          console.warn(`Invalid URL for image ${img.id}`);
+          imageUrl = '/placeholder-image.jpg'; // Fallback to placeholder
+        }
+        
+        return {
+          id: img.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
+          url: imageUrl,
+          alt: img.alt || `${item.name} image`
+        };
+      })
+    : [];
+    
+  console.log("Carousel images prepared:", carouselImages.length, "images");
   
   // Render the actual component with the original layout structure
   return (
@@ -1189,12 +1265,27 @@ export function ItemDetailsPage({
               <Skeleton className="h-96 w-full rounded-xl" />
             ) : (
               <>
-                <ImageCarousel 
-                  images={carouselImages} 
-                  itemId={item.id} 
-                  onAddImages={handleAddImages}
-                  onDeleteImage={handleDeleteImage}
-                />
+                {carouselImages.length > 0 ? (
+                  <ImageCarousel 
+                    images={carouselImages} 
+                    itemId={item.id} 
+                    onAddImages={handleAddImages}
+                    onDeleteImage={handleDeleteImage}
+                  />
+                ) : (
+                  <Card className="h-96 w-full flex flex-col items-center justify-center rounded-xl">
+                    <div className="text-center p-6">
+                      <div className="mb-4 flex justify-center">
+                        <PlaceholderImage className="w-32 h-32" />
+                      </div>
+                      <p className="text-muted-foreground mb-4">No images available for this item</p>
+                      <Button onClick={handleAddImages}>
+                        <ImagePlus className="h-4 w-4 mr-2" />
+                        Add Images
+                      </Button>
+                    </div>
+                  </Card>
+                )}
                 
                 {/* Debug Panel - placed under the image carousel */}
                 {isDebugMode && (

@@ -7,11 +7,12 @@
  * Added support for deleting images.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, ImagePlus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImagePlus, Trash2, AlertCircle } from "lucide-react";
+import { PlaceholderImage } from "@/components/ui/placeholder-image";
 
 interface ImageType {
   id: string;
@@ -33,6 +34,19 @@ export function ImageCarousel({
   onDeleteImage 
 }: ImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  
+  // Track images that fail to load
+  const handleImageError = (id: string) => {
+    console.error(`Error loading image with id ${id}`);
+    setImageErrors(prev => ({ ...prev, [id]: true }));
+  };
+  
+  useEffect(() => {
+    // Reset image errors when images change
+    setImageErrors({});
+    console.log(`ImageCarousel received ${images.length} images`);
+  }, [images]);
   
   // Reset currentIndex if it's out of bounds after images change
   if (currentIndex >= images.length && images.length > 0) {
@@ -70,18 +84,38 @@ export function ImageCarousel({
     }
   };
   
-  // If there are no images, show a placeholder
+  // Render a notification if all images have errors
+  const allImagesHaveErrors = images.length > 0 && 
+    images.every(img => imageErrors[img.id]);
+  
   if (images.length === 0) {
     return (
-      <Card className="overflow-hidden rounded-lg shadow-md border dark:border-border relative min-h-[300px] flex flex-col items-center justify-center p-6">
+      <Card className="relative aspect-square w-full flex items-center justify-center">
         <div className="text-center">
-          <ImagePlus className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-medium text-muted-foreground mb-2">No Images Available</h3>
-          <p className="text-sm text-muted-foreground mb-4">Add images to showcase this item</p>
-          <Button onClick={handleAddImages} className="gap-2">
-            <ImagePlus className="h-4 w-4" />
-            Upload Images
-          </Button>
+          <PlaceholderImage className="w-32 h-32 mx-auto" />
+          <p className="mt-4 text-muted-foreground">No images available</p>
+          {onAddImages && (
+            <Button onClick={onAddImages} className="mt-4">
+              <ImagePlus className="h-4 w-4 mr-2" />
+              Add Images
+            </Button>
+          )}
+        </div>
+      </Card>
+    );
+  }
+
+  // Handle cases where all images fail to load but array is not empty
+  if (allImagesHaveErrors) {
+    return (
+      <Card className="relative aspect-square w-full flex items-center justify-center bg-muted/20">
+        <div className="text-center p-6">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <p className="mb-2 font-medium text-destructive">Failed to load images</p>
+          <p className="text-sm text-muted-foreground mb-4">There was a problem loading the images for this item.</p>
+          {onAddImages && (
+            <Button onClick={onAddImages} className="mt-2">Try Adding New Images</Button>
+          )}
         </div>
       </Card>
     );
@@ -92,13 +126,21 @@ export function ImageCarousel({
       {/* Main image */}
       <Card className="overflow-hidden rounded-lg shadow-md border dark:border-border relative aspect-video">
         <div className="w-full h-full relative flex items-center justify-center">
-          <Image
-            src={images[currentIndex].url}
-            alt={images[currentIndex].alt || `Image ${currentIndex + 1}`}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-contain"
-          />
+          {!imageErrors[images[currentIndex]?.id] ? (
+            <Image
+              src={images[currentIndex]?.url}
+              alt={images[currentIndex]?.alt || `Image ${currentIndex + 1}`}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-contain"
+              onError={() => handleImageError(images[currentIndex]?.id)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full">
+              <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+              <p className="text-sm text-muted-foreground">Failed to load image</p>
+            </div>
+          )}
         </div>
         
         {/* Navigation buttons */}
@@ -159,13 +201,21 @@ export function ImageCarousel({
               onClick={() => handleThumbnailClick(index)}
             >
               <div className="relative h-full w-full">
-                <Image
-                  src={image.url}
-                  alt={image.alt || `Thumbnail ${index + 1}`}
-                  fill
-                  sizes="64px"
-                  className="object-cover"
-                />
+                {!imageErrors[image.id] ? (
+                  <Image
+                    src={image.url}
+                    alt={image.alt || `Thumbnail ${index + 1}`}
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                    onError={() => handleImageError(image.id)}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                    <p className="text-sm text-muted-foreground">Failed to load image</p>
+                  </div>
+                )}
               </div>
             </Button>
           ))}
