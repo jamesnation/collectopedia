@@ -217,19 +217,51 @@ export function ImageCarousel({
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
-        
-        {/* Action buttons in a container */}
-        <div className="absolute top-2 right-2 flex space-x-2">
-          {/* Edit/Reorder Button */}
+      </Card>
+      
+      {/* Thumbnails */}
+      {images.length > 1 && (
+        <div className="flex items-center space-x-2 overflow-x-auto py-2 px-1">
+          {images.map((image, index) => (
+            <Button
+              key={image.id}
+              variant="ghost"
+              className={`p-0 h-16 w-16 rounded overflow-hidden border-2 ${
+                index === currentIndex
+                  ? 'border-primary'
+                  : 'border-transparent hover:border-muted-foreground/30'
+              } relative`}
+              onClick={() => handleThumbnailClick(index)}
+            >
+              <div className="relative h-full w-full">
+                {!imageErrors[image.id] ? (
+                  <Image
+                    src={image.url}
+                    alt={image.alt || `Thumbnail ${index + 1}`}
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                    onError={() => handleImageError(image.id)}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                  </div>
+                )}
+              </div>
+            </Button>
+          ))}
+          
+          {/* Replace "Add" button with "Edit" button and add Popover functionality */}
           <Popover open={isEditMode} onOpenChange={setIsEditMode}>
             <PopoverTrigger asChild>
               <Button
-                variant="secondary"
-                size="sm"
-                className="opacity-80 hover:opacity-100"
+                variant="outline"
+                className="h-16 w-16 rounded-md border border-dashed border-muted-foreground/30 flex flex-col items-center justify-center"
                 onClick={toggleEditMode}
               >
-                Edit Gallery
+                <ImagePlus className="h-5 w-5 mb-1" />
+                <span className="text-xs">Edit</span>
               </Button>
             </PopoverTrigger>
             
@@ -306,71 +338,95 @@ export function ImageCarousel({
             </PopoverContent>
           </Popover>
         </div>
-        
-        {/* Primary image indicator */}
-        {currentIndex === 0 && (
-          <Badge 
-            variant="secondary" 
-            className="absolute bottom-2 left-2 bg-black/50 text-white"
-          >
-            Primary Image
-          </Badge>
-        )}
-        
-        {/* Image counter */}
-        <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
-          {currentIndex + 1} / {images.length}
-        </div>
-      </Card>
+      )}
       
-      {/* Thumbnails */}
-      {images.length > 1 && (
-        <div className="flex items-center space-x-2 overflow-x-auto py-2 px-1">
-          {images.map((image, index) => (
-            <Button
-              key={image.id}
-              variant="ghost"
-              className={`p-0 h-16 w-16 rounded overflow-hidden border-2 ${
-                index === currentIndex
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-muted-foreground/30'
-              } relative`}
-              onClick={() => handleThumbnailClick(index)}
-            >
-              <div className="relative h-full w-full">
-                {!imageErrors[image.id] ? (
-                  <Image
-                    src={image.url}
-                    alt={image.alt || `Thumbnail ${index + 1}`}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                    onError={() => handleImageError(image.id)}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  </div>
-                )}
+      {/* For case with a single image or no images, also need the Edit button */}
+      {images.length <= 1 && (
+        <div className="flex justify-start mt-2">
+          <Popover open={isEditMode} onOpenChange={setIsEditMode}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={toggleEditMode}
+              >
+                <ImagePlus className="h-4 w-4" />
+                <span>Edit Gallery</span>
+              </Button>
+            </PopoverTrigger>
+            
+            <PopoverContent className="w-full max-w-[90vw] sm:max-w-[600px] dark:bg-black/90 dark:border-border">
+              <div className="space-y-4">
+                <h4 className="font-semibold text-md text-foreground">Edit Gallery</h4>
+                <Button 
+                  onClick={handleAddImages}
+                  className="w-full"
+                >
+                  <ImagePlus className="h-4 w-4 mr-2" />
+                  Add New Images
+                </Button>
                 
-                {index === 0 && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-[10px] text-white text-center py-0.5">
-                    Primary
+                {images.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center text-sm text-muted-foreground p-2 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-100 dark:border-blue-900/50">
+                      <Info className="h-3.5 w-3.5 mr-2 flex-shrink-0 text-blue-500" />
+                      <span>Drag images to reorder. The first image will be used as the primary image.</span>
+                    </div>
+                    
+                    <ScrollArea className="w-full h-auto max-h-[40vh]">
+                      {onReorderImages ? (
+                        <DndWrapper
+                          items={images as unknown as SelectImage[]}
+                          onReorder={handleReorderImages}
+                          direction="horizontal"
+                          className="pb-4 pt-1" // Add padding to provide more space
+                          renderItem={({ image, index }: { image: SelectImage | ImageType; index: number }) => (
+                            <SortableImageItem
+                              key={image.id}
+                              image={image as SelectImage}
+                              index={index}
+                              direction="horizontal"
+                              size="md"
+                              onImageDelete={handleDeleteImage}
+                            />
+                          )}
+                        />
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 pb-4">
+                          {images.map((image, index) => (
+                            <div key={image.id} className="relative w-24 h-24 border rounded overflow-hidden">
+                              <Image
+                                src={image.url}
+                                alt={image.alt || `Image ${index + 1}`}
+                                width={100}
+                                height={100}
+                                className="object-cover w-full h-full"
+                                onError={() => handleImageError(image.id)}
+                              />
+                              {index === 0 && (
+                                <Badge variant="secondary" className="absolute bottom-1 left-1 text-xs">
+                                  Primary
+                                </Badge>
+                              )}
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-5 w-5 absolute top-1 right-1"
+                                onClick={() => handleDeleteImage(image.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
                   </div>
                 )}
               </div>
-            </Button>
-          ))}
-          
-          {/* Add more images button */}
-          <Button
-            variant="outline"
-            className="h-16 w-16 rounded-md border border-dashed border-muted-foreground/30 flex flex-col items-center justify-center"
-            onClick={handleAddImages}
-          >
-            <ImagePlus className="h-5 w-5 mb-1" />
-            <span className="text-xs">Add</span>
-          </Button>
+            </PopoverContent>
+          </Popover>
         </div>
       )}
     </div>
