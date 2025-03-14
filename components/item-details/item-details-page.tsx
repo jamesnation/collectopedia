@@ -38,6 +38,7 @@ import { useEbayDebugMode } from "@/hooks/use-ebay-debug-mode";
 import { useRegionContext } from "@/contexts/region-context";
 import { PlaceholderImage } from '@/components/ui/placeholder-image';
 import Image from "next/image";
+import { arrayMove } from '@dnd-kit/sortable';
 
 // Dynamically import the ImageUpload component to prevent SSR issues
 const DynamicImageUpload = dynamic(() => import("@/components/image-upload"), {
@@ -1243,6 +1244,57 @@ export function ItemDetailsPage({
     
   console.log("Carousel images prepared:", carouselImages.length, "images");
   
+  // Inside the component, add the handleImageReorder function
+  const handleImageReorder = async (event: any) => {
+    const { active, over } = event;
+    
+    if (active && over && active.id !== over.id) {
+      setImages((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        
+        // Update the server with the new order
+        const updatedOrders = newItems.map((img, index) => ({
+          id: img.id,
+          order: index
+        }));
+        
+        if (item?.id) {
+          // Import the action dynamically to avoid server component issues
+          import("@/actions/images-actions").then(({ reorderImagesAction }) => {
+            // Update the server with the new order
+            reorderImagesAction(item.id, updatedOrders)
+              .then(() => {
+                console.log("Images reordered successfully");
+                
+                // Refetch the images to ensure we have the latest order from the server
+                // This ensures the primary image is correctly identified for AI price estimation
+                fetchImages();
+                
+                toast({
+                  title: "Success",
+                  description: "Image order updated successfully",
+                  variant: "default",
+                });
+              })
+              .catch(error => {
+                console.error('Failed to update image order:', error);
+                toast({
+                  title: "Error",
+                  description: "Failed to update image order",
+                  variant: "destructive",
+                });
+              });
+          });
+        }
+        
+        return newItems;
+      });
+    }
+  };
+  
   // Render the actual component with the original layout structure
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black/30">
@@ -1271,6 +1323,7 @@ export function ItemDetailsPage({
                     itemId={item.id} 
                     onAddImages={handleAddImages}
                     onDeleteImage={handleDeleteImage}
+                    onReorderImages={handleImageReorder}
                   />
                 ) : (
                   <Card className="h-96 w-full flex flex-col items-center justify-center rounded-xl">

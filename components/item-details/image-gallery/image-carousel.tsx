@@ -4,20 +4,45 @@
  * components/item-details/image-gallery/image-carousel.tsx
  * 
  * This component displays a carousel of item images with thumbnail navigation.
- * Added support for deleting images.
+ * Enhanced with drag-and-drop reordering capabilities and improved UI for larger images.
+ * Added support for deleting images and designating primary images.
  */
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, ImagePlus, Trash2, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, ChevronRight, ImagePlus, Trash2, AlertCircle, Info, GripHorizontal } from "lucide-react";
 import { PlaceholderImage } from "@/components/ui/placeholder-image";
+import { SelectImage } from "@/db/schema/images-schema";
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from "@/components/ui/popover";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import dynamic from "next/dynamic";
+
+// Dynamically import the DnD components to prevent SSR issues
+const DndWrapper = dynamic(() => import('@/components/dnd-wrapper'), { 
+  ssr: false,
+  loading: () => <div className="p-4 text-center">Loading drag and drop functionality...</div>
+});
+
+const SortableImageItem = dynamic(() => import('@/components/sortable-image-item'), { 
+  ssr: false 
+});
 
 interface ImageType {
   id: string;
   url: string;
   alt?: string;
+  itemId?: string;
+  userId?: string;
+  order?: number;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 interface ImageCarouselProps {
@@ -25,16 +50,19 @@ interface ImageCarouselProps {
   itemId: string;
   onAddImages?: () => void;
   onDeleteImage?: (imageId: string) => void;
+  onReorderImages?: (event: any) => void;
 }
 
 export function ImageCarousel({ 
   images, 
   itemId, 
   onAddImages,
-  onDeleteImage 
+  onDeleteImage,
+  onReorderImages
 }: ImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [isEditMode, setIsEditMode] = useState(false);
   
   // Track images that fail to load
   const handleImageError = (id: string) => {
@@ -49,9 +77,11 @@ export function ImageCarousel({
   }, [images]);
   
   // Reset currentIndex if it's out of bounds after images change
-  if (currentIndex >= images.length && images.length > 0) {
-    setCurrentIndex(images.length - 1);
-  }
+  useEffect(() => {
+    if (currentIndex >= images.length && images.length > 0) {
+      setCurrentIndex(images.length - 1);
+    }
+  }, [currentIndex, images.length]);
   
   const hasPrevious = currentIndex > 0;
   const hasNext = currentIndex < images.length - 1;
@@ -81,7 +111,27 @@ export function ImageCarousel({
   const handleDeleteImage = (id: string) => {
     if (onDeleteImage) {
       onDeleteImage(id);
+      
+      // If we deleted the current image, adjust currentIndex
+      if (images.findIndex(img => img.id === id) === currentIndex) {
+        // Move to previous image if available, otherwise first image
+        if (currentIndex > 0) {
+          setCurrentIndex(currentIndex - 1);
+        } else if (images.length > 1) {
+          setCurrentIndex(0);
+        }
+      }
     }
+  };
+  
+  const handleReorderImages = (event: any) => {
+    if (onReorderImages) {
+      onReorderImages(event);
+    }
+  };
+  
+  const toggleEditMode = () => {
+    setIsEditMode(!isEditMode);
   };
   
   // Render a notification if all images have errors
@@ -123,7 +173,7 @@ export function ImageCarousel({
   
   return (
     <div className="space-y-4">
-      {/* Main image */}
+      {/* Main image - Made larger with aspect-video */}
       <Card className="overflow-hidden rounded-lg shadow-md border dark:border-border relative aspect-video">
         <div className="w-full h-full relative flex items-center justify-center">
           {!imageErrors[images[currentIndex]?.id] ? (
@@ -168,16 +218,103 @@ export function ImageCarousel({
           <ChevronRight className="h-4 w-4" />
         </Button>
         
-        {/* Delete button */}
-        {onDeleteImage && (
-          <Button
-            variant="destructive"
-            size="icon"
-            className="absolute top-2 right-2 opacity-80 hover:opacity-100"
-            onClick={() => handleDeleteImage(images[currentIndex].id)}
+        {/* Action buttons in a container */}
+        <div className="absolute top-2 right-2 flex space-x-2">
+          {/* Edit/Reorder Button */}
+          <Popover open={isEditMode} onOpenChange={setIsEditMode}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="opacity-80 hover:opacity-100"
+                onClick={toggleEditMode}
+              >
+                Edit Gallery
+              </Button>
+            </PopoverTrigger>
+            
+            <PopoverContent className="w-full max-w-[90vw] sm:max-w-[600px] dark:bg-black/90 dark:border-border">
+              <div className="space-y-4">
+                <h4 className="font-semibold text-md text-foreground">Edit Gallery</h4>
+                <Button 
+                  onClick={handleAddImages}
+                  className="w-full"
+                >
+                  <ImagePlus className="h-4 w-4 mr-2" />
+                  Add New Images
+                </Button>
+                
+                {images.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center text-sm text-muted-foreground p-2 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-100 dark:border-blue-900/50">
+                      <Info className="h-3.5 w-3.5 mr-2 flex-shrink-0 text-blue-500" />
+                      <span>Drag images to reorder. The first image will be used as the primary image.</span>
+                    </div>
+                    
+                    <ScrollArea className="w-full h-auto max-h-[40vh]">
+                      {onReorderImages ? (
+                        <DndWrapper
+                          items={images as unknown as SelectImage[]}
+                          onReorder={handleReorderImages}
+                          direction="horizontal"
+                          className="pb-4 pt-1" // Add padding to provide more space
+                          renderItem={({ image, index }: { image: SelectImage | ImageType; index: number }) => (
+                            <SortableImageItem
+                              key={image.id}
+                              image={image as SelectImage}
+                              index={index}
+                              direction="horizontal"
+                              size="md"
+                              onImageDelete={handleDeleteImage}
+                            />
+                          )}
+                        />
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 pb-4">
+                          {images.map((image, index) => (
+                            <div key={image.id} className="relative w-24 h-24 border rounded overflow-hidden">
+                              <Image
+                                src={image.url}
+                                alt={image.alt || `Image ${index + 1}`}
+                                width={100}
+                                height={100}
+                                className="object-cover w-full h-full"
+                                onError={() => handleImageError(image.id)}
+                              />
+                              {index === 0 && (
+                                <Badge variant="secondary" className="absolute bottom-1 left-1 text-xs">
+                                  Primary
+                                </Badge>
+                              )}
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-5 w-5 absolute top-1 right-1"
+                                onClick={() => handleDeleteImage(image.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        
+        {/* Primary image indicator */}
+        {currentIndex === 0 && (
+          <Badge 
+            variant="secondary" 
+            className="absolute bottom-2 left-2 bg-black/50 text-white"
           >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+            Primary Image
+          </Badge>
         )}
         
         {/* Image counter */}
@@ -197,7 +334,7 @@ export function ImageCarousel({
                 index === currentIndex
                   ? 'border-primary'
                   : 'border-transparent hover:border-muted-foreground/30'
-              }`}
+              } relative`}
               onClick={() => handleThumbnailClick(index)}
             >
               <div className="relative h-full w-full">
@@ -211,9 +348,14 @@ export function ImageCarousel({
                     onError={() => handleImageError(image.id)}
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                    <p className="text-sm text-muted-foreground">Failed to load image</p>
+                  <div className="flex items-center justify-center h-full">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                  </div>
+                )}
+                
+                {index === 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-[10px] text-white text-center py-0.5">
+                    Primary
                   </div>
                 )}
               </div>

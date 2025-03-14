@@ -1,5 +1,12 @@
 'use client';
 
+/**
+ * components/sortable-image-item.tsx
+ * 
+ * This component renders a single sortable image item in the gallery.
+ * It includes drag handles and delete functionality.
+ */
+
 import React from 'react';
 import Image from 'next/image';
 import { useSortable } from '@dnd-kit/sortable';

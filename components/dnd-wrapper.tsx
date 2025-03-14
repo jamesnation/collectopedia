@@ -1,5 +1,12 @@
 'use client';
 
+/**
+ * components/dnd-wrapper.tsx
+ * 
+ * This component provides a drag-and-drop wrapper for sortable items.
+ * It uses @dnd-kit libraries to provide a smooth drag and drop experience.
+ */
+
 import React from 'react';
 import { 
   DndContext, 
@@ -17,12 +24,12 @@ import {
   verticalListSortingStrategy,
   horizontalListSortingStrategy
 } from '@dnd-kit/sortable';
-import { SelectImage } from '@/db/schema/images-schema';
+import { arrayMove } from '@dnd-kit/sortable';
 
 interface DndWrapperProps {
-  items: SelectImage[];
+  items: any[];
   onReorder: (event: any) => void;
-  renderItem: (props: { image: SelectImage; index: number }) => React.ReactNode;
+  renderItem: (props: { image: any; index: number }) => React.ReactNode;
   direction?: 'vertical' | 'horizontal';
   className?: string;
 }
@@ -78,7 +85,7 @@ export default function DndWrapper({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={items.map(img => img.id)} strategy={strategy}>
+      <SortableContext items={items.map(item => item.id)} strategy={strategy}>
         <div className={`${containerClass} ${className}`}>
           {items.map((image, index) => renderItem({ image, index }))}
         </div>
