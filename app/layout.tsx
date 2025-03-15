@@ -9,6 +9,7 @@ import { auth } from "@clerk/nextjs/server";
 import { getProfileByUserIdAction } from "@/actions/profiles-actions";
 import { createProfile } from "@/db/queries/profiles-queries";
 import { cookies } from "next/headers";
+import { ReactQueryProvider } from "@/providers/react-query-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -53,7 +54,7 @@ export default async function RootLayout({
 
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <head>
           <link rel="preconnect" href="https://sjjbgnzyywlgpmgtmube.supabase.co" />
           <link rel="preconnect" href="https://vercel.com" />
@@ -67,12 +68,14 @@ export default async function RootLayout({
             disableTransitionOnChange
           >
             <RegionProvider>
-              <div className="flex h-screen dark:bg-black/30">
-                <Sidebar />
-                <main className="flex-1 overflow-auto pt-16 md:pt-0">
-                  {children}
-                </main>
-              </div>
+              <ReactQueryProvider>
+                <div className="flex h-screen dark:bg-black/30">
+                  <Sidebar />
+                  <main className="flex-1 overflow-auto pt-16 md:pt-0">
+                    {children}
+                  </main>
+                </div>
+              </ReactQueryProvider>
             </RegionProvider>
           </ThemeProvider>
         </body>

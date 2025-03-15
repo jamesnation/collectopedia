@@ -131,67 +131,81 @@ async function ItemDetailsPageWrapper({ itemId }: { itemId: string }) {
   async function refreshAiPrice(id: string) {
     "use server"
     
-    // First get the current item to access before we modify it
-    const itemResult = await getItemByIdAction(id);
-    if (!itemResult.isSuccess || !itemResult.data) {
-      throw new Error("Failed to load item");
-    }
-    
-    // Get enhanced prices using both image and text search
-    const { getEnhancedEbayPrices } = await import('@/actions/ebay-actions');
-    
-    // Get the primary image for the item
-    const imagesResult = await getImagesByItemIdAction(id);
-    const primaryImage = imagesResult.isSuccess && imagesResult.data && imagesResult.data.length > 0 
-                        ? imagesResult.data[0].url 
-                        : undefined;
-    
-    // Get the enhanced prices
-    const result = await getEnhancedEbayPrices({
-      title: itemResult.data.name,
-      image: primaryImage,
-      condition: itemResult.data.condition,
-      franchise: itemResult.data.franchise,
-      region: "UK" // Default to UK
-    }, true); // Include debug data
-    
-    // Prioritize image-based results over text-based
-    const bestPrice = result.imageBased?.median || 
-                     result.textBased?.median || 
-                     result.combined?.median;
-    
-    if (!bestPrice) {
-      throw new Error("No valid price found");
-    }
-    
-    // Round the price
-    const roundedPrice = Math.round(bestPrice);
-    
-    // Update the item in the database
-    const updateResult = await updateItemAction(id, { 
-      ebayListed: roundedPrice 
-    });
-    
-    if (!updateResult.isSuccess) {
-      throw new Error(updateResult.error || "Failed to update price");
-    }
-    
-    // Record the price change in history
-    await recordItemHistoryAction({
-      itemId: id,
-      userId: auth().userId as string,
-      type: 'priceChange',
-      details: {
-        oldValue: itemResult.data.ebayListed,
-        newValue: roundedPrice,
-        note: "eBay price updated"
+    try {
+      // First get the current item to access before we modify it
+      const itemResult = await getItemByIdAction(id);
+      if (!itemResult.isSuccess || !itemResult.data) {
+        throw new Error("Failed to load item");
       }
-    });
-    
-    // Revalidate the page
-    revalidatePath(`/item/${id}`);
-    
-    return roundedPrice;
+      
+      // Get enhanced prices using both image and text search
+      const { getEnhancedEbayPrices } = await import('@/actions/ebay-actions');
+      
+      // Get the primary image for the item
+      const imagesResult = await getImagesByItemIdAction(id);
+      const primaryImage = imagesResult.isSuccess && imagesResult.data && imagesResult.data.length > 0 
+                          ? imagesResult.data[0].url 
+                          : undefined;
+      
+      console.log(`Refreshing price for "${itemResult.data.name}" with image: ${primaryImage ? 'Yes' : 'No'}`);
+      
+      // Get the enhanced prices
+      const result = await getEnhancedEbayPrices({
+        title: itemResult.data.name,
+        image: primaryImage,
+        condition: itemResult.data.condition,
+        franchise: itemResult.data.franchise,
+        region: "UK" // Default to UK
+      }, true); // Include debug data
+      
+      // Prioritize image-based results over text-based
+      const bestPrice = result.imageBased?.median || 
+                       result.textBased?.median || 
+                       result.combined?.median;
+      
+      if (!bestPrice) {
+        console.error("No valid price found in API response:", result);
+        throw new Error("No valid price found");
+      }
+      
+      // Round the price
+      const roundedPrice = Math.round(bestPrice);
+      
+      console.log(`Price found: ${roundedPrice} (original: ${bestPrice})`);
+      
+      // Update only the ebayListed field, not the value field
+      const updateResult = await updateItemAction(id, { 
+        ebayListed: roundedPrice
+      });
+      
+      if (!updateResult.isSuccess) {
+        throw new Error("Failed to update item with new price");
+      }
+      
+      // Record the price change in history
+      await recordItemHistoryAction({
+        itemId: id,
+        userId: auth().userId as string,
+        type: 'priceChange',
+        details: {
+          oldValue: itemResult.data.ebayListed,
+          newValue: roundedPrice,
+          note: "eBay price updated"
+        }
+      });
+      
+      // Revalidate the page
+      revalidatePath(`/item/${id}`);
+      
+      // Return both the price and debug data
+      return {
+        price: roundedPrice,
+        debugData: result.debugData
+      };
+    } catch (error) {
+      console.error("Error getting eBay price:", error);
+      return null;
+    }
   }
 
   return (

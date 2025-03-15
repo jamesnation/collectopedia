@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Edit, 
   Loader2, 
-  RefreshCw 
+  RefreshCcw 
 } from "lucide-react";
 import { 
   Popover, 
@@ -111,6 +111,26 @@ export function ItemMetrics({
     if (profit < 0) return "text-red-500";
     return "text-muted-foreground";
   };
+
+  // Refresh AI price button with better feedback
+  const refreshButton = (
+    <div className="flex flex-col">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-10 w-10"
+        onClick={onRefreshAiPrice}
+        disabled={isLoadingAiPrice}
+      >
+        {isLoadingAiPrice ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <RefreshCcw className="h-4 w-4" />
+        )}
+      </Button>
+      {isLoadingAiPrice && <span className="text-xs mt-1">Fetching...</span>}
+    </div>
+  );
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -250,19 +270,7 @@ export function ItemMetrics({
             <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">
               {ebayListed ? formatCurrency(ebayListed) : 'Not available'}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onRefreshAiPrice}
-              disabled={isLoadingAiPrice}
-              title="Refresh AI Price Estimate"
-              className="h-8 w-8 ml-2 flex-shrink-0"
-            >
-              {isLoadingAiPrice ?
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
-                <RefreshCw className="h-3.5 w-3.5" />
-              }
-            </Button>
+            {refreshButton}
           </div>
         </CardContent>
       </Card>
