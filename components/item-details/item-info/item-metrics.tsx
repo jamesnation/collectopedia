@@ -128,7 +128,6 @@ export function ItemMetrics({
           <RefreshCcw className="h-4 w-4" />
         )}
       </Button>
-      {isLoadingAiPrice && <span className="text-xs mt-1">Fetching...</span>}
     </div>
   );
 
