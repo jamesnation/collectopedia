@@ -5,14 +5,14 @@
  * 
  * This component is the main container for the item details page.
  * It combines all the sub-components and manages shared state.
- * Updated to match the original layout with gallery on left, details on right.
- * Fixed notes editing to maintain popover open while typing.
+ * Updated to use useReducer for more efficient state updates and prevent flickering.
+ * Implemented optimistic updates for all operations to improve user experience.
  * Fixed image display and upload functionality.
  * Added eBay Image Search Debug Panel functionality.
  * Fixed infinite rendering loop by using useCallback for data fetching functions.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useReducer, memo, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ItemHeader, 
@@ -130,7 +130,74 @@ interface ItemDetailsPageProps {
   refreshAiPrice: (id: string) => Promise<number | null>;
 }
 
-export function ItemDetailsPage({
+// Define action types for our reducer
+type ItemAction = 
+  | { type: 'SET_ITEM'; payload: Item }
+  | { type: 'UPDATE_FIELD'; field: string; value: any }
+  | { type: 'REVERT_FIELD'; field: string; value: any };
+
+// Item reducer function
+function itemReducer(state: Item | null, action: ItemAction): Item | null {
+  switch (action.type) {
+    case 'SET_ITEM':
+      return action.payload;
+    case 'UPDATE_FIELD':
+      if (!state) return null;
+      return {
+        ...state,
+        [action.field]: action.value
+      };
+    case 'REVERT_FIELD':
+      if (!state) return null;
+      return {
+        ...state,
+        [action.field]: action.value
+      };
+    default:
+      return state;
+  }
+}
+
+// Memoize child components to prevent unnecessary re-renders
+const MemoizedItemHeader = memo(ItemHeader);
+const MemoizedItemMetrics = memo(ItemMetrics);
+const MemoizedProfitMetrics = memo(ProfitMetrics);
+const MemoizedImageCarousel = memo(ImageCarousel);
+
+// Create separate components for loading and error states
+const LoadingState = () => (
+  <div className="container py-6 space-y-6">
+    <Skeleton className="h-6 w-32" />
+    <Skeleton className="h-10 w-64" />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Skeleton className="h-96 w-full rounded-xl" />
+      <div className="space-y-4">
+        <div className="grid grid-cols-3 gap-4">
+          <Skeleton className="h-20 w-full rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
+        </div>
+        <Skeleton className="h-28 w-full rounded-xl" />
+        <Skeleton className="h-28 w-full rounded-xl" />
+      </div>
+    </div>
+  </div>
+);
+
+const ErrorState = ({ error, onReturn }: { error: string | null, onReturn: () => void }) => (
+  <div className="container py-6">
+    <Card className="p-6 flex flex-col items-center justify-center space-y-4">
+      <h2 className="text-xl font-bold text-destructive">Error Loading Item</h2>
+      <p className="text-center text-muted-foreground">{error || "Item not found."}</p>
+      <Button onClick={onReturn}>
+        Return to Collection
+      </Button>
+    </Card>
+  </div>
+);
+
+// Memoize the component to prevent unnecessary re-renders
+const ItemDetailsPageComponent = function({
   itemId,
   loadItem,
   updateItem,
@@ -143,7 +210,10 @@ export function ItemDetailsPage({
   const { userId } = useAuth();
   const { isDebugMode, isInitialized } = useEbayDebugMode();
   const { region, formatCurrency } = useRegionContext();
-  const [item, setItem] = useState<Item | null>(null);
+  
+  // Replace useState with useReducer for item state
+  const [item, dispatch] = useReducer(itemReducer, null);
+  
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
@@ -168,14 +238,109 @@ export function ItemDetailsPage({
   const [imageLoading, setImageLoading] = useState(true);
   
   // Fields for the details tab
-  const detailFields = item ? {
-    type: item.type,
-    franchise: item.franchise,
-    brand: item.brand,
-    year: item.year,
-    condition: item.condition,
-    acquired: item.acquired
-  } : {};
+  const detailFields = useMemo(() => {
+    if (!item) return {};
+    return {
+      type: item.type,
+      franchise: item.franchise,
+      brand: item.brand,
+      year: item.year,
+      condition: item.condition,
+      acquired: item.acquired
+    };
+  }, [item]);
+  
+  // Map DB images to the format expected by ImageCarousel with better error handling
+  const carouselImages = useMemo(() => {
+    if (!images || images.length === 0 || !item) return [];
+    
+    return images.map(img => {
+      // Ensure the image URL is valid and formatted correctly
+      let imageUrl = img.url;
+      
+      // Check if URL is valid or needs to be adjusted
+      if (imageUrl) {
+        // If URL doesn't start with http/https and doesn't look like a data URL, assume it's a relative path
+        if (!imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
+          // If it doesn't start with a slash, add one
+          if (!imageUrl.startsWith('/')) {
+            imageUrl = `/${imageUrl}`;
+          }
+        }
+        
+        console.log(`Processing image ${img.id}: ${imageUrl.substring(0, 50)}...`);
+      } else {
+        console.warn(`Invalid URL for image ${img.id}`);
+        imageUrl = '/placeholder-image.jpg'; // Fallback to placeholder
+      }
+      
+      return {
+        id: img.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
+        url: imageUrl,
+        alt: img.alt || `${item.name} image`
+      };
+    });
+  }, [images, item]);
+  
+  console.log("Carousel images prepared:", carouselImages.length, "images");
+  
+  // Inside the component, add the handleImageReorder function
+  const handleImageReorder = async (event: any) => {
+    const { active, over } = event;
+    
+    if (active && over && active.id !== over.id) {
+      // Store previous state for rollback
+      const previousImages = [...images];
+      
+      // Optimistically update UI
+      setImages((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        
+        return arrayMove(items, oldIndex, newIndex);
+      });
+      
+      if (item?.id) {
+        try {
+          // Import the action dynamically to avoid server component issues
+          const { reorderImagesAction } = await import("@/actions/images-actions");
+          
+          // Get the updated order after the state has been updated
+          // We need to use a callback to get the latest state
+          const updatedOrders = images.map((img, index) => ({
+            id: img.id,
+            order: index
+          }));
+          
+          // Update the server with the new order
+          const result = await reorderImagesAction(item.id, updatedOrders);
+          
+          if (!result.isSuccess) {
+            throw new Error(result.error || "Failed to reorder images");
+          }
+          
+          console.log("Images reordered successfully");
+          
+          toast({
+            title: "Success",
+            description: "Image order updated successfully",
+            variant: "default",
+          });
+        } catch (error) {
+          console.error('Failed to update image order:', error);
+          
+          // Revert to previous state if update failed
+          setImages(previousImages);
+          
+          toast({
+            title: "Error",
+            description: "Failed to update image order",
+            variant: "destructive",
+          });
+        }
+      }
+    }
+  };
   
   // Define item fields that can be edited
   const editableFields = ['type', 'franchise', 'brand', 'year', 'condition', 'cost', 'acquired'];
@@ -190,73 +355,53 @@ export function ItemDetailsPage({
   const fetchItemData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setImageLoading(true);
     
     try {
       const data = await loadItem(itemId);
-      setItem(data);
+      dispatch({ type: 'SET_ITEM', payload: data });
+      
+      // Process images from the item data
+      console.log("Processing images from item data:", data.images);
+      
+      if (data.images && data.images.length > 0) {
+        // First try to use the images directly from the item data
+        const processedImages: ImageType[] = data.images.map(img => ({
+          id: img.id,
+          url: img.url,
+          alt: img.alt || `${data.name} image`,
+          itemId: data.id,
+          userId: 'current-user' // Placeholder, would normally be the actual user ID
+        }));
+        
+        setImages(processedImages);
+        console.log("Set images from item data:", processedImages.length);
+      } else {
+        // If no images in item data, try to fetch them separately
+        try {
+          const { getImagesByItemIdAction } = await import("@/actions/images-actions");
+          const imagesResult = await getImagesByItemIdAction(data.id);
+          
+          if (imagesResult.isSuccess && imagesResult.data && imagesResult.data.length > 0) {
+            setImages(imagesResult.data);
+            console.log("Set images from API:", imagesResult.data.length);
+          } else {
+            setImages([]);
+            console.log("No images found for item");
+          }
+        } catch (apiError) {
+          console.error("Error fetching images:", apiError);
+          setImages([]);
+        }
+      }
     } catch (error) {
       console.error("Error loading item:", error);
       setError("Failed to load item. Please try again.");
     } finally {
       setIsLoading(false);
-    }
-  }, [itemId, loadItem]);
-  
-  // Fetch images for the item
-  const fetchImages = useCallback(async () => {
-    if (!item) return;
-    
-    setImageLoading(true);
-    console.log("Fetching images for item:", item.id);
-    console.log("Item images data:", item.images);
-    
-    try {
-      // First attempt to fetch images from the API
-      try {
-        // Import the action dynamically to avoid server component issues
-        const { getImagesByItemIdAction } = await import("@/actions/images-actions");
-        
-        console.log("Fetching images from API for item:", item.id);
-        const imagesResult = await getImagesByItemIdAction(item.id);
-        
-        if (imagesResult.isSuccess && imagesResult.data && imagesResult.data.length > 0) {
-          console.log("Successfully fetched images from API:", imagesResult.data.length);
-          setImages(imagesResult.data);
-          return; // Exit early as we have images from API
-        } else {
-          console.log("No images found from API, falling back to item.images");
-        }
-      } catch (apiError) {
-        console.error("Error fetching images from API:", apiError);
-        console.log("Falling back to item.images");
-      }
-      
-      // Fallback: Use images from the item object
-      if (item.images && item.images.length > 0) {
-        console.log("Using images from item object:", item.images.length);
-        
-        // Convert to ImageType[] with required properties
-        const convertedImages: ImageType[] = item.images.map(img => ({
-          id: img.id,
-          url: img.url,
-          alt: img.alt || `${item.name} image`,
-          itemId: item.id,
-          userId: 'current-user' // Placeholder, would normally be the actual user ID
-        }));
-        
-        console.log("Converted images:", convertedImages);
-        setImages(convertedImages);
-      } else {
-        console.log("No images available for this item");
-        setImages([]);
-      }
-    } catch (error) {
-      console.error("Error loading images:", error);
-      setImages([]); // Ensure we set an empty array on error
-    } finally {
       setImageLoading(false);
     }
-  }, [item]);
+  }, [itemId, loadItem]);
   
   // Fetch history events for the item
   const fetchHistoryEvents = useCallback(async () => {
@@ -278,13 +423,6 @@ export function ItemDetailsPage({
     fetchItemData();
   }, [fetchItemData]);
   
-  // Load images separately when item changes
-  useEffect(() => {
-    if (item) {
-      fetchImages();
-    }
-  }, [fetchImages, item]);
-  
   // Load history events on item change
   useEffect(() => {
     if (item) {
@@ -301,28 +439,35 @@ export function ItemDetailsPage({
   }, [item]);
   
   // Handle starting edit mode for a field
-  const handleEditStart = (field: string) => {
+  const handleEditStart = useCallback((field: string) => {
     setIsEditingField(field);
     
     // Initialize temporary states when editing starts
     if (field === "notes" && item) {
       setTempNotes(item.notes || "");
     }
-  };
+  }, [item]);
   
   // Handle canceling edit mode
-  const handleEditCancel = () => {
+  const handleEditCancel = useCallback(() => {
     setIsEditingField(null);
-  };
+  }, []);
   
   // Handle updating a field
-  const handleUpdateField = async (field: string, value: any) => {
+  const handleUpdateField = useCallback(async (field: string, value: any) => {
     if (!item) return;
     
+    // Optimistically update the UI first using the reducer
+    const previousValue = item[field as keyof Item];
+    dispatch({ type: 'UPDATE_FIELD', field, value });
+    setIsEditingField(null);
+    
     try {
+      // Then update the server
       const updatedItem = await updateItem(item.id, { [field]: value });
-      setItem(updatedItem);
-      setIsEditingField(null);
+      
+      // Update with server response to ensure consistency
+      dispatch({ type: 'SET_ITEM', payload: updatedItem });
       
       // Refresh history events after update
       await fetchHistoryEvents();
@@ -333,13 +478,17 @@ export function ItemDetailsPage({
       });
     } catch (err) {
       console.error(`Error updating ${field}:`, err);
+      
+      // Revert to previous value if the update fails
+      dispatch({ type: 'REVERT_FIELD', field, value: previousValue });
+      
       toast({
         title: "Error",
         description: `Failed to update ${field}. Please try again.`,
         variant: "destructive"
       });
     }
-  };
+  }, [item, updateItem, fetchHistoryEvents, toast]);
   
   // Handle adding images
   const handleAddImages = async () => {
@@ -369,7 +518,20 @@ export function ItemDetailsPage({
       
       console.log("Creating image record for item:", item.id, "userId:", userId);
       
-      // Create a new image entry
+      // Create a temporary image entry for optimistic update
+      const tempImageId = `temp-${Date.now()}`;
+      const newTempImage: ImageType = {
+        id: tempImageId,
+        itemId: item.id,
+        userId: userId,
+        url: url,
+        alt: `${item.name} image ${images.length + 1}`
+      };
+      
+      // Optimistically update the UI
+      setImages(prevImages => [...prevImages, newTempImage]);
+      
+      // Create a new image entry on the server
       const imageResult = await createImageAction({
         itemId: item.id,
         userId: userId,
@@ -377,29 +539,15 @@ export function ItemDetailsPage({
       });
       
       if (imageResult.isSuccess && imageResult.data) {
-        // Update both images state and item state
+        // Update the images state with the actual server data
         const newImage = imageResult.data;
         console.log("Successfully created image entry:", newImage);
         
         setImages(prevImages => {
-          const updatedImages = [...prevImages, newImage];
-          console.log("Updated images array:", updatedImages);
-          return updatedImages;
-        });
-        
-        setItem(prevItem => {
-          if (!prevItem) return null;
-          
-          const updatedItem = {
-            ...prevItem,
-            images: [...prevItem.images, {
-              id: newImage.id,
-              url: newImage.url,
-              alt: `${prevItem.name} image ${prevItem.images.length + 1}`
-            }]
-          };
-          console.log("Updated item with new image:", updatedItem);
-          return updatedItem;
+          // Replace the temporary image with the real one
+          return prevImages.map(img => 
+            img.id === tempImageId ? newImage : img
+          );
         });
         
         toast({
@@ -408,6 +556,10 @@ export function ItemDetailsPage({
         });
       } else {
         console.error("Failed to create image entry:", imageResult.error);
+        
+        // Remove the temporary image if the server request failed
+        setImages(prevImages => prevImages.filter(img => img.id !== tempImageId));
+        
         throw new Error(imageResult.error || "Failed to create image entry");
       }
     } catch (err) {
@@ -420,15 +572,19 @@ export function ItemDetailsPage({
     } finally {
       // Close the upload dialog when done
       setIsImageUploadOpen(false);
-      
-      // Refresh images after upload attempt, regardless of outcome
-      fetchImages();
     }
   };
   
   // Handle deleting an image
   const handleDeleteImage = async (imageId: string) => {
     if (!item) return;
+    
+    // Optimistically update UI by removing the image
+    const imageToDelete = images.find(img => img.id === imageId);
+    const previousImages = [...images];
+    
+    // Remove from UI immediately
+    setImages(prevImages => prevImages.filter(img => img.id !== imageId));
     
     try {
       // Import the deleteImageAction dynamically to avoid server component issues
@@ -437,25 +593,19 @@ export function ItemDetailsPage({
       const result = await deleteImageAction(imageId, item.id);
       
       if (result.isSuccess) {
-        // Update both images state and item state
-        setImages(prevImages => prevImages.filter(img => img.id !== imageId));
-        
-        setItem(prevItem => {
-          if (!prevItem) return null;
-          
-          return {
-            ...prevItem,
-            images: prevItem.images.filter(img => img.id !== imageId)
-          };
-        });
-        
         toast({
           title: "Success",
           description: "Image deleted successfully."
         });
+      } else {
+        throw new Error(result.error || "Failed to delete image");
       }
     } catch (err) {
       console.error("Error deleting image:", err);
+      
+      // Restore the previous images if deletion failed
+      setImages(previousImages);
+      
       toast({
         title: "Error",
         description: "Failed to delete image. Please try again.",
@@ -472,25 +622,8 @@ export function ItemDetailsPage({
     setDebugData(null); // Clear previous debug data
     
     try {
-      // Get the current primary image URL
-      let primaryImage: string | undefined;
-      
-      try {
-        // Import the action dynamically to avoid server component issues
-        const { getImagesByItemIdAction } = await import("@/actions/images-actions");
-        const imagesResult = await getImagesByItemIdAction(itemId);
-        
-        if (imagesResult.isSuccess && imagesResult.data && imagesResult.data.length > 0) {
-          primaryImage = imagesResult.data[0].url;
-        } else {
-          // Fallback to current images state if fetch fails
-          primaryImage = images.length > 0 ? images[0].url : undefined;
-        }
-      } catch (error) {
-        console.error("Error fetching latest images:", error);
-        // Fallback to current images state
-        primaryImage = images.length > 0 ? images[0].url : undefined;
-      }
+      // Get the current primary image URL from the images state
+      const primaryImage = images.length > 0 ? images[0].url : undefined;
       
       // Log that we're refreshing with debug mode
       console.log('Refreshing AI price with debug mode:', { isDebugMode, isInitialized });
@@ -531,10 +664,8 @@ export function ItemDetailsPage({
       const newPrice = await refreshAiPrice(item.id);
       
       if (newPrice !== null) {
-        setItem({
-          ...item,
-          ebayListed: newPrice
-        });
+        // Optimistically update the UI using the reducer
+        dispatch({ type: 'UPDATE_FIELD', field: 'ebayListed', value: newPrice });
         
         toast({
           title: "Success",
@@ -559,20 +690,25 @@ export function ItemDetailsPage({
   const handleToggleSold = async (checked: boolean) => {
     if (!item) return;
     
+    // Optimistically update the UI using the reducer
+    dispatch({ type: 'UPDATE_FIELD', field: 'isSold', value: checked });
+    
     if (checked && !item.soldPrice && !item.soldDate) {
       // If item is being marked as sold but doesn't have sold details
       setShowSoldDetails(true);
       try {
         await updateItem(item.id, { isSold: true });
-        setItem({ ...item, isSold: true });
+        // UI already updated optimistically
       } catch (err) {
         console.error("Failed to update sold status:", err);
+        // Revert optimistic update
+        dispatch({ type: 'UPDATE_FIELD', field: 'isSold', value: !checked });
+        setShowSoldDetails(false);
         toast({
           title: "Error",
           description: "Failed to update sold status. Please try again.",
           variant: "destructive"
         });
-        setShowSoldDetails(false);
       }
     } else {
       // Just toggle the sold status
@@ -580,7 +716,9 @@ export function ItemDetailsPage({
         const updatedItem = await updateItem(item.id, { 
           isSold: checked
         });
-        setItem(updatedItem);
+        
+        // Update with server response to ensure consistency
+        dispatch({ type: 'SET_ITEM', payload: updatedItem });
         setShowSoldDetails(false);
         
         // Refresh history events
@@ -593,6 +731,8 @@ export function ItemDetailsPage({
         });
       } catch (err) {
         console.error("Failed to update sold status:", err);
+        // Revert optimistic update
+        dispatch({ type: 'UPDATE_FIELD', field: 'isSold', value: !checked });
         toast({
           title: "Error",
           description: "Failed to update sold status. Please try again.",
@@ -606,14 +746,23 @@ export function ItemDetailsPage({
   const handleSaveSoldDetails = async () => {
     if (!item) return;
     
+    const soldPrice = tempSoldPrice ? parseFloat(tempSoldPrice) : null;
+    const soldDate = tempSoldDate ? new Date(tempSoldDate) : null;
+    
+    // Optimistically update the UI using the reducer
+    const previousItem = { ...item };
+    dispatch({ type: 'UPDATE_FIELD', field: 'soldPrice', value: soldPrice });
+    dispatch({ type: 'UPDATE_FIELD', field: 'soldDate', value: soldDate });
+    setShowSoldDetails(false);
+    
     try {
       const updatedItem = await updateItem(item.id, {
-        soldPrice: tempSoldPrice ? parseFloat(tempSoldPrice) : null,
-        soldDate: tempSoldDate ? new Date(tempSoldDate) : null
+        soldPrice,
+        soldDate
       });
       
-      setItem(updatedItem);
-      setShowSoldDetails(false);
+      // Update with server response to ensure consistency
+      dispatch({ type: 'SET_ITEM', payload: updatedItem });
       
       // Refresh history events
       const events = await loadHistoryEvents(itemId);
@@ -625,6 +774,11 @@ export function ItemDetailsPage({
       });
     } catch (err) {
       console.error("Failed to save sold details:", err);
+      
+      // Revert optimistic update
+      dispatch({ type: 'SET_ITEM', payload: previousItem });
+      setShowSoldDetails(true);
+      
       toast({
         title: "Error",
         description: "Failed to save sold details. Please try again.",
@@ -1175,127 +1329,16 @@ export function ItemDetailsPage({
     );
   };
   
-  // Render loading state
+  // Render the appropriate component based on state
   if (isLoading) {
-    return (
-      <div className="container py-6 space-y-6">
-        <Skeleton className="h-6 w-32" />
-        <Skeleton className="h-10 w-64" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Skeleton className="h-96 w-full rounded-xl" />
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <Skeleton className="h-20 w-full rounded-lg" />
-              <Skeleton className="h-20 w-full rounded-lg" />
-              <Skeleton className="h-20 w-full rounded-lg" />
-            </div>
-            <Skeleton className="h-28 w-full rounded-xl" />
-            <Skeleton className="h-28 w-full rounded-xl" />
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState />;
   }
   
-  // Render an error state
   if (error || !item) {
-    return (
-      <div className="container py-6">
-        <Card className="p-6 flex flex-col items-center justify-center space-y-4">
-          <h2 className="text-xl font-bold text-destructive">Error Loading Item</h2>
-          <p className="text-center text-muted-foreground">{error || "Item not found."}</p>
-          <Button onClick={() => router.push("/my-collection")}>
-            Return to Collection
-          </Button>
-        </Card>
-      </div>
-    );
+    return <ErrorState error={error} onReturn={() => router.push("/my-collection")} />;
   }
   
-  // Map DB images to the format expected by ImageCarousel with better error handling
-  const carouselImages = images && images.length > 0 
-    ? images.map(img => {
-        // Ensure the image URL is valid and formatted correctly
-        let imageUrl = img.url;
-        
-        // Check if URL is valid or needs to be adjusted
-        if (imageUrl) {
-          // If URL doesn't start with http/https and doesn't look like a data URL, assume it's a relative path
-          if (!imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
-            // If it doesn't start with a slash, add one
-            if (!imageUrl.startsWith('/')) {
-              imageUrl = `/${imageUrl}`;
-            }
-          }
-          
-          console.log(`Processing image ${img.id}: ${imageUrl.substring(0, 50)}...`);
-        } else {
-          console.warn(`Invalid URL for image ${img.id}`);
-          imageUrl = '/placeholder-image.jpg'; // Fallback to placeholder
-        }
-        
-        return {
-          id: img.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
-          url: imageUrl,
-          alt: img.alt || `${item.name} image`
-        };
-      })
-    : [];
-    
-  console.log("Carousel images prepared:", carouselImages.length, "images");
-  
-  // Inside the component, add the handleImageReorder function
-  const handleImageReorder = async (event: any) => {
-    const { active, over } = event;
-    
-    if (active && over && active.id !== over.id) {
-      setImages((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        
-        const newItems = arrayMove(items, oldIndex, newIndex);
-        
-        // Update the server with the new order
-        const updatedOrders = newItems.map((img, index) => ({
-          id: img.id,
-          order: index
-        }));
-        
-        if (item?.id) {
-          // Import the action dynamically to avoid server component issues
-          import("@/actions/images-actions").then(({ reorderImagesAction }) => {
-            // Update the server with the new order
-            reorderImagesAction(item.id, updatedOrders)
-              .then(() => {
-                console.log("Images reordered successfully");
-                
-                // Refetch the images to ensure we have the latest order from the server
-                // This ensures the primary image is correctly identified for AI price estimation
-                fetchImages();
-                
-                toast({
-                  title: "Success",
-                  description: "Image order updated successfully",
-                  variant: "default",
-                });
-              })
-              .catch(error => {
-                console.error('Failed to update image order:', error);
-                toast({
-                  title: "Error",
-                  description: "Failed to update image order",
-                  variant: "destructive",
-                });
-              });
-          });
-        }
-        
-        return newItems;
-      });
-    }
-  };
-  
-  // Render the actual component with the original layout structure
+  // Render the main component
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black/30">
       <main className="container mx-auto px-2 sm:px-4 py-8 sm:py-12 max-w-7xl overflow-x-hidden">
@@ -1318,7 +1361,7 @@ export function ItemDetailsPage({
             ) : (
               <>
                 {carouselImages.length > 0 ? (
-                  <ImageCarousel 
+                  <MemoizedImageCarousel 
                     images={carouselImages} 
                     itemId={item.id} 
                     onAddImages={handleAddImages}
@@ -1353,7 +1396,7 @@ export function ItemDetailsPage({
           {/* Details column */}
           <div className="space-y-6">
             {/* Item Header */}
-            <ItemHeader
+            <MemoizedItemHeader
               name={item.name}
               isEditing={isEditingField === "name"}
               onEditStart={() => handleEditStart("name")}
@@ -1362,7 +1405,7 @@ export function ItemDetailsPage({
             />
             
             {/* Metrics Section */}
-            <ItemMetrics
+            <MemoizedItemMetrics
               cost={item.cost}
               value={item.value}
               soldPrice={item.soldPrice}
@@ -1383,7 +1426,7 @@ export function ItemDetailsPage({
             />
             
             {/* Profit Metrics */}
-            <ProfitMetrics
+            <MemoizedProfitMetrics
               cost={item.cost}
               value={item.value}
               soldPrice={item.soldPrice}
@@ -1724,4 +1767,7 @@ export function ItemDetailsPage({
       </Dialog>
     </div>
   );
-} 
+};
+
+// Export a memoized version of the component
+export const ItemDetailsPage = memo(ItemDetailsPageComponent); 
