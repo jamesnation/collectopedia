@@ -72,12 +72,15 @@ export async function fetchEbayPrices(
     
     // Create search term that includes franchise if provided
     let searchTerm = toyName;
+    
+    // Include franchise in text search if provided and not "Other" or "Unknown"
     if (franchise && franchise.trim() && !['Other', 'Unknown'].includes(franchise)) {
       searchTerm = `${franchise} ${toyName}`;
       console.log('Added franchise to search term:', { originalName: toyName, franchise, finalSearchTerm: searchTerm });
     } else {
       console.log('Using original name without franchise:', { toyName, franchise: franchise || 'None', reason: !franchise ? 'No franchise' : franchise === 'Other' || franchise === 'Unknown' ? 'Excluded franchise' : 'Empty franchise' });
     }
+    
     url.searchParams.append('toyName', searchTerm);
     url.searchParams.append('listingType', listingType);
     if (condition) {
@@ -147,6 +150,7 @@ export async function updateEbayPrices(
   name: string, 
   type: 'listed' | 'sold', 
   condition?: 'New' | 'Used',
+  franchise?: string,
   region?: string
 ): Promise<{
   success: boolean;
@@ -161,9 +165,9 @@ export async function updateEbayPrices(
     // Get region from cookie if not provided
     const effectiveRegion = region || getRegionFromCookie() || 'UK'; // Default to UK if not found
     
-    console.log(`Updating eBay ${type} prices for item "${name}" (${condition || 'Any condition'}, Region: ${effectiveRegion})`);
+    console.log(`Updating eBay ${type} prices for item "${name}" (${condition || 'Any condition'}, Franchise: ${franchise || 'Any'}, Region: ${effectiveRegion})`);
     
-    const prices = await fetchEbayPrices(name, type, condition, undefined, effectiveRegion);
+    const prices = await fetchEbayPrices(name, type, condition, franchise, effectiveRegion);
 
     console.log(`${type.charAt(0).toUpperCase() + type.slice(1)} Prices (${condition || 'Any Condition'}):`, prices);
 
@@ -245,7 +249,7 @@ export async function updateAllEbayListedValues() {
         if (!item.name) continue;
         
         // Update the eBay listed price - pass the item's condition and franchise
-        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, getRegionFromCookie());
+        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, item.franchise, getRegionFromCookie());
         
         if (result.success && result.prices && result.prices.median) {
           totalListedValue += result.prices.median;
@@ -649,7 +653,7 @@ export async function getEnhancedEbayPrices(
     console.log('Debug mode is disabled, no debug data will be collected');
   }
   
-  // Get text-based results with franchise
+  // Get text-based results WITH franchise (for better text-based matching)
   const textResults = await fetchEbayPrices(
     item.title,
     'listed',
@@ -968,7 +972,7 @@ export async function refreshAllEbayPrices(
       // Process this batch in parallel
       await Promise.all(batch.map(async (item) => {
         try {
-          const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, getRegionFromCookie());
+          const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, item.franchise, getRegionFromCookie());
           
           if (result.success && result.prices?.median) {
             totalListedValue += result.prices.median;
@@ -1018,7 +1022,7 @@ export async function updateItemWithEnhancedPricing(item: any, itemImages: Recor
       console.log(`No image available for ${item.name}. Using text-based pricing only.`);
       
       // Update the eBay listed price - pass the item's condition and franchise
-      const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, getRegionFromCookie());
+      const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, item.franchise, getRegionFromCookie());
       
       if (result.success && result.prices && result.prices.median) {
         console.log(`Successfully updated price for ${item.name} to ${result.prices.median}`);
@@ -1074,7 +1078,7 @@ export async function processBatchEbayPriceUpdate(batch: any[], progress: any = 
   try {
     await Promise.all(batch.map(async (item) => {
       try {
-        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, getRegionFromCookie());
+        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, item.franchise, getRegionFromCookie());
         
         if (result.success && result.prices?.median) {
           results.successfulUpdates++;

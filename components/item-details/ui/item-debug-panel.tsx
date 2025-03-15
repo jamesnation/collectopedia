@@ -211,7 +211,7 @@ export function ItemDebugPanel({ debugData }: DebugDataProps) {
                 Formatted Query: <span className="text-blue-900 dark:text-blue-100 font-bold">&quot;{displayQuery}&quot;</span>
               </div>
               <div className="text-[10px] text-blue-700 dark:text-blue-400 mt-1">
-                Format: [Item Name] + (Condition) + Franchise
+                Format: [Item Name] + (Condition) + Franchise (text search only)
               </div>
               {rawSearchString && rawSearchString !== displayQuery && (
                 <div className="text-xs text-blue-800 dark:text-blue-300 mt-2">
