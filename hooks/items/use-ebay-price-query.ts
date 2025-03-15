@@ -48,7 +48,7 @@ export function useEbayPriceQuery(
       
       // Ensure the response matches our expected interface
       const priceResult: EnhancedEbayPriceResult = {
-        price: result.finalPrice || result.price || null,
+        price: (result.combined?.median || result.imageBased?.median || result.textBased?.median || null),
         textBased: result.textBased,
         imageBased: result.imageBased,
         combined: result.combined,
