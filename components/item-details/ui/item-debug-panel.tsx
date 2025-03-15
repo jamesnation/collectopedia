@@ -208,21 +208,21 @@ export function ItemDebugPanel({ debugData }: DebugDataProps) {
             
             <div className="p-2 bg-blue-100 dark:bg-blue-950/20 rounded-md">
               <div className="text-xs font-medium text-blue-800 dark:text-blue-300">
-                Formatted Query: <span className="text-blue-900 dark:text-blue-100 font-bold">"{displayQuery}"</span>
+                Formatted Query: <span className="text-blue-900 dark:text-blue-100 font-bold">&quot;{displayQuery}&quot;</span>
               </div>
               <div className="text-[10px] text-blue-700 dark:text-blue-400 mt-1">
                 Format: [Item Name] + (Condition) + Franchise
               </div>
               {rawSearchString && rawSearchString !== displayQuery && (
                 <div className="text-xs text-blue-800 dark:text-blue-300 mt-2">
-                  <span className="font-semibold">Raw Search:</span> "{rawSearchString}"
+                  <span className="font-semibold">Raw Search:</span> &quot;{rawSearchString}&quot;
                 </div>
               )}
             </div>
             
             {textQuery && (
               <div className="text-xs text-blue-600 dark:text-blue-300">
-                <span className="font-semibold">Text Search:</span> "{textQuery}"
+                <span className="font-semibold">Text Search:</span> &quot;{textQuery}&quot;
               </div>
             )}
             
