@@ -98,6 +98,48 @@ export function ItemDebugPanel({ debugData }: DebugDataProps) {
   const filterString = debugData.imageSearchDetails?.filterString || '';
   const filterKeywords = debugData.imageSearchDetails?.titleFilterWords || [];
   
+  // More comprehensive extraction of query parameters
+  const itemName = debugData.itemName || 
+                  debugData.item?.name || 
+                  debugData.request?.title ||
+                  debugData.requestParams?.title ||
+                  debugData.searchParams?.title ||
+                  debugData.title ||
+                  '';
+                  
+  const itemCondition = debugData.itemCondition || 
+                       debugData.item?.condition || 
+                       debugData.request?.condition ||
+                       debugData.requestParams?.condition ||
+                       debugData.searchParams?.condition ||
+                       debugData.condition ||
+                       '';
+                       
+  const itemFranchise = debugData.itemFranchise || 
+                       debugData.item?.franchise || 
+                       debugData.request?.franchise ||
+                       debugData.requestParams?.franchise ||
+                       debugData.searchParams?.franchise ||
+                       debugData.franchise ||
+                       '';
+
+  // Try to build the formatted query or fallback to the raw query
+  const formattedQuery = [
+    itemName,
+    itemCondition ? `(${itemCondition})` : '',
+    itemFranchise ? `${itemFranchise}` : ''
+  ].filter(Boolean).join(' ').trim() || textQuery;
+
+  // Check if we actually have a query to show
+  const displayQuery = formattedQuery || textQuery || 'Not available';
+
+  // Try to find the actual raw search string from the debugData
+  const rawSearchString = debugData.searchText || 
+                         debugData.rawSearchQuery || 
+                         debugData.ebaySearchQuery || 
+                         debugData.searchString ||
+                         textQuery;
+
   // Add this helper function after the useState declaration
   const getEbayItemUrl = (match: any): string => {
     // Try direct URL properties first
@@ -163,6 +205,20 @@ export function ItemDebugPanel({ debugData }: DebugDataProps) {
             <h4 className="text-xs font-medium text-blue-700 dark:text-blue-400 flex items-center">
               <Search className="h-3 w-3 mr-1" /> eBay Search Query Details
             </h4>
+            
+            <div className="p-2 bg-blue-100 dark:bg-blue-950/20 rounded-md">
+              <div className="text-xs font-medium text-blue-800 dark:text-blue-300">
+                Formatted Query: <span className="text-blue-900 dark:text-blue-100 font-bold">"{displayQuery}"</span>
+              </div>
+              <div className="text-[10px] text-blue-700 dark:text-blue-400 mt-1">
+                Format: [Item Name] + (Condition) + Franchise
+              </div>
+              {rawSearchString && rawSearchString !== displayQuery && (
+                <div className="text-xs text-blue-800 dark:text-blue-300 mt-2">
+                  <span className="font-semibold">Raw Search:</span> "{rawSearchString}"
+                </div>
+              )}
+            </div>
             
             {textQuery && (
               <div className="text-xs text-blue-600 dark:text-blue-300">
@@ -372,7 +428,37 @@ export function ItemDebugPanel({ debugData }: DebugDataProps) {
           {/* Full debug info */}
           {showFullDebug && (
             <div className="mt-2 border border-yellow-200 dark:border-yellow-800/30 rounded p-2 max-h-[300px] overflow-y-auto">
-              {/* Add detailed sample item data */}
+              {/* Add query details first to make them easier to find */}
+              <div className="mb-4">
+                <h5 className="text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-1">
+                  Query Details:
+                </h5>
+                <div className="bg-yellow-100 dark:bg-yellow-900/20 p-2 rounded text-xs">
+                  <div><span className="font-semibold">Item Name:</span> {itemName || 'Not found'}</div>
+                  <div><span className="font-semibold">Condition:</span> {itemCondition || 'Not found'}</div>
+                  <div><span className="font-semibold">Franchise:</span> {itemFranchise || 'Not found'}</div>
+                  <div className="mt-1"><span className="font-semibold">Text Query:</span> {textQuery || 'Not found'}</div>
+                  <div className="mt-1"><span className="font-semibold">Has Image Query:</span> {imageQuery ? 'Yes' : 'No'}</div>
+                </div>
+              </div>
+
+              {/* Request params if available */}
+              {(debugData.request || debugData.requestParams || debugData.searchParams) && (
+                <div className="mb-4">
+                  <h5 className="text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-1">
+                    Request Parameters:
+                  </h5>
+                  <pre className="text-xs text-yellow-700 dark:text-yellow-400 whitespace-pre-wrap bg-yellow-100 dark:bg-yellow-900/20 p-2 rounded">
+                    {JSON.stringify(
+                      debugData.request || debugData.requestParams || debugData.searchParams, 
+                      null, 
+                      2
+                    )}
+                  </pre>
+                </div>
+              )}
+
+              {/* Sample item data */}
               {(debugData.imageMatches?.length > 0 || debugData.textMatches?.length > 0) && (
                 <div className="mb-4">
                   <h5 className="text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-1">
@@ -387,6 +473,11 @@ export function ItemDebugPanel({ debugData }: DebugDataProps) {
                   </pre>
                 </div>
               )}
+
+              {/* Full debug data */}
+              <h5 className="text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-1">
+                Full Debug Data:
+              </h5>
               <pre className="text-xs text-yellow-700 dark:text-yellow-400 whitespace-pre-wrap">
                 {JSON.stringify(debugData, null, 2)}
               </pre>
