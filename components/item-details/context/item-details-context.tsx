@@ -261,10 +261,19 @@ export function ItemDetailsProvider({
   
   // Handle editing field start
   const handleEditStart = (field: string) => {
+    console.log(`handleEditStart called with field: ${field}`);
+    
     if (field === "notes" && item) {
       setTempNotes(item.notes || "");
+    } else if ((field === "soldPrice" || field === "soldPrice-main" || field === "soldPrice-detail") && item) {
+      console.log(`Setting tempSoldPrice to: ${item.soldPrice}`);
+      setTempSoldPrice(item.soldPrice ? String(item.soldPrice) : "");
+    } else if (field === "soldDate" && item) {
+      setTempSoldDate(item.soldDate ? new Date(item.soldDate).toISOString().split('T')[0] : "");
     }
+    
     setIsEditingField(field);
+    console.log(`isEditingField is now set to: ${field}`);
   };
   
   // Handle editing cancel
@@ -278,14 +287,29 @@ export function ItemDetailsProvider({
     if (!item) return;
     
     try {
+      // Log field update attempts for debugging
+      console.log(`Updating field: ${field} with value:`, value);
+      
+      // Normalize field names
+      const normalizedField = field === "soldPrice-main" || field === "soldPrice-detail" 
+        ? "soldPrice" 
+        : field;
+      
       // Use the React Query mutation
       await updateItemMutation.mutateAsync({ 
         id: item.id, 
-        data: { [field]: value } 
+        data: { [normalizedField]: value } 
       });
       
       setIsEditingField(null);
       
+      // Show success message for certain fields
+      if (normalizedField === "soldPrice" || normalizedField === "soldDate") {
+        toast({
+          title: "Success",
+          description: `Updated ${normalizedField === "soldPrice" ? "sold price" : "sold date"} successfully.`,
+        });
+      }
     } catch (error) {
       console.error(`Error updating ${field}:`, error);
       toast({
@@ -452,27 +476,31 @@ export function ItemDetailsProvider({
     if (!item) return;
     
     try {
+      // Update the item's isSold status immediately in the database
+      await updateItemMutation.mutateAsync({
+        id: item.id,
+        data: {
+          isSold: checked
+        }
+      });
+      
       // If toggling to sold, show the sold details form
       if (checked) {
         setShowSoldDetails(true);
         setTempSoldPrice(item.soldPrice ? String(item.soldPrice) : "");
         setTempSoldDate(item.soldDate ? new Date(item.soldDate).toISOString().split('T')[0] : "");
-        return;
+      } else {
+        // If toggling to not sold, clear sold details
+        await updateItemMutation.mutateAsync({
+          id: item.id,
+          data: {
+            soldPrice: null,
+            soldDate: null
+          }
+        });
+        
+        setShowSoldDetails(false);
       }
-      
-      // If toggling to not sold, update the item right away
-      // Use React Query mutation
-      await updateItemMutation.mutateAsync({
-        id: item.id,
-        data: {
-          isSold: false,
-          soldPrice: null,
-          soldDate: null
-        }
-      });
-      
-      setShowSoldDetails(false);
-      
     } catch (error) {
       console.error("Error toggling sold state:", error);
       toast({
@@ -491,6 +519,16 @@ export function ItemDetailsProvider({
       const soldPrice = tempSoldPrice ? parseFloat(tempSoldPrice) : null;
       const soldDate = tempSoldDate ? new Date(tempSoldDate) : null;
       
+      // Validate input
+      if (!soldPrice || !soldDate) {
+        toast({
+          title: "Validation Error",
+          description: "Both sold price and date are required.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Use React Query mutation
       await updateItemMutation.mutateAsync({
         id: item.id,
@@ -503,6 +541,10 @@ export function ItemDetailsProvider({
       
       setShowSoldDetails(false);
       
+      toast({
+        title: "Success",
+        description: "Sold details saved successfully.",
+      });
     } catch (error) {
       console.error("Error saving sold details:", error);
       toast({

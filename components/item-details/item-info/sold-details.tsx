@@ -49,6 +49,13 @@ export function SoldDetails({
     soldDate ? new Date(soldDate).toISOString().split('T')[0] : ""
   );
 
+  console.log("SoldDetails rendering with props:", {
+    soldPrice,
+    soldDate,
+    isEditingSoldPrice,
+    isEditingSoldDate
+  });
+
   // Update local state when props change
   useEffect(() => {
     if (!isEditingSoldPrice && soldPrice !== null) {
@@ -59,16 +66,32 @@ export function SoldDetails({
     }
   }, [soldPrice, soldDate, isEditingSoldPrice, isEditingSoldDate]);
 
-  const handleSoldPriceSave = () => {
-    const parsedPrice = parseInt(editedSoldPrice);
+  const handleSoldPriceSave = async () => {
+    console.log("Attempting to save sold price:", editedSoldPrice);
+    const parsedPrice = parseFloat(editedSoldPrice);
     if (!isNaN(parsedPrice)) {
-      onEditSoldPriceSave(parsedPrice);
+      try {
+        await onEditSoldPriceSave(parsedPrice);
+        console.log("Sold price saved successfully");
+      } catch (error) {
+        console.error("Error saving sold price:", error);
+      }
+    } else {
+      console.error("Invalid price format:", editedSoldPrice);
     }
   };
 
-  const handleSoldDateSave = () => {
+  const handleSoldDateSave = async () => {
+    console.log("Attempting to save sold date:", editedSoldDate);
     if (editedSoldDate) {
-      onEditSoldDateSave(new Date(editedSoldDate));
+      try {
+        await onEditSoldDateSave(new Date(editedSoldDate));
+        console.log("Sold date saved successfully");
+      } catch (error) {
+        console.error("Error saving sold date:", error);
+      }
+    } else {
+      console.error("Invalid date format or empty date");
     }
   };
 
@@ -78,12 +101,24 @@ export function SoldDetails({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Sold Price</Label>
-          <Popover open={isEditingSoldPrice} onOpenChange={(open) => !open && onEditCancel()}>
+          <Popover 
+            open={isEditingSoldPrice}
+            onOpenChange={(open) => {
+              console.log("SoldPrice popover onOpenChange:", { open, isEditingSoldPrice });
+              if (!open) {
+                onEditCancel();
+              }
+            }}
+          >
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
                 className="p-0 h-auto font-normal group w-full text-left justify-start !items-start"
-                onClick={onEditSoldPriceStart}
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log("SoldPrice button clicked, calling onEditSoldPriceStart");
+                  onEditSoldPriceStart();
+                }}
               >
                 <div className="flex items-center">
                   <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10 text-purple-400 font-semibold">
@@ -131,7 +166,10 @@ export function SoldDetails({
         
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Sold Date</Label>
-          <Popover open={isEditingSoldDate} onOpenChange={(open) => !open && onEditCancel()}>
+          <Popover open={isEditingSoldDate} onOpenChange={(open) => {
+            if (!open) onEditCancel();
+            else if (open && !isEditingSoldDate) onEditSoldDateStart();
+          }}>
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"

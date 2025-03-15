@@ -72,20 +72,41 @@ export function ItemDetailsCard() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="text-xs text-muted-foreground mb-1.5">Date Acquired</div>
-              <div className="flex items-center">
-                <Button
-                  variant="ghost"
-                  className="p-0 h-auto font-normal text-left justify-start w-full group"
-                  onClick={() => handleEditStart("acquired")}
-                >
-                  <div className="flex items-center">
-                    <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
-                      {item.acquired ? new Date(item.acquired).toLocaleDateString() : 'Not specified'}
-                    </Badge>
-                    <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2">Edit</span>
+              <Popover open={isEditingField === "acquired"} onOpenChange={(open) => !open && handleEditCancel()}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="p-0 h-auto font-normal text-left justify-start w-full group"
+                    onClick={() => handleEditStart("acquired")}
+                  >
+                    <div className="flex items-center">
+                      <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
+                        {item.acquired ? new Date(item.acquired).toLocaleDateString() : 'Not specified'}
+                      </Badge>
+                      <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2">Edit</span>
+                    </div>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 dark:bg-black/90 dark:border-border">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-sm text-foreground">Edit Date Acquired</h4>
+                    <div className="space-y-2">
+                      <input 
+                        type="date"
+                        className="w-full p-2 rounded-md border border-input bg-background"
+                        value={item.acquired ? new Date(item.acquired).toISOString().split('T')[0] : ''}
+                        onChange={(e) => {
+                          const date = e.target.value ? new Date(e.target.value) : null;
+                          handleUpdateField("acquired", date);
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                    </div>
                   </div>
-                </Button>
-              </div>
+                </PopoverContent>
+              </Popover>
             </div>
             
             <div>
@@ -104,20 +125,39 @@ export function ItemDetailsCard() {
           </div>
         </div>
         
-        {/* Show sold details for editing only when the item is sold and has sold details */}
-        {item.isSold && item.soldPrice !== null && !showSoldDetails && (
-          <SoldDetails
-            soldPrice={item.soldPrice}
-            soldDate={item.soldDate}
-            isEditingSoldPrice={isEditingField === "soldPrice"}
-            isEditingSoldDate={isEditingField === "soldDate"}
-            onEditSoldPriceStart={() => handleEditStart("soldPrice")}
-            onEditSoldDateStart={() => handleEditStart("soldDate")}
-            onEditCancel={handleEditCancel}
-            onEditSoldPriceSave={(price) => handleUpdateField("soldPrice", price)}
-            onEditSoldDateSave={(date) => handleUpdateField("soldDate", date)}
-          />
-        )}
+        {/* Always show SoldDetails when the item is sold, regardless of showSoldDetails state */}
+        {(() => {
+          // Show the SoldDetails component when:
+          // 1. Item is sold AND
+          // 2. Either the initial form is not showing OR we have saved the details already
+          const shouldShowSoldDetails = item.isSold && 
+            (!showSoldDetails || (item.soldPrice !== null && item.soldDate !== null));
+          
+          console.log("SoldDetails conditional check:", {
+            isSold: item.isSold,
+            soldPrice: item.soldPrice,
+            soldDate: item.soldDate,
+            showSoldDetails,
+            shouldShowSoldDetails
+          });
+          
+          return shouldShowSoldDetails && (
+            <SoldDetails
+              soldPrice={item.soldPrice}
+              soldDate={item.soldDate}
+              isEditingSoldPrice={isEditingField === "soldPrice" || isEditingField === "soldPrice-main" || isEditingField === "soldPrice-detail"}
+              isEditingSoldDate={isEditingField === "soldDate"}
+              onEditSoldPriceStart={() => {
+                console.log("onEditSoldPriceStart called from SoldDetails");
+                handleEditStart("soldPrice");
+              }}
+              onEditSoldDateStart={() => handleEditStart("soldDate")}
+              onEditCancel={handleEditCancel}
+              onEditSoldPriceSave={(price) => handleUpdateField("soldPrice", price)}
+              onEditSoldDateSave={(date) => handleUpdateField("soldDate", date)}
+            />
+          );
+        })()}
         
         {/* Item Information Section */}
         <div className="space-y-4 pt-4 border-t border-border">
