@@ -559,9 +559,6 @@ export function ItemDetailsProvider({
   const handleDeleteItem = async () => {
     if (!item) return;
     
-    const confirmDelete = window.confirm("Are you sure you want to delete this item? This action cannot be undone.");
-    if (!confirmDelete) return;
-    
     try {
       // Use React Query mutation
       await deleteItemMutation.mutateAsync(item.id);
@@ -569,6 +566,10 @@ export function ItemDetailsProvider({
       // Navigate back to collection
       router.push("/my-collection");
       
+      toast({
+        title: "Item deleted",
+        description: "The item has been successfully deleted.",
+      });
     } catch (error) {
       console.error("Error deleting item:", error);
       toast({

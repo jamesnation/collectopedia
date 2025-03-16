@@ -134,7 +134,7 @@ function ItemDetailsContent() {
         {/* Back Button */}
         <Button 
           variant="ghost" 
-          className="inline-flex items-center text-purple-400 hover:text-primary/50 mb-4 sm:mb-8"
+          className="inline-flex items-center text-muted-foreground hover:text-foreground hover:bg-muted/40 mb-4 sm:mb-8"
           onClick={() => router.push("/my-collection")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
