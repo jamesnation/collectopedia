@@ -18,6 +18,7 @@ import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema";
 import { useState, useEffect } from "react";
 import { getCustomBrandsAction } from "@/actions/custom-brands-actions";
 import { getCustomFranchisesAction } from "@/actions/custom-franchises-actions";
+import { Edit } from "lucide-react";
 
 // Constants for dropdown options
 const TYPE_OPTIONS = itemTypeEnum.enumValues;
@@ -119,7 +120,9 @@ export function ItemDetailsCard() {
                       <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
                         {item.acquired ? new Date(item.acquired).toLocaleDateString() : 'Not specified'}
                       </Badge>
-                      <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2">Edit</span>
+                      <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Edit size={14} className="text-muted-foreground" />
+                      </span>
                     </div>
                   </Button>
                 </PopoverTrigger>
@@ -213,7 +216,9 @@ export function ItemDetailsCard() {
                       <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
                         {item.type || 'Not specified'}
                       </Badge>
-                      <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2">Edit</span>
+                      <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Edit size={14} className="text-muted-foreground" />
+                      </span>
                     </div>
                   </Button>
                 </PopoverTrigger>
@@ -253,7 +258,9 @@ export function ItemDetailsCard() {
                       <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
                         {item.franchise || 'Not specified'}
                       </Badge>
-                      <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2">Edit</span>
+                      <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Edit size={14} className="text-muted-foreground" />
+                      </span>
                     </div>
                   </Button>
                 </PopoverTrigger>
@@ -302,7 +309,9 @@ export function ItemDetailsCard() {
                       <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
                         {item.brand || 'Not specified'}
                       </Badge>
-                      <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2">Edit</span>
+                      <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Edit size={14} className="text-muted-foreground" />
+                      </span>
                     </div>
                   </Button>
                 </PopoverTrigger>
@@ -351,7 +360,9 @@ export function ItemDetailsCard() {
                       <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
                         {item.year || 'Not specified'}
                       </Badge>
-                      <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2">Edit</span>
+                      <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Edit size={14} className="text-muted-foreground" />
+                      </span>
                     </div>
                   </Button>
                 </PopoverTrigger>
@@ -392,7 +403,9 @@ export function ItemDetailsCard() {
                       <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
                         {item.condition || 'Not specified'}
                       </Badge>
-                      <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2">Edit</span>
+                      <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Edit size={14} className="text-muted-foreground" />
+                      </span>
                     </div>
                   </Button>
                 </PopoverTrigger>
@@ -430,7 +443,9 @@ export function ItemDetailsCard() {
                   >
                     <div className="w-full bg-primary/5 hover:bg-primary/10 p-2 rounded text-sm min-h-[60px] overflow-y-auto text-left relative">
                       <span className="block whitespace-pre-wrap">{item.notes || 'No notes added'}</span>
-                      <span className="absolute top-1 right-1 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">Edit</span>
+                      <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Edit size={14} className="text-muted-foreground" />
+                      </span>
                     </div>
                   </Button>
                 </PopoverTrigger>
