@@ -29,6 +29,13 @@
 - **Server Configuration**: Implemented robust Next.js server setup with automatic port allocation.
 - **Rendering Performance**: Achieved fast page compilation and loading times (main page in 519ms, item details in 1654ms).
 
+### 6. eBay Integration Refinements
+- **Query Optimization**: Implemented different search strategies for text and image searches.
+- **Enhanced Text Search**: Modified the eBay search algorithm to include franchise parameter in text-based searches for better matching.
+- **Image Search Refinement**: Optimized image searches to exclude franchise, focusing purely on visual similarity.
+- **Debug Panel Improvements**: Enhanced the debug panel to clearly display query formats and search parameters.
+- **Code Consistency**: Updated all relevant components to maintain consistent parameter usage across the application.
+
 ## Technical Debt
 
 1. **TypeScript Type Issues**: Some TypeScript errors remain in the codebase, particularly around image object properties and function arguments.

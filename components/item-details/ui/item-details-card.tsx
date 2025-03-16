@@ -14,26 +14,37 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { ItemStatus, SoldDetails } from "../item-info";
 import { ItemCondition } from "@/types/item-types";
+import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema";
+import { useState, useEffect } from "react";
+import { getCustomBrandsAction } from "@/actions/custom-brands-actions";
+import { getCustomFranchisesAction } from "@/actions/custom-franchises-actions";
 
 // Constants for dropdown options
-const TYPE_OPTIONS = ["Action Figure", "Plush", "Building Set", "Vehicle", "Statue", "Other"];
-const FRANCHISE_OPTIONS = [
-  { value: "starWars", label: "Star Wars" },
-  { value: "marvel", label: "Marvel" },
-  { value: "dc", label: "DC Comics" },
-  { value: "nintendo", label: "Nintendo" },
-  { value: "pokemon", label: "Pokémon" },
-  { value: "other", label: "Other" }
+const TYPE_OPTIONS = itemTypeEnum.enumValues;
+
+// Franchise options from schema
+const FRANCHISE_OPTIONS = franchiseEnum.enumValues;
+
+// Default brands from old file
+const DEFAULT_BRANDS = [
+  'DC',
+  'Filmation',
+  'Funko',
+  'Games Workshop',
+  'Hasbro',
+  'Kenner',
+  'Marvel',
+  'Matchbox',
+  'Mattel',
+  'Medium',
+  'Playmates',
+  'Senate',
+  'Sunbow',
+  'Super7',
+  'Takara',
+  'Tomy'
 ];
-const BRAND_OPTIONS = [
-  { value: "hasbro", label: "Hasbro" },
-  { value: "mattel", label: "Mattel" },
-  { value: "lego", label: "LEGO" },
-  { value: "funko", label: "Funko" },
-  { value: "hottoys", label: "Hot Toys" },
-  { value: "bandai", label: "Bandai" },
-  { value: "other", label: "Other" }
-];
+
 const YEAR_OPTIONS = Array.from({ length: 50 }, (_, i) => {
   const year = new Date().getFullYear() - i;
   return { value: year.toString(), label: year.toString() };
@@ -58,6 +69,31 @@ export function ItemDetailsCard() {
     handleSaveSoldDetails,
     handleDeleteItem
   } = useItemDetails();
+
+  // Add state for custom brands and franchises
+  const [customBrands, setCustomBrands] = useState<{ id: string; name: string }[]>([]);
+  const [customFranchises, setCustomFranchises] = useState<{ id: string; name: string }[]>([]);
+
+  // Load custom brands and franchises
+  useEffect(() => {
+    const loadCustomData = async () => {
+      try {
+        const brandsResult = await getCustomBrandsAction();
+        if (brandsResult.isSuccess && brandsResult.data) {
+          setCustomBrands(brandsResult.data);
+        }
+
+        const franchisesResult = await getCustomFranchisesAction();
+        if (franchisesResult.isSuccess && franchisesResult.data) {
+          setCustomFranchises(franchisesResult.data);
+        }
+      } catch (error) {
+        console.error("Error loading custom data:", error);
+      }
+    };
+
+    loadCustomData();
+  }, []);
 
   if (!item) return null;
 
@@ -230,9 +266,18 @@ export function ItemDetailsCard() {
                         value={item.franchise}
                         onChange={(e) => handleUpdateField("franchise", e.target.value)}
                       >
-                        {FRANCHISE_OPTIONS.map(option => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
+                        <optgroup label="Default Franchises">
+                          {FRANCHISE_OPTIONS.map(option => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </optgroup>
+                        {customFranchises.length > 0 && (
+                          <optgroup label="Custom Franchises">
+                            {customFranchises.map(franchise => (
+                              <option key={franchise.id} value={franchise.name}>{franchise.name}</option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                     </div>
                     <div className="flex justify-end space-x-2">
@@ -270,9 +315,18 @@ export function ItemDetailsCard() {
                         value={item.brand}
                         onChange={(e) => handleUpdateField("brand", e.target.value)}
                       >
-                        {BRAND_OPTIONS.map(option => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
+                        <optgroup label="Default Brands">
+                          {DEFAULT_BRANDS.map(option => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </optgroup>
+                        {customBrands.length > 0 && (
+                          <optgroup label="Custom Brands">
+                            {customBrands.map(brand => (
+                              <option key={brand.id} value={brand.name}>{brand.name}</option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                     </div>
                     <div className="flex justify-end space-x-2">
