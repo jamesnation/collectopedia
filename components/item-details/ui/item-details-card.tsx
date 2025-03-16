@@ -113,13 +113,13 @@ export function ItemDetailsCard() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="p-0 h-auto font-normal text-left justify-start w-full group"
+                    className="p-0 h-auto font-normal text-left justify-start w-full group bg-transparent hover:bg-transparent"
                     onClick={() => handleEditStart("acquired")}
                   >
                     <div className="flex items-center">
-                      <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
+                      <span className="rounded-full border border-input px-2.5 py-0.5 text-xs font-semibold">
                         {item.acquired ? new Date(item.acquired).toLocaleDateString() : 'Not specified'}
-                      </Badge>
+                      </span>
                       <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Edit size={14} className="text-muted-foreground" />
                       </span>
@@ -209,13 +209,13 @@ export function ItemDetailsCard() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="p-0 h-auto font-normal text-left justify-start w-full group"
+                    className="p-0 h-auto font-normal text-left justify-start w-full group bg-transparent hover:bg-transparent"
                     onClick={() => handleEditStart("type")}
                   >
                     <div className="flex items-center">
-                      <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
+                      <span className="rounded-full border border-input px-2.5 py-0.5 text-xs font-semibold">
                         {item.type || 'Not specified'}
-                      </Badge>
+                      </span>
                       <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Edit size={14} className="text-muted-foreground" />
                       </span>
@@ -251,13 +251,13 @@ export function ItemDetailsCard() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="p-0 h-auto font-normal text-left justify-start w-full group"
+                    className="p-0 h-auto font-normal text-left justify-start w-full group bg-transparent hover:bg-transparent"
                     onClick={() => handleEditStart("franchise")}
                   >
                     <div className="flex items-center">
-                      <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
+                      <span className="rounded-full border border-input px-2.5 py-0.5 text-xs font-semibold">
                         {item.franchise || 'Not specified'}
-                      </Badge>
+                      </span>
                       <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Edit size={14} className="text-muted-foreground" />
                       </span>
@@ -302,13 +302,13 @@ export function ItemDetailsCard() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="p-0 h-auto font-normal text-left justify-start w-full group"
+                    className="p-0 h-auto font-normal text-left justify-start w-full group bg-transparent hover:bg-transparent"
                     onClick={() => handleEditStart("brand")}
                   >
                     <div className="flex items-center">
-                      <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
+                      <span className="rounded-full border border-input px-2.5 py-0.5 text-xs font-semibold">
                         {item.brand || 'Not specified'}
-                      </Badge>
+                      </span>
                       <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Edit size={14} className="text-muted-foreground" />
                       </span>
@@ -353,13 +353,13 @@ export function ItemDetailsCard() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="p-0 h-auto font-normal text-left justify-start w-full group"
+                    className="p-0 h-auto font-normal text-left justify-start w-full group bg-transparent hover:bg-transparent"
                     onClick={() => handleEditStart("year")}
                   >
                     <div className="flex items-center">
-                      <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
+                      <span className="rounded-full border border-input px-2.5 py-0.5 text-xs font-semibold">
                         {item.year || 'Not specified'}
-                      </Badge>
+                      </span>
                       <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Edit size={14} className="text-muted-foreground" />
                       </span>
@@ -396,13 +396,13 @@ export function ItemDetailsCard() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="p-0 h-auto font-normal text-left justify-start w-full group"
+                    className="p-0 h-auto font-normal text-left justify-start w-full group bg-transparent hover:bg-transparent"
                     onClick={() => handleEditStart("condition")}
                   >
                     <div className="flex items-center">
-                      <Badge variant="outline" className="bg-primary/5 hover:bg-primary/10">
+                      <span className="rounded-full border border-input px-2.5 py-0.5 text-xs font-semibold">
                         {item.condition || 'Not specified'}
-                      </Badge>
+                      </span>
                       <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Edit size={14} className="text-muted-foreground" />
                       </span>
@@ -438,10 +438,10 @@ export function ItemDetailsCard() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="p-0 h-auto font-normal text-left justify-start w-full group"
+                    className="p-0 h-auto font-normal text-left justify-start w-full group bg-transparent hover:bg-transparent"
                     onClick={() => handleEditStart("notes")}
                   >
-                    <div className="w-full bg-primary/5 hover:bg-primary/10 p-2 rounded text-sm min-h-[60px] overflow-y-auto text-left relative">
+                    <div className="w-full p-2 rounded text-sm min-h-[60px] overflow-y-auto text-left relative border border-input bg-transparent">
                       <span className="block whitespace-pre-wrap">{item.notes || 'No notes added'}</span>
                       <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Edit size={14} className="text-muted-foreground" />
