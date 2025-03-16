@@ -295,6 +295,12 @@ export function ItemDetailsProvider({
         ? "soldPrice" 
         : field;
       
+      // IMPORTANT: Skip trying to update the images field directly, as it doesn't exist in the database schema
+      if (normalizedField === "images") {
+        console.log("Skipping direct update of images field as it's handled separately");
+        return;
+      }
+      
       // Use the React Query mutation
       await updateItemMutation.mutateAsync({ 
         id: item.id, 
@@ -584,50 +590,77 @@ export function ItemDetailsProvider({
   const handleImageReorder = async (event: any) => {
     if (!item || !event || !event.active || !event.over) return;
     
+    // Prevent event propagation to stop popover from closing
+    if (event.originalEvent) {
+      event.originalEvent.stopPropagation();
+    }
+    
     const oldIndex = images.findIndex(img => img.id === event.active.id);
     const newIndex = images.findIndex(img => img.id === event.over.id);
     
     if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
     
     try {
+      console.log('Reordering images:', { oldIndex, newIndex, active: event.active.id, over: event.over.id });
+      
       // Update local state first (optimistic update)
       const newImages = arrayMove(images, oldIndex, newIndex);
       setImages(newImages);
       
-      // Convert to simple array for the item's images
-      const simpleImages = newImages.map(img => ({
-        id: img.id,
-        url: img.url,
-        alt: img.alt || `${item.name} image`
-      }));
+      // IMPORTANT: Skip updating the main item and only update the images table order
+      // The main item table does not have a proper images field in the schema
       
-      // Use React Query mutation to update the order in the database
-      await updateItemMutation.mutateAsync({
-        id: item.id,
-        data: { images: simpleImages }
-      });
-      
-      // Also update the order in the images table
+      // Update the order in the images table
       try {
         const { reorderImagesAction } = await import("@/actions/images-actions");
         
-        // Create order updates
+        // Create order updates with only necessary fields
         const orderUpdates = newImages.map((img, index) => ({
           id: img.id,
           order: index
         }));
         
-        await reorderImagesAction(item.id, orderUpdates);
+        console.log('Updating image orders in images table:', orderUpdates);
+        
+        const result = await reorderImagesAction(item.id, orderUpdates);
+        
+        if (!result.isSuccess) {
+          console.error('Error from reorderImagesAction:', result.error);
+          throw new Error(result.error || 'Failed to reorder images');
+        }
+        
+        console.log('Successfully updated image orders');
+        
+        // Indicate success with a toast
+        toast({
+          title: "Success",
+          description: "Image order updated successfully",
+        });
+        
+        // Rather than updating the main item table, we'll re-fetch the images
+        // to ensure we have the correct order
+        fetchImages();
+        
       } catch (orderError) {
-        console.error("Error updating image order:", orderError);
-        // Not critical, so we don't need to show a toast
+        console.error("Error updating image order in images table:", orderError);
+        // Show a toast for this error as it affects functionality
+        toast({
+          title: "Warning",
+          description: "Images reordered but order might not persist on refresh",
+          variant: "destructive",
+        });
+        
+        // Revert optimistic update
+        fetchImages();
       }
       
     } catch (error) {
       console.error("Error reordering images:", error);
       toast({
         title: "Error",
-        description: "Failed to reorder images. Please try again.",
+        description: typeof error === 'object' && error !== null && 'message' in error 
+          ? `Failed to reorder images: ${(error as Error).message}` 
+          : "Failed to reorder images. Please try again.",
         variant: "destructive",
       });
       

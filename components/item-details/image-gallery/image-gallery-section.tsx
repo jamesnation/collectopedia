@@ -61,6 +61,35 @@ export function ImageGallerySection({
   const handleImageUpload = async (url: string) => {
     await onUploadImage(url);
   };
+  
+  // Wrap the onReorderImages function to ensure the popover stays open
+  const handleReorderImages = async (event: any) => {
+    // Prevent event propagation to stop popover from closing
+    if (event.originalEvent) {
+      event.originalEvent.stopPropagation();
+    }
+    
+    try {
+      // Call the original reorder function
+      await onReorderImages(event);
+      
+      // Make sure the popover stays open by forcing it after a short delay
+      // This prevents the popover from closing after the reordering operation
+      const wasOpen = isPopoverOpen;
+      if (wasOpen) {
+        // In case the popover closed during the operation
+        setTimeout(() => {
+          setIsPopoverOpen(true);
+        }, 10);
+      }
+    } catch (error) {
+      console.error("Error in reordering images:", error);
+      // Even if there's an error, try to keep the popover open
+      setTimeout(() => {
+        setIsPopoverOpen(true);
+      }, 10);
+    }
+  };
 
   return (
     <div className="space-y-2 sm:space-y-4 w-full overflow-hidden">
@@ -98,7 +127,7 @@ export function ImageGallerySection({
                 <ScrollArea className="w-full h-auto max-h-[40vh]">
                   <DndWrapper
                     items={images}
-                    onReorder={onReorderImages}
+                    onReorder={handleReorderImages}
                     direction="horizontal"
                     className="pb-4 pt-1" // Add padding to provide more space
                     renderItem={({ image, index }: { image: SelectImage; index: number }) => (

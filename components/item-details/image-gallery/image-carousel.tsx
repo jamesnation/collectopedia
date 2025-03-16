@@ -134,7 +134,19 @@ export function ImageCarousel({
   
   const handleReorderImages = (event: any) => {
     if (onReorderImages) {
+      // Before calling onReorderImages, ensure the edit mode stays open
+      const previousEditMode = isEditMode;
+      
+      // Call the reorder function
       onReorderImages(event);
+      
+      // Force edit mode to stay open by using a short timeout 
+      // This prevents the popover from closing after reordering
+      if (previousEditMode) {
+        setTimeout(() => {
+          setIsEditMode(true);
+        }, 10);
+      }
     }
   };
   
