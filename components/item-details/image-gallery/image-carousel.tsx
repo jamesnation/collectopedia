@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import dynamic from "next/dynamic";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Dynamically import the DnD components to prevent SSR issues
 const DndWrapper = dynamic(() => import('@/components/dnd-wrapper'), { 
@@ -63,6 +64,7 @@ export function ImageCarousel({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [isEditMode, setIsEditMode] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   // Track images that fail to load
   const handleImageError = (id: string) => {
@@ -73,6 +75,7 @@ export function ImageCarousel({
   useEffect(() => {
     // Reset image errors when images change
     setImageErrors({});
+    setImageLoaded(false);
     console.log(`ImageCarousel received ${images.length} images`);
   }, [images]);
   
@@ -90,9 +93,11 @@ export function ImageCarousel({
     // Implement circular navigation - when at first image, go to last image
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
+      setImageLoaded(false);
     } else {
       // Go to the last image
       setCurrentIndex(images.length - 1);
+      setImageLoaded(false);
     }
   };
   
@@ -100,13 +105,16 @@ export function ImageCarousel({
     // Implement circular navigation - when at last image, go to first image
     if (currentIndex < images.length - 1) {
       setCurrentIndex(currentIndex + 1);
+      setImageLoaded(false);
     } else {
       // Go back to the first image
       setCurrentIndex(0);
+      setImageLoaded(false);
     }
   };
   
   const handleThumbnailClick = (index: number) => {
+    setImageLoaded(false);
     setCurrentIndex(index);
   };
   
@@ -178,16 +186,47 @@ export function ImageCarousel({
   // Handle cases where all images fail to load but array is not empty
   if (allImagesHaveErrors) {
     return (
-      <div className="relative w-full h-[650px] flex items-center justify-center bg-muted/10 rounded-lg">
+      <motion.div 
+        className="relative w-full h-[650px] flex items-center justify-center bg-muted/10 rounded-lg"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+      >
         <div className="text-center p-6">
-          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <p className="mb-2 font-medium text-destructive">Failed to load images</p>
-          <p className="text-sm text-muted-foreground mb-4">There was a problem loading the images for this item.</p>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          </motion.div>
+          <motion.p 
+            className="mb-2 font-medium text-destructive"
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+          >
+            Failed to load images
+          </motion.p>
+          <motion.p 
+            className="text-sm text-muted-foreground mb-4"
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+          >
+            There was a problem loading the images for this item.
+          </motion.p>
           {onAddImages && (
-            <Button onClick={onAddImages} className="mt-2">Try Adding New Images</Button>
+            <motion.div
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+            >
+              <Button onClick={onAddImages} className="mt-2">Try Adding New Images</Button>
+            </motion.div>
           )}
         </div>
-      </div>
+      </motion.div>
     );
   }
   
@@ -196,21 +235,45 @@ export function ImageCarousel({
       {/* Main image - Made larger with floating design and no card background */}
       <div className="relative w-full h-[650px] rounded-lg overflow-hidden">
         <div className="w-full h-full relative flex items-center justify-center bg-transparent">
-          {!imageErrors[images[currentIndex]?.id] ? (
-            <Image
-              src={images[currentIndex]?.url}
-              alt={images[currentIndex]?.alt || `Image ${currentIndex + 1}`}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-contain"
-              onError={() => handleImageError(images[currentIndex]?.id)}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full">
-              <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-              <p className="text-sm text-muted-foreground">Failed to load image</p>
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {!imageErrors[images[currentIndex]?.id] ? (
+              <motion.div
+                key={`image-${images[currentIndex]?.id}`}
+                className="w-full h-full relative"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: imageLoaded ? 1 : 0.3 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Image
+                  src={images[currentIndex]?.url}
+                  alt={images[currentIndex]?.alt || `Image ${currentIndex + 1}`}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-contain"
+                  onError={() => handleImageError(images[currentIndex]?.id)}
+                  onLoad={() => setImageLoaded(true)}
+                />
+                {!imageLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="error"
+                className="flex flex-col items-center justify-center h-full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                <p className="text-sm text-muted-foreground">Failed to load image</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         
         {/* Navigation buttons */}
@@ -235,35 +298,46 @@ export function ImageCarousel({
       
       {/* Thumbnails */}
       {images.length > 1 && (
-        <div className="flex items-center space-x-2 overflow-x-auto py-2 px-1">
+        <motion.div 
+          className="flex items-center space-x-2 overflow-x-auto py-2 px-1"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
           {images.map((image, index) => (
-            <Button
+            <motion.div
               key={image.id}
-              variant="ghost"
-              className={`p-0 h-16 w-16 rounded overflow-hidden border-2 ${
-                index === currentIndex
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-muted-foreground/30'
-              } relative`}
-              onClick={() => handleThumbnailClick(index)}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
             >
-              <div className="relative h-full w-full">
-                {!imageErrors[image.id] ? (
-                  <Image
-                    src={image.url}
-                    alt={image.alt || `Thumbnail ${index + 1}`}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                    onError={() => handleImageError(image.id)}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  </div>
-                )}
-              </div>
-            </Button>
+              <Button
+                variant="ghost"
+                className={`p-0 h-16 w-16 rounded overflow-hidden border-2 ${
+                  index === currentIndex
+                    ? 'border-primary'
+                    : 'border-transparent hover:border-muted-foreground/30'
+                } relative`}
+                onClick={() => handleThumbnailClick(index)}
+              >
+                <div className="relative h-full w-full">
+                  {!imageErrors[image.id] ? (
+                    <Image
+                      src={image.url}
+                      alt={image.alt || `Thumbnail ${index + 1}`}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                      onError={() => handleImageError(image.id)}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full w-full bg-muted">
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    </div>
+                  )}
+                </div>
+              </Button>
+            </motion.div>
           ))}
           
           {/* Replace "Add" button with "Edit" button and add Popover functionality */}
@@ -351,7 +425,7 @@ export function ImageCarousel({
               </div>
             </PopoverContent>
           </Popover>
-        </div>
+        </motion.div>
       )}
       
       {/* For case with a single image or no images, also need the Edit button */}

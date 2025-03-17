@@ -6,6 +6,8 @@
  * This component handles the image gallery section on the left side of the item details page.
  * It displays the image carousel or a placeholder for adding images, and the debug panel
  * when debug mode is enabled.
+ * Enhanced with smooth loading transitions using Framer Motion.
+ * Updated to completely ignore AI price loading state.
  */
 
 import { useItemDetails } from "../context";
@@ -17,6 +19,7 @@ import { ImagePlus } from "lucide-react";
 import { PlaceholderImage } from '@/components/ui/placeholder-image';
 import { useEbayDebugMode } from "@/hooks/use-ebay-debug-mode";
 import { ItemDebugPanel } from "./item-debug-panel";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function ItemGallerySection() {
   const {
@@ -63,38 +66,84 @@ export function ItemGallerySection() {
 
   return (
     <div className="space-y-2 sm:space-y-4 w-full overflow-hidden">
-      {imageLoading ? (
-        <Skeleton className="h-96 w-full rounded-xl" />
-      ) : (
-        <>
-          {carouselImages.length > 0 ? (
-            <ImageCarousel 
-              images={carouselImages} 
-              itemId={item.id} 
-              onAddImages={handleAddImages}
-              onDeleteImage={handleDeleteImage}
-              onReorderImages={handleImageReorder}
-            />
-          ) : (
-            <Card className="h-96 w-full flex flex-col items-center justify-center rounded-xl">
-              <div className="text-center p-6">
-                <div className="mb-4 flex justify-center">
-                  <PlaceholderImage className="w-32 h-32" />
-                </div>
-                <p className="text-muted-foreground mb-4">No images available for this item</p>
-                <Button onClick={handleAddImages}>
-                  <ImagePlus className="h-4 w-4 mr-2" />
-                  Add Images
-                </Button>
-              </div>
-            </Card>
-          )}
-          
-          {/* Debug Panel - shown when debug mode is enabled */}
-          {isDebugMode && isInitialized && (
-            <ItemDebugPanel debugData={debugData} />
-          )}
-        </>
+      <AnimatePresence mode="wait">
+        {imageLoading ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Skeleton className="h-96 w-full rounded-xl" />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {carouselImages.length > 0 ? (
+              <ImageCarousel 
+                images={carouselImages} 
+                itemId={item.id} 
+                onAddImages={handleAddImages}
+                onDeleteImage={handleDeleteImage}
+                onReorderImages={handleImageReorder}
+              />
+            ) : (
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              >
+                <Card className="h-96 w-full flex flex-col items-center justify-center rounded-xl">
+                  <div className="text-center p-6">
+                    <motion.div 
+                      className="mb-4 flex justify-center"
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.4 }}
+                    >
+                      <PlaceholderImage className="w-32 h-32" />
+                    </motion.div>
+                    <motion.p 
+                      className="text-muted-foreground mb-4"
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.3, duration: 0.4 }}
+                    >
+                      No images available for this item
+                    </motion.p>
+                    <motion.div
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.4, duration: 0.4 }}
+                    >
+                      <Button onClick={handleAddImages}>
+                        <ImagePlus className="h-4 w-4 mr-2" />
+                        Add Images
+                      </Button>
+                    </motion.div>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Debug Panel - shown when debug mode is enabled */}
+      {isDebugMode && isInitialized && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+        >
+          <ItemDebugPanel debugData={debugData} />
+        </motion.div>
       )}
     </div>
   );

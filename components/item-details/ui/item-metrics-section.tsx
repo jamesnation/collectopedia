@@ -5,6 +5,7 @@
  * 
  * This component combines ItemMetrics and ProfitMetrics to display
  * pricing information and financial metrics for an item.
+ * Updated to only show AI price loading in the refresh button itself.
  */
 
 import { useItemDetails } from "../context";

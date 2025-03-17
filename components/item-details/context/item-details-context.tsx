@@ -248,7 +248,10 @@ export function ItemDetailsProvider({
       console.error("Error fetching images:", error);
       setImageError("Failed to load images");
     } finally {
-      setIsLoadingImages(false);
+      // Add a small delay before removing loading state to allow for smooth transitions
+      setTimeout(() => {
+        setIsLoadingImages(false);
+      }, 300);
     }
   }, [itemData?.id]);
   
@@ -333,22 +336,25 @@ export function ItemDetailsProvider({
   
   // Handle image upload
   const handleImageUpload = async (url: string) => {
-    if (!item || !url) return;
-    
-    console.log("Handling image upload:", url);
-    setIsImageUploadOpen(false);
+    if (!item?.id || !userId) {
+      toast({
+        title: "Error",
+        description: "Unable to upload image. Missing item ID or user ID.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
-      const { createImageAction } = await import("@/actions/images-actions");
+      setIsLoadingImages(true);
       
-      // Extract userId from auth (or use a placeholder for now)
-      const currentUserId = userId || 'current-user';
+      const { createImageAction } = await import("@/actions/images-actions");
       
       // First create the image record
       const result = await createImageAction({
         url,
         itemId: item.id,
-        userId: currentUserId
+        userId: userId
       });
       
       console.log("Create image result:", result);
@@ -369,7 +375,7 @@ export function ItemDetailsProvider({
             url,
             alt: `${item.name} image`,
             itemId: item.id,
-            userId: currentUserId
+            userId: userId
           };
           
           setImages(prev => [...prev, newImage]);
@@ -401,15 +407,29 @@ export function ItemDetailsProvider({
       toast({
         title: "Error",
         description: "Failed to upload image. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
+    } finally {
+      // Add a small delay before removing loading state
+      setTimeout(() => {
+        setIsLoadingImages(false);
+      }, 300);
     }
   };
   
   // Handle delete image
-  const handleDeleteImage = useCallback(async (imageId: string) => {
+  const handleDeleteImage = async (imageId: string) => {
+    if (!item?.id || !userId) {
+      toast({
+        title: "Error",
+        description: "Unable to delete image. Missing item ID or user ID.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
-      if (!item?.id) return;
+      setIsLoadingImages(true);
       
       // Remove from local state immediately (optimistic update)
       setImages(prevImages => prevImages.filter(img => img.id !== imageId));
@@ -432,15 +452,20 @@ export function ItemDetailsProvider({
         description: "Failed to delete image",
         variant: "destructive",
       });
+    } finally {
+      // Add a small delay before removing loading state
+      setTimeout(() => {
+        setIsLoadingImages(false);
+      }, 300);
     }
-  }, [item?.id, fetchImages]);
+  };
   
   // Handle refresh AI price
   const handleRefreshAiPrice = useCallback(async () => {
     if (!item?.id) return;
     
     try {
-      // Set loading state manually to ensure UI updates
+      // Only set the AI price loading state, which will only affect the refresh button
       setIsLoadingAiPrice(true);
       
       // Call the mutation
@@ -588,19 +613,30 @@ export function ItemDetailsProvider({
   
   // Handle image reordering
   const handleImageReorder = async (event: any) => {
-    if (!item || !event || !event.active || !event.over) return;
-    
-    // Prevent event propagation to stop popover from closing
-    if (event.originalEvent) {
-      event.originalEvent.stopPropagation();
+    if (!item?.id || !userId) {
+      toast({
+        title: "Error",
+        description: "Unable to reorder images. Missing item ID or user ID.",
+        variant: "destructive"
+      });
+      return;
     }
     
-    const oldIndex = images.findIndex(img => img.id === event.active.id);
-    const newIndex = images.findIndex(img => img.id === event.over.id);
-    
-    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
-    
     try {
+      setIsLoadingImages(true);
+      
+      if (!item || !event || !event.active || !event.over) return;
+      
+      // Prevent event propagation to stop popover from closing
+      if (event.originalEvent) {
+        event.originalEvent.stopPropagation();
+      }
+      
+      const oldIndex = images.findIndex(img => img.id === event.active.id);
+      const newIndex = images.findIndex(img => img.id === event.over.id);
+      
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+      
       console.log('Reordering images:', { oldIndex, newIndex, active: event.active.id, over: event.over.id });
       
       // Update local state first (optimistic update)
@@ -658,14 +694,14 @@ export function ItemDetailsProvider({
       console.error("Error reordering images:", error);
       toast({
         title: "Error",
-        description: typeof error === 'object' && error !== null && 'message' in error 
-          ? `Failed to reorder images: ${(error as Error).message}` 
-          : "Failed to reorder images. Please try again.",
-        variant: "destructive",
+        description: "Failed to reorder images. Please try again.",
+        variant: "destructive"
       });
-      
-      // Reload images if the reorder failed
-      fetchImages();
+    } finally {
+      // Add a small delay before removing loading state
+      setTimeout(() => {
+        setIsLoadingImages(false);
+      }, 300);
     }
   };
   
