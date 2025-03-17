@@ -168,7 +168,7 @@ export function ImageCarousel({
   
   if (images.length === 0) {
     return (
-      <div className="relative w-full h-[650px] flex items-center justify-center bg-muted/10 rounded-lg">
+      <div className="relative w-full h-[400px] sm:h-[500px] md:h-[650px] flex items-center justify-center bg-muted/10 rounded-lg">
         <div className="text-center">
           <PlaceholderImage className="w-32 h-32 mx-auto" />
           <p className="mt-4 text-muted-foreground">No images available</p>
@@ -187,7 +187,7 @@ export function ImageCarousel({
   if (allImagesHaveErrors) {
     return (
       <motion.div 
-        className="relative w-full h-[650px] flex items-center justify-center bg-muted/10 rounded-lg"
+        className="relative w-full h-[400px] sm:h-[500px] md:h-[650px] flex items-center justify-center bg-muted/10 rounded-lg"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
@@ -232,8 +232,8 @@ export function ImageCarousel({
   
   return (
     <div className="space-y-4">
-      {/* Main image - Made larger with floating design and no card background */}
-      <div className="relative w-full h-[650px] rounded-lg overflow-hidden">
+      {/* Main image - Made responsive with smaller height on mobile */}
+      <div className="relative w-full h-[400px] sm:h-[500px] md:h-[650px] rounded-lg overflow-hidden">
         <div className="w-full h-full relative flex items-center justify-center bg-transparent">
           <AnimatePresence mode="wait">
             {!imageErrors[images[currentIndex]?.id] ? (
