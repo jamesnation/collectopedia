@@ -2,7 +2,7 @@
  * Catalog Index - Main entry point for the catalog view
  * 
  * This file has been refactored to use a component-based architecture
- * with context for state management.
+ * with context for state management and React Query for data fetching.
  */
 
 "use client"
@@ -12,6 +12,7 @@ import { CatalogProvider } from './context/catalog-provider';
 import { ImageCacheProvider } from './context/image-cache-context';
 import CatalogPageContent from './catalog-page';
 import { CatalogItem } from './utils/item-types';
+import CatalogQueryProvider from './catalog-query-provider';
 
 interface CatalogProps {
   initialItems: CatalogItem[];
@@ -30,16 +31,18 @@ export default function Catalog({
   initialBrands = [],
 }: CatalogProps) {
   return (
-    <ImageCacheProvider>
-      <CatalogProvider
-        initialItems={initialItems}
-        initialTypes={initialTypes}
-        initialFranchises={initialFranchises}
-        initialBrands={initialBrands}
-      >
-        <CatalogPageContent />
-      </CatalogProvider>
-    </ImageCacheProvider>
+    <CatalogQueryProvider>
+      <ImageCacheProvider>
+        <CatalogProvider
+          initialItems={initialItems}
+          initialTypes={initialTypes}
+          initialFranchises={initialFranchises}
+          initialBrands={initialBrands}
+        >
+          <CatalogPageContent />
+        </CatalogProvider>
+      </ImageCacheProvider>
+    </CatalogQueryProvider>
   );
 }
 

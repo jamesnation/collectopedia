@@ -2,6 +2,7 @@
  * Add Item Modal Component
  * 
  * A modal dialog for adding new items to the collection.
+ * This component has been updated to use React Query for mutations.
  */
 
 "use client"
@@ -13,9 +14,10 @@ import { Plus } from "lucide-react"
 import AddItemForm from './add-item-form'
 import { CatalogItem } from '../utils/item-types'
 import { CustomEntity } from "../filter-controls/filter-types"
+import { useAddItemMutation } from '../hooks/use-catalog-queries'
 
 interface AddItemModalProps {
-  onAddItem: (item: Omit<CatalogItem, 'id'>) => Promise<any>
+  // Removed onAddItem prop as we'll use React Query mutation
   customTypes: CustomEntity[]
   customFranchises: CustomEntity[]
   customBrands: CustomEntity[]
@@ -27,7 +29,7 @@ interface AddItemModalProps {
 }
 
 export default function AddItemModal({
-  onAddItem,
+  // Removed onAddItem parameter 
   customTypes,
   customFranchises,
   customBrands,
@@ -38,18 +40,16 @@ export default function AddItemModal({
   trigger
 }: AddItemModalProps) {
   const [open, setOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Use the React Query mutation hook instead of local state
+  const { mutate: addItem, isPending } = useAddItemMutation()
 
   const handleSubmit = async (formData: Omit<CatalogItem, 'id'>) => {
-    setIsSubmitting(true)
-    try {
-      await onAddItem(formData)
-      setOpen(false)
-    } catch (error) {
-      console.error("Failed to add item:", error)
-    } finally {
-      setIsSubmitting(false)
-    }
+    addItem(formData, {
+      onSuccess: () => {
+        setOpen(false)
+      }
+    })
   }
 
   return (
@@ -58,7 +58,7 @@ export default function AddItemModal({
         {trigger || (
           <Button 
             className="bg-violet-600 hover:bg-violet-700 text-white"
-            disabled={isLoading || isSubmitting}
+            disabled={isLoading || isPending}
           >
             <Plus className="mr-2 h-4 w-4" />
             Add Item
@@ -78,7 +78,7 @@ export default function AddItemModal({
           onLoadCustomTypes={onLoadCustomTypes}
           onLoadCustomFranchises={onLoadCustomFranchises}
           onLoadCustomBrands={onLoadCustomBrands}
-          isSubmitting={isSubmitting}
+          isSubmitting={isPending}
         />
       </DialogContent>
     </Dialog>

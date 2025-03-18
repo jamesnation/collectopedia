@@ -64,6 +64,27 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   // Track the most recently requested batch of items for debugging
   const [lastRequestedItems, setLastRequestedItems] = useState<string[]>([]);
   
+  // Add event listener for cache invalidation
+  useEffect(() => {
+    const handleInvalidateCache = (event: CustomEvent<{ itemId: string }>) => {
+      const { itemId } = event.detail;
+      console.log('[CACHE] Received invalidate-image-cache event for item:', itemId);
+      invalidateCache(itemId);
+    };
+
+    // Add the event listener
+    if (typeof window !== 'undefined') {
+      window.addEventListener('invalidate-image-cache', handleInvalidateCache as EventListener);
+    }
+
+    // Remove the event listener when the component unmounts
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('invalidate-image-cache', handleInvalidateCache as EventListener);
+      }
+    };
+  }, []);
+  
   // Save cache to localStorage when it changes
   useEffect(() => {
     if (typeof window !== 'undefined' && Object.keys(imageCache).length > 0) {

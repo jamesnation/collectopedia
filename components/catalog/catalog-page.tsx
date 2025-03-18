@@ -136,7 +136,6 @@ export function CatalogPageContent() {
           </h1>
           <div className="flex items-center space-x-4">
             <AddItemModal
-              onAddItem={addItem}
               customTypes={customTypes}
               customFranchises={customFranchises}
               customBrands={customBrands}
@@ -258,7 +257,6 @@ export function CatalogPageContent() {
             </p>
             <div className="flex gap-4">
               <AddItemModal
-                onAddItem={addItem}
                 customTypes={customTypes}
                 customFranchises={customFranchises}
                 customBrands={customBrands}
@@ -266,12 +264,6 @@ export function CatalogPageContent() {
                 onLoadCustomFranchises={loadCustomFranchises}
                 onLoadCustomBrands={loadCustomBrands}
                 isLoading={isLoading}
-                trigger={
-                  <Button className="bg-violet-600 hover:bg-violet-700 text-white">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Item
-                  </Button>
-                }
               />
               <Button 
                 variant="outline"
