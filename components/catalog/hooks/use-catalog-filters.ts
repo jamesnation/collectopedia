@@ -12,92 +12,168 @@ export type SortDescriptor = {
 
 interface UseCatalogFiltersProps {
   items: CatalogItem[];
+  // Filter parameters from context
+  searchQuery?: string;
+  typeFilter?: string;
+  franchiseFilter?: string;
+  yearFilter?: string;
+  showSold?: boolean;
+  soldYearFilter?: string;
+  showWithImages?: boolean;
+  sortDescriptor?: SortDescriptor;
 }
 
-export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
+export function useCatalogFilters({ 
+  items,
+  searchQuery = '',
+  typeFilter = 'all',
+  franchiseFilter = 'all',
+  yearFilter = 'all',
+  showSold = false,
+  soldYearFilter = 'all',
+  showWithImages = false,
+  sortDescriptor: externalSortDescriptor
+}: UseCatalogFiltersProps) {
   // Get image cache context
   const { imageCache, hasCompletedLoading, hasImages } = useImageCache();
   
-  // View state
+  // View state - this doesn't seem to be used by the context
   const [view, setView] = useState<'list' | 'grid'>('list');
   
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  
-  // Filter state
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [franchiseFilter, setFranchiseFilter] = useState<string>('all');
-  const [yearFilter, setYearFilter] = useState<string>('all');
-  const [showSold, setShowSold] = useState(false);
-  const [soldYearFilter, setSoldYearFilter] = useState<string>('all');
-  const [showWithImages, setShowWithImages] = useState(false);
-  
-  // Sort state
-  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
+  // Use the external sortDescriptor or default
+  const actualSortDescriptor = externalSortDescriptor || {
     column: 'name',
     direction: 'ascending'
-  });
-
-  // Create a debounced search handler
-  const debouncedSetSearch = useDebouncedCallback(
-    (value) => setDebouncedSearchQuery(value),
-    300
-  );
-
-  // Handler for search input changes
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchQuery(value);
-    debouncedSetSearch(value);
-  }, [debouncedSetSearch]);
-
-  // Handler for sort changes
-  const handleSort = useCallback((column: string) => {
-    setSortDescriptor(prev => ({
-      column,
-      direction: prev.column === column && prev.direction === 'ascending' 
-        ? 'descending' 
-        : 'ascending'
-    }));
-  }, []);
+  };
 
   // Create a filtered and sorted list of items
   const filteredAndSortedItems = useMemo(() => {
-    let result = items.filter(item => showSold ? item.isSold : !item.isSold);
+    // Use minimal logging for performance
+    console.log('[CATALOG FILTER] Filtering', items.length, 'items with filters:', { 
+      search: searchQuery, 
+      type: typeFilter,
+      franchise: franchiseFilter,
+      year: yearFilter,
+      showSold,
+      withImages: showWithImages
+    });
     
-    // Apply search filter
-    if (debouncedSearchQuery) {
-      const lowercasedQuery = debouncedSearchQuery.toLowerCase();
-      result = result.filter(item => 
-        item.name.toLowerCase().includes(lowercasedQuery) ||
-        item.type.toLowerCase().includes(lowercasedQuery) ||
-        item.franchise.toLowerCase().includes(lowercasedQuery) ||
-        (item.brand && item.brand.toLowerCase().includes(lowercasedQuery))
+    // Debug to see what items we have before filtering
+    if (items.length === 0) {
+      console.log('[CATALOG FILTER] No items to filter!');
+      return [];
+    }
+    
+    if (items.length > 0) {
+      console.log('[CATALOG FILTER] Sample of items before filtering:', 
+        items.slice(0, 3).map(item => ({
+          id: item.id,
+          name: item.name,
+          isSold: item.isSold,
+          type: item.type,
+          franchise: item.franchise,
+          year: item.year
+        }))
       );
     }
     
-    // Apply type filter
-    if (typeFilter !== 'all') {
+    let result = [...items]; // Start with a copy of all items
+    
+    // Apply sold status filter
+    if (showSold) {
+      // When showSold is true, we only show sold items
+      result = result.filter(item => item.isSold);
+      console.log('[CATALOG FILTER] Showing only sold items:', result.length);
+    } else {
+      // When showSold is false, we show all non-sold items
+      result = result.filter(item => !item.isSold);
+      console.log('[CATALOG FILTER] Showing only unsold items:', result.length);
+    }
+    
+    // Add more detailed debugging around the sold filter
+    const soldCount = items.filter(item => item.isSold).length;
+    const unsoldCount = items.filter(item => !item.isSold).length;
+    console.log(`[CATALOG FILTER] Items count: sold=${soldCount}, unsold=${unsoldCount}, showingSold=${showSold}`);
+    
+    // Check if we have items after the sold filter
+    if (result.length === 0) {
+      console.log('[CATALOG FILTER] No items after sold filter!');
+      return []; // Early return if we have no items
+    }
+    
+    // Apply search filter if search query exists
+    if (searchQuery && searchQuery.trim() !== '') {
+      const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.length > 0);
+      console.log('[CATALOG FILTER] Applying search with terms:', searchTerms);
+      
+      if (searchTerms.length > 0) {
+        result = result.filter(item => {
+          // Check each search term independently
+          return searchTerms.every(term => {
+            // Fields to search in
+            const fieldsToSearch = [
+              item.name,
+              item.type,
+              item.franchise,
+              item.brand || '',
+              item.notes || '',
+              item.year?.toString() || '',
+            ];
+            
+            // Check if any field contains the search term
+            return fieldsToSearch.some(field => {
+              if (!field) return false;
+              return field.toLowerCase().includes(term);
+            });
+          });
+        });
+        
+        console.log(`[CATALOG FILTER] After search filter: ${result.length} items matching "${searchQuery}"`);
+        
+        // If search returns no results, should we return to the full list?
+        if (result.length === 0) {
+          console.log('[CATALOG FILTER] Search returned no results!');
+        }
+      }
+    }
+    
+    // Apply type filter if specified
+    if (typeFilter && typeFilter !== 'all' && typeFilter !== '') {
       result = result.filter(item => item.type === typeFilter);
+      console.log(`[CATALOG FILTER] After type filter (${typeFilter}): ${result.length} items`);
+      
+      if (result.length === 0) {
+        console.log('[CATALOG FILTER] Type filter returned no results!');
+      }
     }
     
-    // Apply franchise filter
-    if (franchiseFilter !== 'all') {
+    // Apply franchise filter if specified
+    if (franchiseFilter && franchiseFilter !== 'all' && franchiseFilter !== '') {
       result = result.filter(item => item.franchise === franchiseFilter);
+      console.log(`[CATALOG FILTER] After franchise filter (${franchiseFilter}): ${result.length} items`);
+      
+      if (result.length === 0) {
+        console.log('[CATALOG FILTER] Franchise filter returned no results!');
+      }
     }
     
-    // Apply year filter
-    if (yearFilter !== 'all') {
+    // Apply year filter if specified
+    if (yearFilter && yearFilter !== 'all' && yearFilter !== '') {
       result = result.filter(item => {
         const acquiredYear = item.acquired instanceof Date 
           ? item.acquired.getFullYear().toString()
           : new Date(item.acquired).getFullYear().toString();
         return acquiredYear === yearFilter;
       });
+      console.log(`[CATALOG FILTER] After year filter (${yearFilter}): ${result.length} items`);
+      
+      if (result.length === 0) {
+        console.log('[CATALOG FILTER] Year filter returned no results!');
+      }
     }
 
-    // Apply sold year filter
-    if (showSold && soldYearFilter !== 'all') {
+    // Apply sold year filter if applicable
+    if (showSold && soldYearFilter && soldYearFilter !== 'all' && soldYearFilter !== '') {
       result = result.filter(item => {
         if (!item.soldDate) return false;
         const soldYear = item.soldDate instanceof Date
@@ -105,27 +181,15 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
           : new Date(item.soldDate).getFullYear().toString();
         return soldYear === soldYearFilter;
       });
+      console.log(`[CATALOG FILTER] After sold year filter (${soldYearFilter}): ${result.length} items`);
+      
+      if (result.length === 0) {
+        console.log('[CATALOG FILTER] Sold year filter returned no results!');
+      }
     }
 
     // Apply show with images filter - check for either image field or images array
     if (showWithImages) {
-      // Add diagnostic logs before filtering
-      console.log('[IMAGE FILTER] Before filtering: Items count =', result.length);
-      
-      // Log the first few items' image properties for debugging
-      console.log('[IMAGE FILTER] Sample items image data:', 
-        result.slice(0, 3).map(item => ({
-          id: item.id,
-          name: item.name,
-          imageType: typeof item.image,
-          imageValue: item.image,
-          hasImage: Boolean(item.image),
-          hasImagesArray: Array.isArray(item.images) && item.images.length > 0,
-          imagesInCache: imageCache[item.id]?.length || 0,
-          hasCompletedLoadingImages: hasCompletedLoading[item.id] || false
-        }))
-      );
-      
       result = result.filter(item => {
         // Check if item has a direct image property that's non-empty
         const hasDirectImage = Boolean(item.image && String(item.image).trim() !== '');
@@ -136,68 +200,74 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
         // Check if item has images in the image cache
         const hasImagesInCache = (imageCache[item.id]?.length || 0) > 0;
         
-        // Log each item's filter evaluation for the first few items
-        if (result.indexOf(item) < 5) {
-          console.log(`[IMAGE FILTER] Item "${item.name}": hasDirectImage=${hasDirectImage}, hasImagesArray=${hasImagesArray}, hasImagesInCache=${hasImagesInCache}`);
-        }
-        
         // Consider the item as having images if any condition is true
         return hasDirectImage || hasImagesArray || hasImagesInCache;
       });
+      console.log(`[CATALOG FILTER] After image filter: ${result.length} items`);
       
-      // Add diagnostic logs after filtering
-      console.log('[IMAGE FILTER] After filtering: Items count =', result.length);
+      if (result.length === 0) {
+        console.log('[CATALOG FILTER] Image filter returned no results!');
+      }
     }
 
-    // Apply sorting
-    result.sort((a, b) => {
-      const { column, direction } = sortDescriptor;
-      let comparison = 0;
+    // If we have zero results after all filters, we should consider returning a default set
+    if (result.length === 0) {
+      console.log('[CATALOG FILTER] All filters combined returned no results!');
+      // We could return all items or just an empty array based on requirements
+      // result = items.filter(item => !item.isSold); // Option to return all unsold items
+    }
 
-      switch (column) {
-        case 'name':
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case 'acquired':
-          comparison = new Date(a.acquired).getTime() - new Date(b.acquired).getTime();
-          break;
-        case 'cost':
-          comparison = a.cost - b.cost;
-          break;
-        case 'value':
-        case 'soldPrice':
-          comparison = (showSold ? (a.soldPrice ?? 0) - (b.soldPrice ?? 0) : a.value - b.value);
-          break;
-        case 'ebayListed':
-          comparison = (a.ebayListed ?? 0) - (b.ebayListed ?? 0);
-          break;
-        case 'soldDate':
-          if (a.soldDate && b.soldDate) {
-            comparison = new Date(a.soldDate).getTime() - new Date(b.soldDate).getTime();
-          } else if (a.soldDate) {
-            comparison = 1;
-          } else if (b.soldDate) {
-            comparison = -1;
-          }
-          break;
-      }
+    // Apply sorting if we have any items
+    if (result.length > 0) {
+      result.sort((a, b) => {
+        const { column, direction } = actualSortDescriptor;
+        let comparison = 0;
+  
+        switch (column) {
+          case 'name':
+            comparison = a.name.localeCompare(b.name);
+            break;
+          case 'acquired':
+            comparison = new Date(a.acquired).getTime() - new Date(b.acquired).getTime();
+            break;
+          case 'cost':
+            comparison = a.cost - b.cost;
+            break;
+          case 'value':
+          case 'soldPrice':
+            comparison = (showSold ? (a.soldPrice ?? 0) - (b.soldPrice ?? 0) : a.value - b.value);
+            break;
+          case 'ebayListed':
+            comparison = (a.ebayListed ?? 0) - (b.ebayListed ?? 0);
+            break;
+          case 'soldDate':
+            if (a.soldDate && b.soldDate) {
+              comparison = new Date(a.soldDate).getTime() - new Date(b.soldDate).getTime();
+            } else if (a.soldDate) {
+              comparison = 1;
+            } else if (b.soldDate) {
+              comparison = -1;
+            }
+            break;
+        }
+  
+        return direction === 'ascending' ? comparison : -comparison;
+      });
+    }
 
-      return direction === 'ascending' ? comparison : -comparison;
-    });
-
+    console.log('[CATALOG FILTER] Returning', result.length, 'filtered items');
     return result;
   }, [
     items, 
-    debouncedSearchQuery, 
+    searchQuery, 
     typeFilter, 
     franchiseFilter, 
     yearFilter, 
-    sortDescriptor, 
+    actualSortDescriptor, 
     showSold, 
     soldYearFilter,
     showWithImages,
-    imageCache,
-    hasCompletedLoading
+    imageCache
   ]);
 
   // Calculate summary values 
@@ -256,28 +326,6 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     // View state
     view,
     setView,
-    
-    // Search state
-    searchQuery,
-    setSearchQuery: handleSearchChange,
-    
-    // Filter state
-    typeFilter,
-    setTypeFilter,
-    franchiseFilter,
-    setFranchiseFilter,
-    yearFilter,
-    setYearFilter,
-    showSold,
-    setShowSold,
-    soldYearFilter,
-    setSoldYearFilter,
-    showWithImages,
-    setShowWithImages,
-    
-    // Sort state
-    sortDescriptor,
-    handleSort,
     
     // Result data
     filteredAndSortedItems,

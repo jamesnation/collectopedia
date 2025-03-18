@@ -1,108 +1,130 @@
-import { DollarSign, ShoppingCart, BarChart4, Percent, Brain } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { useRegionContext } from "@/contexts/region-context";
+/**
+ * Summary Panel Component
+ * 
+ * Displays key collection statistics in a row of cards at the top of the catalog page.
+ */
 
-interface SummaryPanelProps {
-  totalValue?: number;
-  totalCost?: number;
-  totalItems?: number;
-  ebayListedValue?: number;
-  ebaySoldValue?: number;
-  showSold: boolean;
-  unsoldTotalCost?: number;
+import React from 'react';
+import { 
+  Banknote, 
+  ShoppingCart, 
+  BarChart2, 
+  Percent, 
+  Brain 
+} from 'lucide-react';
+import { formatCurrency, formatPercentage } from '../utils/format-utils';
+
+export interface SummaryValues {
+  totalValue: number;
+  totalCost: number;
+  totalProfit: number;
+  profitMargin: number;
+  aiEstimate: number;
+  totalSold?: number;
+  totalSoldValue?: number;
+  totalSpent?: number;
 }
 
-const formatNumber = (value: number) => {
-  return value.toLocaleString('en-US');
-};
+interface SummaryPanelProps {
+  summaryValues: SummaryValues;
+  showSold?: boolean;
+  view?: 'grid' | 'list';
+  onViewChange?: (view: 'grid' | 'list') => void;
+  className?: string;
+}
 
 export default function SummaryPanel({
-  totalValue = 0,
-  totalCost = 0,
-  totalItems = 0,
-  ebayListedValue = 0,
-  ebaySoldValue = 0,
+  summaryValues,
   showSold = false,
-  unsoldTotalCost = 0
+  view = 'grid',
+  onViewChange,
+  className = '',
 }: SummaryPanelProps) {
-  const profit = totalValue - totalCost;
-  const profitMargin = totalCost > 0 ? (profit / totalCost) * 100 : 0;
-  const { formatCurrency } = useRegionContext();
-  
-  // Total spent is the total cost of unsold items minus the total profit from sold items
-  // Only calculated when showing sold items
-  const totalSpent = showSold ? (unsoldTotalCost - profit) : 0;
+  const {
+    totalValue,
+    totalCost,
+    totalProfit,
+    profitMargin,
+    aiEstimate,
+    totalSoldValue = 0,
+    totalSpent = 0,
+  } = summaryValues;
+
+  // Determine values to display based on whether we're showing sold items
+  const displayValues = {
+    value: showSold ? totalSoldValue : totalValue,
+    cost: totalCost,
+    profit: totalProfit,
+    margin: profitMargin,
+    estimate: aiEstimate,
+    spent: totalSpent,
+  };
+
+  const isProfitPositive = displayValues.profit > 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-      <Card className="dark:bg-card/60 dark:border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Total {showSold ? "Sold" : "Collection"} Value</p>
-              <p className="text-2xl font-bold dark:text-foreground">{formatCurrency(totalValue)}</p>
-              {showSold && (
-                <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground mt-2">
-                  Total Spent: <span className={`font-semibold ${totalSpent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{formatCurrency(totalSpent)}</span>
-                </p>
-              )}
-            </div>
-            <DollarSign className="h-6 w-6 text-purple-400 dark:text-purple-400" aria-label="Total Value" />
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="dark:bg-card/60 dark:border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Total Cost</p>
-              <p className="text-2xl font-bold dark:text-foreground">{formatCurrency(totalCost)}</p>
-            </div>
-            <ShoppingCart className="h-6 w-6 text-purple-400 dark:text-purple-400" aria-label="Total Cost" />
-          </div>
-        </CardContent>
-      </Card>
+    <div className={`grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 ${className}`}>
+      {/* Value Card */}
+      <div className="bg-gray-900 rounded-lg p-4 shadow-md">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-gray-400 text-sm font-medium">
+            {showSold ? "Total Sold Value" : "Total Collection Value"}
+          </h3>
+          <Banknote className="h-5 w-5 text-violet-400" />
+        </div>
+        <p className="text-white text-2xl font-bold">
+          {formatCurrency(displayValues.value)}
+        </p>
+        {showSold && (
+          <p className="text-gray-400 text-xs mt-1">
+            Total Spent: {formatCurrency(displayValues.spent)}
+          </p>
+        )}
+      </div>
 
-      <Card className="dark:bg-card/60 dark:border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Total Profit</p>
-              <p className={`text-2xl font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatCurrency(profit)}
-              </p>
-            </div>
-            <BarChart4 className="h-6 w-6 text-purple-400 dark:text-purple-400" aria-label="Total Profit" />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Cost Card */}
+      <div className="bg-gray-900 rounded-lg p-4 shadow-md">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-gray-400 text-sm font-medium">Total Cost</h3>
+          <ShoppingCart className="h-5 w-5 text-violet-400" />
+        </div>
+        <p className="text-white text-2xl font-bold">
+          {formatCurrency(displayValues.cost)}
+        </p>
+      </div>
 
-      <Card className="dark:bg-card/60 dark:border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Profit Margin</p>
-              <p className={`text-2xl font-bold ${profitMargin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {profitMargin.toFixed(2)}%
-              </p>
-            </div>
-            <Percent className="h-6 w-6 text-purple-400 dark:text-purple-400" aria-label="Profit Margin" />
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="dark:bg-card/60 dark:border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">AI Estimate</p>
-              <p className="text-2xl font-bold dark:text-foreground">{formatCurrency(ebayListedValue)}</p>
-            </div>
-            <Brain className="h-6 w-6 text-purple-400 dark:text-purple-400" aria-label="AI Estimate" />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Profit Card */}
+      <div className="bg-gray-900 rounded-lg p-4 shadow-md">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-gray-400 text-sm font-medium">Total Profit</h3>
+          <BarChart2 className="h-5 w-5 text-violet-400" />
+        </div>
+        <p className={`text-2xl font-bold ${isProfitPositive ? 'text-green-500' : 'text-red-500'}`}>
+          {formatCurrency(displayValues.profit)}
+        </p>
+      </div>
+
+      {/* Profit Margin Card */}
+      <div className="bg-gray-900 rounded-lg p-4 shadow-md">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-gray-400 text-sm font-medium">Profit Margin</h3>
+          <Percent className="h-5 w-5 text-violet-400" />
+        </div>
+        <p className={`text-2xl font-bold ${isProfitPositive ? 'text-green-500' : 'text-red-500'}`}>
+          {formatPercentage(displayValues.margin / 100)}
+        </p>
+      </div>
+
+      {/* AI Estimate Card */}
+      <div className="bg-gray-900 rounded-lg p-4 shadow-md">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-gray-400 text-sm font-medium">AI Estimate</h3>
+          <Brain className="h-5 w-5 text-violet-400" />
+        </div>
+        <p className="text-white text-2xl font-bold">
+          {formatCurrency(displayValues.estimate)}
+        </p>
+      </div>
     </div>
   );
 } 

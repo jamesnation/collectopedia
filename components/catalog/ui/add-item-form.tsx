@@ -25,424 +25,550 @@ import { CONDITION_OPTIONS, DEFAULT_BRANDS } from '../utils/schema-adapter'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { X } from 'lucide-react'
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { Loader2 } from "lucide-react"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { CustomEntity } from "../filter-controls/filter-types"
 
 // Dynamically import the image upload component to avoid SSR issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
 
+// Define the form schema with Zod
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  type: z.string().min(1, "Type is required"),
+  franchise: z.string().min(1, "Franchise is required"),
+  brand: z.string().optional(),
+  year: z.string().optional(),
+  condition: z.enum(["New", "Used"]),
+  acquired: z.string().optional(),
+  cost: z.number().nonnegative().default(0),
+  value: z.number().nonnegative().default(0),
+  notes: z.string().optional(),
+})
+
+type FormValues = z.infer<typeof formSchema>
+
 interface AddItemFormProps {
-  onSubmit: (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>
-  customTypes: { id: string; name: string }[]
-  customFranchises: { id: string; name: string }[]
-  customBrands: { id: string; name: string }[]
-  onLoadCustomTypes: () => void
-  onLoadCustomFranchises: () => void
-  onLoadCustomBrands: () => void
-  isLoading: boolean
-  hideSubmitButton?: boolean
+  onSubmit: (data: Omit<CatalogItem, 'id'>) => Promise<void>
+  onCancel?: () => void
+  customTypes: CustomEntity[]
+  customFranchises: CustomEntity[]
+  customBrands: CustomEntity[]
+  onLoadCustomTypes: () => Promise<void>
+  onLoadCustomFranchises: () => Promise<void>
+  onLoadCustomBrands: () => Promise<void>
+  isSubmitting?: boolean
 }
 
-export function AddItemForm({
+export default function AddItemForm({
   onSubmit,
+  onCancel,
   customTypes,
   customFranchises,
   customBrands,
   onLoadCustomTypes,
   onLoadCustomFranchises,
   onLoadCustomBrands,
-  isLoading,
-  hideSubmitButton = false
+  isSubmitting = false,
 }: AddItemFormProps) {
-  const [newItem, setNewItem] = useState<{
-    name: string
-    type: string
-    franchise: string
-    brand: string
-    year: number | null
-    condition: "New" | "Used"
-    acquired: string
-    cost: string
-    value: string
-    notes: string
-    image: string | null
-  }>({
-    name: "",
-    type: "",
-    franchise: "",
-    brand: "",
-    year: null,
-    condition: "New",
-    acquired: new Date().toISOString().split('T')[0],
-    cost: "",
-    value: "",
-    notes: "",
-    image: null
-  })
-  
-  const [newItemImages, setNewItemImages] = useState<string[]>([])
+  const [isLoadingTypes, setIsLoadingTypes] = useState(false)
+  const [isLoadingFranchises, setIsLoadingFranchises] = useState(false)
+  const [isLoadingBrands, setIsLoadingBrands] = useState(false)
+  const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const yearOptions = generateYearOptions()
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setNewItem(prev => ({
-      ...prev,
-      [name]: value
-    }))
+
+  // Initialize the form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      type: "",
+      franchise: "",
+      brand: "",
+      year: "",
+      condition: "Used",
+      acquired: new Date().toISOString().split("T")[0], // Today's date in YYYY-MM-DD
+      cost: 0,
+      value: 0,
+      notes: "",
+    },
+  })
+
+  // Load custom types if empty
+  const handleLoadCustomTypes = async () => {
+    if (customTypes.length === 0 && !isLoadingTypes) {
+      setIsLoadingTypes(true)
+      await onLoadCustomTypes()
+      setIsLoadingTypes(false)
+    }
   }
 
-  const handleTypeChange = (value: string) => {
-    setNewItem(prev => ({
-      ...prev,
-      type: value
-    }))
+  // Load custom franchises if empty
+  const handleLoadCustomFranchises = async () => {
+    if (customFranchises.length === 0 && !isLoadingFranchises) {
+      setIsLoadingFranchises(true)
+      await onLoadCustomFranchises()
+      setIsLoadingFranchises(false)
+    }
   }
 
-  const handleFranchiseChange = (value: string) => {
-    setNewItem(prev => ({
-      ...prev,
-      franchise: value
-    }))
+  // Load custom brands if empty
+  const handleLoadCustomBrands = async () => {
+    if (customBrands.length === 0 && !isLoadingBrands) {
+      setIsLoadingBrands(true)
+      await onLoadCustomBrands()
+      setIsLoadingBrands(false)
+    }
   }
 
-  const handleBrandChange = (value: string) => {
-    setNewItem({ ...newItem, brand: value })
-  }
-
-  const handleYearChange = (value: string) => {
-    setNewItem(prev => ({
-      ...prev,
-      year: value ? parseInt(value) : null
-    }))
-  }
-
-  const handleConditionChange = (value: string) => {
-    setNewItem(prev => ({
-      ...prev,
-      condition: value as "New" | "Used"
-    }))
-  }
-
+  // Handle image upload
   const handleImageUpload = (url: string) => {
-    setNewItemImages(prev => [...prev, url])
+    setUploadedImages(prev => [...prev, url])
   }
 
+  // Handle image removal
   const handleRemoveImage = (index: number) => {
-    setNewItemImages(prev => prev.filter((_, i) => i !== index))
+    setUploadedImages(prev => prev.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Parse numeric values
-    const cost = parseFloat(newItem.cost) || 0
-    const value = parseFloat(newItem.value) || 0
-    
-    // Create the item object
-    const itemToSubmit = {
-      userId: '', // This will be set by the hook
-      name: newItem.name,
-      type: newItem.type || 'Other',
-      franchise: newItem.franchise || 'Other',
-      brand: newItem.brand || null,
-      year: newItem.year,
-      condition: newItem.condition,
-      acquired: new Date(newItem.acquired || new Date()),
-      cost,
-      value,
-      notes: newItem.notes,
-      image: newItemImages[0] || null,
-      images: newItemImages,
+  // Form submission handler
+  const handleFormSubmit = async (values: FormValues) => {
+    // Convert the form data to the CatalogItem format
+    const newItem: Omit<CatalogItem, 'id'> = {
+      userId: '', // Will be set by the server
+      name: values.name,
+      type: values.type,
+      franchise: values.franchise,
+      brand: values.brand || null,
+      year: values.year ? parseInt(values.year, 10) : null,
+      condition: values.condition,
+      acquired: values.acquired ? new Date(values.acquired) : new Date(),
+      cost: values.cost,
+      value: values.value,
+      notes: values.notes || null,
+      image: uploadedImages.length > 0 ? uploadedImages[0] : null,
+      images: uploadedImages,
+      createdAt: new Date(),
+      updatedAt: new Date(),
       isSold: false,
       soldPrice: null,
       soldDate: null,
-      ebaySold: null,
-      ebayListed: null
     }
-    
-    const success = await onSubmit(itemToSubmit)
-    
-    if (success) {
-      // Reset form
-      setNewItem({
-        name: "",
-        type: "",
-        franchise: "",
-        brand: "",
-        year: null,
-        condition: "New",
-        acquired: new Date().toISOString().split('T')[0],
-        cost: "",
-        value: "",
-        notes: "",
-        image: null
-      })
-      setNewItemImages([])
-    }
+
+    await onSubmit(newItem)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 [&_*:focus]:z-10">
-      <div className="space-y-2">
-        <Label htmlFor="name" className="text-sm font-medium dark:text-foreground">Name</Label>
-        <Input
-          id="name"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+        {/* Name Field */}
+        <FormField
+          control={form.control}
           name="name"
-          value={newItem.name}
-          onChange={handleInputChange}
-          required
-          className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Item Name</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g. Optimus Prime" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="type" className="text-sm font-medium dark:text-foreground">Type</Label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <Select 
-              name="type" 
-              value={newItem.type} 
-              onValueChange={handleTypeChange}
-            >
-              <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-black/90 dark:border-border">
-                <SelectGroup>
-                  <SelectLabel className="dark:text-muted-foreground">Default Types</SelectLabel>
-                  {itemTypeEnum.enumValues.map((type) => (
-                    <SelectItem key={`new-type-${type}`} value={type} className="dark:text-foreground dark:focus:bg-primary/20">{type}</SelectItem>
-                  ))}
-                </SelectGroup>
-                <SelectSeparator className="dark:bg-border" />
-                <SelectGroup>
-                  <SelectLabel className="dark:text-muted-foreground">Custom Types</SelectLabel>
-                  {customTypes.map((type) => (
-                    <SelectItem key={`new-type-custom-${type.id}`} value={type.name} className="dark:text-foreground dark:focus:bg-primary/20">{type.name}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <CustomTypeModal onSuccess={onLoadCustomTypes} />
-          </div>
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="franchise" className="text-sm font-medium dark:text-foreground">Franchise</Label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <Select
-              value={newItem.franchise || ""}
-              onValueChange={handleFranchiseChange}
-            >
-              <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
-                <SelectValue placeholder="Select franchise" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-black/90 dark:border-border">
-                <SelectGroup>
-                  <SelectLabel className="dark:text-muted-foreground">Default Franchises</SelectLabel>
-                  {franchiseEnum.enumValues.map((franchise) => (
-                    <SelectItem key={`new-franchise-${franchise}`} value={franchise} className="dark:text-foreground dark:focus:bg-primary/20">{franchise}</SelectItem>
-                  ))}
-                </SelectGroup>
-                <SelectSeparator className="dark:bg-border" />
-                <SelectGroup>
-                  <SelectLabel className="dark:text-muted-foreground">Custom Franchises</SelectLabel>
-                  {customFranchises.map((franchise) => (
-                    <SelectItem key={`new-franchise-custom-${franchise.id}`} value={franchise.name} className="dark:text-foreground dark:focus:bg-primary/20">{franchise.name}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          <CustomFranchiseModal onSuccess={onLoadCustomFranchises} />
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="brand" className="text-sm font-medium dark:text-foreground">Brand</Label>
-        <div className="flex gap-2">
-          <Select
-            value={newItem.brand || ""}
-            onValueChange={handleBrandChange}
-          >
-            <SelectTrigger className="flex-1 dark:bg-card/40 dark:border-border dark:text-foreground">
-              <SelectValue placeholder="Select brand" />
-            </SelectTrigger>
-            <SelectContent className="dark:bg-black/90 dark:border-border">
-              <SelectGroup>
-                <SelectLabel className="dark:text-muted-foreground">Default Brands</SelectLabel>
-                {DEFAULT_BRANDS.map((brand) => (
-                  <SelectItem key={brand} value={brand} className="dark:text-foreground dark:focus:bg-primary/20">
-                    {brand}
-                  </SelectItem>
-                ))}
-                {customBrands.length > 0 && (
-                  <>
-                    <SelectLabel className="dark:text-muted-foreground">Custom Brands</SelectLabel>
-                    {customBrands.map((brand) => (
-                      <SelectItem key={brand.id} value={brand.name} className="dark:text-foreground dark:focus:bg-primary/20">
-                        {brand.name}
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <CustomBrandModal onSuccess={onLoadCustomBrands} />
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="year" className="text-sm font-medium dark:text-foreground">Year</Label>
-        <Select
-          value={newItem.year?.toString() || ""}
-          onValueChange={handleYearChange}
-        >
-          <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
-            <SelectValue placeholder="Select year" />
-          </SelectTrigger>
-          <SelectContent className="dark:bg-black/90 dark:border-border">
-            <SelectGroup>
-              <SelectLabel className="dark:text-muted-foreground">Year</SelectLabel>
-              {yearOptions.map((year) => (
-                <SelectItem key={year.value} value={year.value} className="dark:text-foreground dark:focus:bg-primary/20">
-                  {year.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="condition" className="text-sm font-medium dark:text-foreground">Condition</Label>
-        <Select
-          value={newItem.condition}
-          onValueChange={handleConditionChange}
-        >
-          <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
-            <SelectValue placeholder="Select condition" />
-          </SelectTrigger>
-          <SelectContent className="dark:bg-black/90 dark:border-border">
-            <SelectGroup>
-              <SelectLabel className="dark:text-muted-foreground">Condition</SelectLabel>
-              {CONDITION_OPTIONS.map((condition) => (
-                <SelectItem key={condition} value={condition} className="dark:text-foreground dark:focus:bg-primary/20">
-                  {condition}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="acquired" className="text-sm font-medium dark:text-foreground">Date Acquired</Label>
-        <Input
-          id="acquired"
-          name="acquired"
-          type="date"
-          value={newItem.acquired}
-          onChange={handleInputChange}
-          required
-          className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary"
+
+        {/* Type Field */}
+        <FormField
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Type</FormLabel>
+              <FormControl>
+                <Select 
+                  onOpenChange={handleLoadCustomTypes} 
+                  onValueChange={field.onChange} 
+                  value={field.value}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Default Types</SelectLabel>
+                      {itemTypeEnum.enumValues.map(type => (
+                        <SelectItem key={`type-${type}`} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel>Custom Types</SelectLabel>
+                      {isLoadingTypes ? (
+                        <div className="flex items-center justify-center p-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        </div>
+                      ) : (
+                        customTypes.map(type => (
+                          <SelectItem key={`custom-type-${type.id}`} value={type.name}>
+                            {type.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <div className="flex justify-end mt-1">
+                <CustomTypeModal onSuccess={onLoadCustomTypes} />
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="cost" className="text-sm font-medium dark:text-foreground">Cost</Label>
-        <Input
-          id="cost"
-          name="cost"
-          type="number"
-          value={newItem.cost}
-          onChange={handleInputChange}
-          required
-          className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary"
+
+        {/* Franchise Field */}
+        <FormField
+          control={form.control}
+          name="franchise"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Franchise</FormLabel>
+              <FormControl>
+                <Select 
+                  onOpenChange={handleLoadCustomFranchises} 
+                  onValueChange={field.onChange} 
+                  value={field.value}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Franchise" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Default Franchises</SelectLabel>
+                      {franchiseEnum.enumValues.map(franchise => (
+                        <SelectItem key={`franchise-${franchise}`} value={franchise}>
+                          {franchise}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel>Custom Franchises</SelectLabel>
+                      {isLoadingFranchises ? (
+                        <div className="flex items-center justify-center p-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        </div>
+                      ) : (
+                        customFranchises.map(franchise => (
+                          <SelectItem key={`custom-franchise-${franchise.id}`} value={franchise.name}>
+                            {franchise.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <div className="flex justify-end mt-1">
+                <CustomFranchiseModal onSuccess={onLoadCustomFranchises} />
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="value" className="text-sm font-medium dark:text-foreground">Estimated Value</Label>
-        <Input
-          id="value"
-          name="value"
-          type="number"
-          value={newItem.value}
-          onChange={handleInputChange}
-          required
-          className="dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary"
+
+        {/* Brand Field */}
+        <FormField
+          control={form.control}
+          name="brand"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Brand</FormLabel>
+              <FormControl>
+                <Select 
+                  onOpenChange={handleLoadCustomBrands} 
+                  onValueChange={field.onChange} 
+                  value={field.value}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Default Brands</SelectLabel>
+                      {DEFAULT_BRANDS.map(brand => (
+                        <SelectItem key={`brand-${brand}`} value={brand}>
+                          {brand}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel>Custom Brands</SelectLabel>
+                      {isLoadingBrands ? (
+                        <div className="flex items-center justify-center p-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        </div>
+                      ) : (
+                        customBrands.map(brand => (
+                          <SelectItem key={`custom-brand-${brand.id}`} value={brand.name}>
+                            {brand.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <div className="flex justify-end mt-1">
+                <CustomBrandModal onSuccess={onLoadCustomBrands} />
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="notes" className="text-sm font-medium dark:text-foreground">Notes</Label>
-        <Textarea
-          id="notes"
-          name="notes"
-          value={newItem.notes}
-          onChange={handleInputChange}
-          className="min-h-[100px] dark:bg-card/40 dark:border-border dark:text-foreground dark:focus:border-primary"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="image" className="text-sm font-medium dark:text-foreground">Images</Label>
-        
-        {/* Enhanced image upload section with better layout */}
-        <div className="p-3 bg-muted/50 rounded-md">
-          <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
-        </div>
-        
-        {newItemImages.length > 0 && (
-          <div className="mt-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
-              {newItemImages.map((image, index) => (
-                <div key={index} className="relative group bg-card border rounded-md overflow-hidden aspect-square">
-                  <Image 
-                    src={image} 
-                    alt={`Uploaded image ${index + 1}`} 
-                    fill
-                    className="object-cover" 
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200"></div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6 opacity-80 hover:opacity-100 shadow-sm"
-                    onClick={() => handleRemoveImage(index)}
+
+        {/* Two columns for Year and Condition */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Year Field */}
+          <FormField
+            control={form.control}
+            name="year"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Year</FormLabel>
+                <FormControl>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value}
                   >
-                    <X className="h-3 w-3" />
-                  </Button>
-                  {index === 0 && (
-                    <div className="absolute bottom-1 left-1 bg-primary/80 text-primary-foreground text-xs px-2 py-0.5 rounded-sm">
-                      Primary
-                    </div>
-                  )}
-                </div>
-              ))}
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Year</SelectLabel>
+                        {yearOptions.map(year => (
+                          <SelectItem key={`year-${year.value}`} value={year.value}>
+                            {year.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Condition Field */}
+          <FormField
+            control={form.control}
+            name="condition"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Condition</FormLabel>
+                <FormControl>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Condition" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Condition</SelectLabel>
+                        {CONDITION_OPTIONS.map(condition => (
+                          <SelectItem key={`condition-${condition}`} value={condition}>
+                            {condition}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Two columns for Acquired Date and Cost */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Acquired Date Field */}
+          <FormField
+            control={form.control}
+            name="acquired"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date Acquired</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="date" 
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Cost Field */}
+          <FormField
+            control={form.control}
+            name="cost"
+            render={({ field: { onChange, ...rest } }) => (
+              <FormItem>
+                <FormLabel>Cost</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    min="0"
+                    placeholder="0.00" 
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                      onChange(isNaN(value) ? 0 : value);
+                    }}
+                    {...rest} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Value Field */}
+        <FormField
+          control={form.control}
+          name="value"
+          render={({ field: { onChange, ...rest } }) => (
+            <FormItem>
+              <FormLabel>Estimated Value</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  min="0"
+                  placeholder="0.00" 
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                    onChange(isNaN(value) ? 0 : value);
+                  }}
+                  {...rest} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Notes Field */}
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Add any additional information about the item" 
+                  className="min-h-[100px]"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Image Upload Field */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Images</Label>
+          
+          <div className="p-3 bg-muted/50 rounded-md">
+            <DynamicImageUpload onUpload={handleImageUpload} bucketName="item-images" />
+          </div>
+          
+          {uploadedImages.length > 0 && (
+            <div className="mt-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
+                {uploadedImages.map((image, index) => (
+                  <div key={index} className="relative group bg-card border rounded-md overflow-hidden aspect-square">
+                    <Image 
+                      src={image} 
+                      alt={`Uploaded image ${index + 1}`} 
+                      fill
+                      className="object-cover" 
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200"></div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 opacity-80 hover:opacity-100 shadow-sm"
+                      onClick={() => handleRemoveImage(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                    {index === 0 && (
+                      <div className="absolute bottom-1 left-1 bg-primary/80 text-primary-foreground text-xs px-2 py-0.5 rounded-sm">
+                        Primary
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-        
-        {newItemImages.length === 0 && (
-          <div className="text-center p-4 border border-dashed rounded-md bg-muted/30 text-muted-foreground text-sm">
-            No images uploaded yet. Upload images to showcase your item.
-          </div>
-        )}
-      </div>
-      
-      {!hideSubmitButton && (
-        <Button 
-          type="submit" 
-          className="w-full dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Adding...' : 'Add Item'}
-        </Button>
-      )}
-    </form>
+          )}
+          
+          {uploadedImages.length === 0 && (
+            <div className="text-center p-4 border border-dashed rounded-md bg-muted/30 text-muted-foreground text-sm">
+              No images uploaded yet. Upload images to showcase your item.
+            </div>
+          )}
+        </div>
+
+        {/* Form Actions */}
+        <div className="flex justify-end space-x-2 pt-2">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+            >
+              Cancel
+            </Button>
+          )}
+          <Button 
+            type="submit" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              'Add Item'
+            )}
+          </Button>
+        </div>
+      </form>
+    </Form>
   )
 } 

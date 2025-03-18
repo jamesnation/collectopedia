@@ -23,6 +23,7 @@ export interface CatalogItem {
   images?: string[];
   ebayListed?: number | null;
   ebaySold?: number | null;
+  ebayLastUpdated?: Date | null;
 }
 
 export interface CustomEntity {
@@ -60,6 +61,34 @@ export const mapCatalogItemToSchemaItem = (item: CatalogItem) => {
     // Ensure notes is always a string
     notes: notes || '',
   };
+};
+
+/**
+ * This function ensures the extended CatalogItem is compatible with hooks that
+ * expect the original schema type. It adds any missing required properties.
+ */
+export const ensureCompatibleItem = (item: any): CatalogItem => {
+  // Make sure the item has all required properties, adding defaults for missing ones
+  return {
+    ...item,
+    // Ensure these exist with correct types
+    ebayLastUpdated: item.ebayLastUpdated || null,
+    acquired: item.acquired || new Date(),
+    cost: typeof item.cost === 'number' ? item.cost : 0,
+    value: typeof item.value === 'number' ? item.value : 0,
+    notes: item.notes || '',
+    image: item.image || null,
+    isSold: Boolean(item.isSold),
+    soldPrice: item.soldPrice || null,
+    soldDate: item.soldDate || null,
+  };
+};
+
+/**
+ * Apply compatibility adapter to an array of items
+ */
+export const ensureCompatibleItems = (items: any[]): CatalogItem[] => {
+  return items.map(ensureCompatibleItem);
 };
 
 // Constants for hard-coded options
