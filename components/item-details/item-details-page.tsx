@@ -6,7 +6,8 @@
  * This component is the main container for the item details page.
  * Refactored to use the ItemDetailsContext provider with React Query
  * for improved data fetching, caching, and optimistic updates.
- * Enhanced with smooth loading transitions using Framer Motion.
+ * Static skeleton loaders used for loading states while keeping
+ * animations for the loaded content.
  */
 
 import { useRouter } from "next/navigation";
@@ -98,28 +99,14 @@ function ItemDetailsContent() {
       <div className="min-h-screen bg-slate-50 dark:bg-black/30">
         <main className="container mx-auto px-2 sm:px-4 py-8 sm:py-12 max-w-7xl overflow-x-hidden">
           {/* Back Button Skeleton */}
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <div>
             <Skeleton className="h-10 w-40 mb-4 sm:mb-8" />
-          </motion.div>
+          </div>
           
           {/* Main content skeleton - two column layout matching the actual UI */}
-          <motion.div 
-            className="grid md:grid-cols-2 gap-4 sm:gap-8 w-full"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-8 w-full">
             {/* Left column - Image gallery skeleton */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="flex flex-col gap-4"
-            >
+            <div className="flex flex-col gap-4">
               {/* Main image skeleton */}
               <Skeleton className="aspect-square w-full rounded-xl" />
               
@@ -130,43 +117,29 @@ function ItemDetailsContent() {
                 <Skeleton className="h-16 w-16 rounded-md" />
                 <Skeleton className="h-16 w-16 rounded-md" />
               </div>
-            </motion.div>
+            </div>
             
             {/* Right column - Item details skeletons */}
             <div className="flex flex-col gap-4">
               {/* Item header skeleton */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-              >
+              <div>
                 <Skeleton className="h-12 w-full rounded-lg mb-2" />
                 <Skeleton className="h-6 w-1/3 rounded-md" />
-              </motion.div>
+              </div>
               
               {/* Metrics section skeleton */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.3 }}
-                className="grid grid-cols-3 gap-4 my-2"
-              >
+              <div className="grid grid-cols-3 gap-4 my-2">
                 <Skeleton className="h-24 w-full rounded-lg" />
                 <Skeleton className="h-24 w-full rounded-lg" />
                 <Skeleton className="h-24 w-full rounded-lg" />
-              </motion.div>
+              </div>
               
               {/* Details card skeleton */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.4 }}
-                className="flex-1"
-              >
+              <div className="flex-1">
                 <Skeleton className="h-64 w-full rounded-xl" />
-              </motion.div>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </main>
       </div>
     );
