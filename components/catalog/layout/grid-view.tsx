@@ -3,6 +3,7 @@
  * 
  * Displays items in a responsive grid layout.
  * Updated to use named exports per TypeScript standards.
+ * Reduced maximum columns to 4 for better item visibility.
  */
 
 'use client';
@@ -68,7 +69,7 @@ export function GridView({
 
   return (
     <div 
-      className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 ${gridClassName}`}
+      className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 ${gridClassName}`}
     >
       {items.map((item) => (
         <Link 
