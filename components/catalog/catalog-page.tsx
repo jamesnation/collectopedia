@@ -6,6 +6,7 @@
  * Updated to use named exports per TypeScript standards.
  * Removed debug info section to clean up the UI.
  * Consolidated filter controls into a top bar with dropdown menu.
+ * Fixed mobile layout issues with responsive design for filter controls.
  */
 
 'use client';
@@ -185,11 +186,11 @@ export function CatalogPageContent() {
           className="mb-6"
         />
 
-        {/* Consolidated Top Bar */}
-        <div className="mb-6 flex items-center gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+        {/* Consolidated Top Bar - Made Responsive */}
+        <div className="mb-6 flex flex-col md:flex-row gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 p-2 rounded-lg">
           {/* Search and Primary Controls */}
-          <div className="flex-1 flex items-center gap-4">
-            <div className="relative flex-1 max-w-2xl">
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:flex-1">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="search"
@@ -200,8 +201,8 @@ export function CatalogPageContent() {
               />
             </div>
 
-            {/* Show Sold Toggle */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap gap-2 justify-start">
+              {/* Show Sold Toggle */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -210,21 +211,21 @@ export function CatalogPageContent() {
               >
                 Show Sold
               </Button>
+            
+              {/* Filters Dropdown */}
+              <FiltersDropdown
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onReset={handleFilterReset}
+                customTypes={customTypes}
+                customFranchises={customFranchises}
+                activeFilterCount={activeFilterCount}
+              />
             </div>
-
-            {/* Filters Dropdown */}
-            <FiltersDropdown
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              onReset={handleFilterReset}
-              customTypes={customTypes}
-              customFranchises={customFranchises}
-              activeFilterCount={activeFilterCount}
-            />
           </div>
 
           {/* Right Side Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-0">
             {/* View Toggle */}
             <div className="bg-muted rounded-md p-1 inline-flex shadow-sm">
               <Button
@@ -263,7 +264,7 @@ export function CatalogPageContent() {
               value={sortBy}
               onChange={handleSortChange}
               options={defaultSortOptions}
-              className="w-52"
+              className="w-full sm:w-52"
             />
           </div>
         </div>
