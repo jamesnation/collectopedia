@@ -7,6 +7,7 @@
  * Removed debug info section to clean up the UI.
  * Consolidated filter controls into a top bar with dropdown menu.
  * Fixed mobile layout issues with responsive design for filter controls.
+ * Optimized layout for tablet portrait mode (iPad dimensions).
  */
 
 'use client';
@@ -187,10 +188,10 @@ export function CatalogPageContent() {
         />
 
         {/* Consolidated Top Bar - Made Responsive */}
-        <div className="mb-6 flex flex-col md:flex-row gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 p-2 rounded-lg">
+        <div className="mb-6 flex flex-col lg:flex-row gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 p-3 rounded-lg">
           {/* Search and Primary Controls */}
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:flex-1">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row w-full lg:flex-1 gap-4">
+            <div className="relative flex-1 sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="search"
@@ -201,12 +202,12 @@ export function CatalogPageContent() {
               />
             </div>
 
-            <div className="flex flex-wrap gap-2 justify-start">
+            <div className="flex items-center flex-wrap gap-2 justify-start">
               {/* Show Sold Toggle */}
               <Button
                 variant="ghost"
                 size="sm"
-                className={filters.showSold ? "bg-accent" : ""}
+                className={`${filters.showSold ? "bg-accent" : ""} sm:flex-shrink-0`}
                 onClick={handleShowSoldToggle}
               >
                 Show Sold
@@ -225,7 +226,7 @@ export function CatalogPageContent() {
           </div>
 
           {/* Right Side Controls */}
-          <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-0">
+          <div className="flex sm:justify-end flex-wrap items-center gap-3 mt-2 lg:mt-0">
             {/* View Toggle */}
             <div className="bg-muted rounded-md p-1 inline-flex shadow-sm">
               <Button
@@ -264,7 +265,7 @@ export function CatalogPageContent() {
               value={sortBy}
               onChange={handleSortChange}
               options={defaultSortOptions}
-              className="w-full sm:w-52"
+              className="w-full sm:w-60 lg:w-52"
             />
           </div>
         </div>
