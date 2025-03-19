@@ -4,16 +4,17 @@
  * This component serves as the primary content for the catalog page,
  * bringing together all the subcomponents like filters, grid/list views, etc.
  * Updated to use named exports per TypeScript standards.
+ * Removed debug info section to clean up the UI.
+ * Consolidated filter controls into a top bar with dropdown menu.
  */
 
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useCatalogContext } from './context/catalog-context';
-import { Package, Plus, Grid, List as ListIcon } from 'lucide-react';
+import { Package, Plus, Grid, List as ListIcon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-// Direct import for filter bar component
-import { FilterBar } from './filter-controls/filter-bar';
+import { FiltersDropdown } from './filter-controls/filters-dropdown';
 import { GridView } from './layout/grid-view';
 import { ListView } from './layout/list-view';
 import { ImageCacheProvider } from './context/image-cache-context';
@@ -71,6 +72,7 @@ export function CatalogPageContent() {
     viewType,
     setViewType,
     filters,
+    setFilters,
     sortBy,
     setSortBy,
     addItem,
@@ -86,6 +88,44 @@ export function CatalogPageContent() {
     loadCustomFranchises,
     loadCustomBrands
   } = useCatalogContext();
+
+  // Calculate active filter count
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.type) count++;
+    if (filters.franchise) count++;
+    if (filters.year) count++;
+    if (filters.showWithImages) count++;
+    return count;
+  }, [filters]);
+
+  // Handle filter changes
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters({ ...filters, [key]: value });
+  };
+
+  // Handle filter reset
+  const handleFilterReset = () => {
+    setFilters({
+      search: filters.search,
+      showSold: filters.showSold,
+      soldYear: filters.soldYear,
+      type: '',
+      franchise: '',
+      year: '',
+      showWithImages: false
+    });
+  };
+
+  // Handle search input
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters({ ...filters, search: e.target.value });
+  };
+
+  // Handle show sold toggle
+  const handleShowSoldToggle = () => {
+    setFilters({ ...filters, showSold: !filters.showSold });
+  };
 
   // Debug: log context values
   useEffect(() => {
@@ -134,23 +174,6 @@ export function CatalogPageContent() {
           <h1 className="text-4xl font-serif text-foreground dark:text-foreground">
             Your Collection <span className="text-foreground dark:text-foreground">Catalog</span>
           </h1>
-          <div className="flex items-center space-x-4">
-            <AddItemModal
-              customTypes={customTypes}
-              customFranchises={customFranchises}
-              customBrands={customBrands}
-              onLoadCustomTypes={loadCustomTypes}
-              onLoadCustomFranchises={loadCustomFranchises}
-              onLoadCustomBrands={loadCustomBrands}
-              isLoading={isLoading}
-            />
-            <SortDropdown
-              value={sortBy}
-              onChange={handleSortChange}
-              options={defaultSortOptions}
-              className="w-52"
-            />
-          </div>
         </div>
 
         {/* Summary Panel */}
@@ -162,17 +185,52 @@ export function CatalogPageContent() {
           className="mb-6"
         />
 
-        {/* Filters Section */}
-        <div className="mb-6 flex flex-col space-y-4">
-          <FilterBar />
-          
-          {/* View Toggle */}
-          <div className="flex justify-end mt-2">
-            <div className="bg-gray-800 rounded-md p-1 inline-flex">
+        {/* Consolidated Top Bar */}
+        <div className="mb-6 flex items-center gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+          {/* Search and Primary Controls */}
+          <div className="flex-1 flex items-center gap-4">
+            <div className="relative flex-1 max-w-2xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="search"
+                placeholder="Search your collection..."
+                value={filters.search || ''}
+                onChange={handleSearchChange}
+                className="w-full bg-muted/50 rounded-md border border-border pl-9 pr-4 py-2 text-sm"
+              />
+            </div>
+
+            {/* Show Sold Toggle */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={filters.showSold ? "bg-accent" : ""}
+                onClick={handleShowSoldToggle}
+              >
+                Show Sold
+              </Button>
+            </div>
+
+            {/* Filters Dropdown */}
+            <FiltersDropdown
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onReset={handleFilterReset}
+              customTypes={customTypes}
+              customFranchises={customFranchises}
+              activeFilterCount={activeFilterCount}
+            />
+          </div>
+
+          {/* Right Side Controls */}
+          <div className="flex items-center gap-3">
+            {/* View Toggle */}
+            <div className="bg-muted rounded-md p-1 inline-flex shadow-sm">
               <Button
                 size="sm"
                 variant={viewType === 'grid' ? 'default' : 'ghost'}
-                className={viewType === 'grid' ? 'bg-violet-600' : 'bg-transparent hover:bg-gray-700'}
+                className={viewType === 'grid' ? 'bg-violet-600' : 'bg-transparent hover:bg-muted-foreground/10'}
                 onClick={() => setViewType('grid')}
                 title="Grid View"
               >
@@ -181,29 +239,33 @@ export function CatalogPageContent() {
               <Button
                 size="sm"
                 variant={viewType === 'list' ? 'default' : 'ghost'}
-                className={viewType === 'list' ? 'bg-violet-600' : 'bg-transparent hover:bg-gray-700'}
+                className={viewType === 'list' ? 'bg-violet-600' : 'bg-transparent hover:bg-muted-foreground/10'}
                 onClick={() => setViewType('list')}
                 title="List View"
               >
                 <ListIcon className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-        </div>
 
-        {/* Debug Info */}
-        <div className="mb-4 p-2 bg-gray-100 dark:bg-gray-800 rounded text-sm">
-          <p>Items: {items.length} | Loading: {isLoading ? 'Yes' : 'No'}</p>
-          <p>View: {viewType} | Filter: {filters.search ? `"${filters.search}"` : 'None'}</p>
-          <p>Show Sold: {filters.showSold ? 'Yes' : 'No'} | With Images: {filters.showWithImages ? 'Yes' : 'No'}</p>
-          <p>
-            Filters: Type: {filters.type || 'None'} | 
-            Franchise: {filters.franchise || 'None'} | 
-            Year: {filters.year || 'None'}
-          </p>
-          {items.length > 0 && (
-            <p>First item: {items[0].name} (ID: {items[0].id.substring(0, 8)}...)</p>
-          )}
+            {/* Add Item Button */}
+            <AddItemModal
+              customTypes={customTypes}
+              customFranchises={customFranchises}
+              customBrands={customBrands}
+              onLoadCustomTypes={loadCustomTypes}
+              onLoadCustomFranchises={loadCustomFranchises}
+              onLoadCustomBrands={loadCustomBrands}
+              isLoading={isLoading}
+            />
+
+            {/* Sort Dropdown */}
+            <SortDropdown
+              value={sortBy}
+              onChange={handleSortChange}
+              options={defaultSortOptions}
+              className="w-52"
+            />
+          </div>
         </div>
 
         {/* Loading State */}
