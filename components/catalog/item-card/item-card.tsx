@@ -4,6 +4,7 @@
  * Displays a single item in the catalog with its image and basic details.
  * Used in both grid and list views.
  * Updated to use named exports per TypeScript standards.
+ * Updated text sizes to be smaller and consistent with list view.
  */
 
 'use client';
@@ -70,20 +71,20 @@ export function ItemCard({
         {/* Sold overlay */}
         {isSold && (
           <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-            <Badge className="bg-red-500 text-white">Sold</Badge>
+            <Badge className="bg-red-500 text-white text-xs">Sold</Badge>
           </div>
         )}
       </div>
       
       <CardContent className="p-3">
-        <div className="space-y-1">
-          <h3 className="font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+        <div className="space-y-0.5">
+          <h3 className="text-sm font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
             <HighlightedText
               text={`${item.name} ${displayYear}`}
               searchQuery={filters.search}
             />
           </h3>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {item.franchise && (
               <span className="block truncate">
                 <HighlightedText
@@ -103,12 +104,12 @@ export function ItemCard({
       </CardContent>
       
       <CardFooter className="p-3 pt-0 flex justify-between items-center">
-        <div className="text-sm font-medium">
+        <div className="text-xs font-medium">
           {formattedValue}
         </div>
         {hasEbayPrice(item) && (
-          <div className="text-sm text-muted-foreground">
-            <span className="text-xs">eBay: </span>
+          <div className="text-xs text-muted-foreground">
+            <span className="text-[10px]">eBay: </span>
             {formatCurrency(item.ebayPrice || 0)}
           </div>
         )}
