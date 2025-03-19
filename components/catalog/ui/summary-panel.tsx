@@ -3,6 +3,7 @@
  * 
  * Displays key collection statistics in a row of cards at the top of the catalog page.
  * Updated to use named exports per TypeScript standards.
+ * Adjusted to display as a single column on mobile and tablet views for better responsiveness.
  */
 
 import React from 'react';
@@ -64,7 +65,7 @@ export function SummaryPanel({
   const isProfitPositive = displayValues.profit > 0;
 
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 ${className}`}>
+    <div className={`grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6 ${className}`}>
       {/* Value Card */}
       <div className="bg-gray-900 rounded-lg p-4 shadow-md">
         <div className="flex items-center justify-between mb-1">
