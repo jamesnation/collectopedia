@@ -2,6 +2,7 @@
  * List View Component
  * 
  * Displays items in a table layout with more detailed information.
+ * Updated to use named exports per TypeScript standards.
  */
 
 'use client';
@@ -20,23 +21,31 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { 
-  ArrowUpDown, 
-  ChevronDown, 
-  ChevronUp, 
+  MoreHorizontal, 
   Edit, 
-  Trash2, 
-  ExternalLink, 
-  Loader2,
-  Eye
+  Trash, 
+  ChevronUp, 
+  ChevronDown,
+  Eye,
+  Package,
+  Loader2
 } from 'lucide-react';
-import { SortOption } from '../context/catalog-context';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { CatalogItem } from '../utils/item-types';
 import { formatCurrency, formatDate } from '../utils/format-utils';
-import { useCatalogContext } from '../context/catalog-context';
+import { CatalogItem } from '../utils/item-types';
+import { SortOption } from '../context/catalog-context';
 import { HighlightedText } from '../utils/search-utils';
+import { useCatalogContext } from '../context/catalog-context';
 
-interface ListViewProps {
+export interface ListViewProps {
   items: CatalogItem[];
   isLoading?: boolean;
   loadingItemId?: string | null;
@@ -48,7 +57,7 @@ interface ListViewProps {
   className?: string;
 }
 
-export default function ListView({
+export function ListView({
   items,
   isLoading = false,
   loadingItemId = null,
@@ -61,231 +70,250 @@ export default function ListView({
 }: ListViewProps) {
   const router = useRouter();
   const { filters } = useCatalogContext();
-
-  // Handle row click to navigate to item details
-  const handleRowClick = useCallback((item: CatalogItem) => {
+  
+  // Handle item view navigation
+  const handleViewItem = useCallback((item: CatalogItem) => {
     router.push(`/item/${item.id}`);
   }, [router]);
-
-  // Handle sort click
-  const handleSortClick = useCallback((column: string) => {
-    onSort(column);
-  }, [onSort]);
-
-  // Handle edit button click
-  const handleEditClick = useCallback((e: React.MouseEvent, item: CatalogItem) => {
-    e.stopPropagation(); // Prevent row click
+  
+  // Handle edit action
+  const handleEditClick = useCallback((item: CatalogItem) => {
     if (onEdit) {
       onEdit(item);
-    } else {
-      // For now, just navigate to the item page since we don't have an edit page
-      router.push(`/item/${item.id}`);
     }
-  }, [onEdit, router]);
-
-  // Handle delete button click
-  const handleDeleteClick = useCallback((e: React.MouseEvent, item: CatalogItem) => {
-    e.stopPropagation(); // Prevent row click
+  }, [onEdit]);
+  
+  // Handle delete action
+  const handleDeleteClick = useCallback((item: CatalogItem) => {
     if (onDelete) {
       onDelete(item);
     }
   }, [onDelete]);
-
-  // Generate sort indicator
+  
+  // Get sort indicator based on current sort state
   const getSortIndicator = (column: string) => {
     if (sortDescriptor.column !== column) {
-      return <ArrowUpDown className="ml-1 h-4 w-4" />;
+      return null;
     }
     
     return sortDescriptor.direction === 'asc' 
-      ? <ChevronUp className="ml-1 h-4 w-4" />
-      : <ChevronDown className="ml-1 h-4 w-4" />;
+      ? <ChevronUp className="ml-2 h-4 w-4" />
+      : <ChevronDown className="ml-2 h-4 w-4" />;
   };
-
+  
+  // Loading state
+  if (isLoading && items.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="flex flex-col items-center">
+          <Package className="w-12 h-12 animate-pulse text-gray-400" />
+          <p className="mt-4 text-gray-500">Loading items...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Empty state
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col justify-center items-center h-64 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+        <Package className="w-12 h-12 text-gray-400 mb-4" />
+        <h3 className="text-xl font-medium text-gray-500 dark:text-gray-400 mb-2">
+          No items found
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
+          Try adjusting your filters to see more items.
+        </p>
+      </div>
+    );
+  }
+  
   return (
-    <div className={cn("w-full overflow-auto", className)}>
+    <div className={`w-full overflow-auto ${className}`}>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-16">Image</TableHead>
-            
-            <TableHead className="cursor-pointer" onClick={() => handleSortClick('name')}>
+            <TableHead style={{ width: 60 }}></TableHead>
+            <TableHead 
+              className="cursor-pointer hover:text-primary"
+              onClick={() => onSort('name')}
+            >
               <div className="flex items-center">
                 Name
                 {getSortIndicator('name')}
               </div>
             </TableHead>
-            
-            <TableHead className="cursor-pointer" onClick={() => handleSortClick('type')}>
+            <TableHead 
+              className="cursor-pointer hover:text-primary"
+              onClick={() => onSort('type')}
+            >
               <div className="flex items-center">
                 Type
                 {getSortIndicator('type')}
               </div>
             </TableHead>
-            
-            <TableHead className="cursor-pointer" onClick={() => handleSortClick('franchise')}>
+            <TableHead 
+              className="cursor-pointer hover:text-primary"
+              onClick={() => onSort('franchise')}
+            >
               <div className="flex items-center">
                 Franchise
                 {getSortIndicator('franchise')}
               </div>
             </TableHead>
-            
-            <TableHead className="cursor-pointer" onClick={() => handleSortClick('year')}>
+            <TableHead 
+              className="cursor-pointer hover:text-primary"
+              onClick={() => onSort('year')}
+            >
               <div className="flex items-center">
                 Year
                 {getSortIndicator('year')}
               </div>
             </TableHead>
-            
-            <TableHead className="cursor-pointer" onClick={() => handleSortClick('value')}>
+            <TableHead 
+              className="cursor-pointer hover:text-primary"
+              onClick={() => onSort('acquired')}
+            >
               <div className="flex items-center">
+                Acquired
+                {getSortIndicator('acquired')}
+              </div>
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer hover:text-primary text-right"
+              onClick={() => onSort('cost')}
+            >
+              <div className="flex items-center justify-end">
+                Cost
+                {getSortIndicator('cost')}
+              </div>
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer hover:text-primary text-right"
+              onClick={() => onSort('value')}
+            >
+              <div className="flex items-center justify-end">
                 Value
                 {getSortIndicator('value')}
               </div>
             </TableHead>
-            
             {showSold && (
-              <TableHead className="cursor-pointer" onClick={() => handleSortClick('soldPrice')}>
-                <div className="flex items-center">
+              <TableHead 
+                className="cursor-pointer hover:text-primary text-right"
+                onClick={() => onSort('soldPrice')}
+              >
+                <div className="flex items-center justify-end">
                   Sold Price
                   {getSortIndicator('soldPrice')}
                 </div>
               </TableHead>
             )}
-            
-            <TableHead className="w-20 text-right">Actions</TableHead>
+            <TableHead style={{ width: 60 }}></TableHead>
           </TableRow>
         </TableHeader>
-        
         <TableBody>
           {items.map((item) => {
             const isItemLoading = loadingItemId === item.id;
+            const isSold = item.isSold;
+            const yearDisplay = item.year || '-';
             
             return (
               <TableRow 
                 key={item.id}
                 className={cn(
-                  "cursor-pointer hover:bg-muted/50",
-                  item.isSold && "bg-muted/20"
+                  "cursor-pointer hover:bg-secondary/20",
+                  isSold && "bg-muted/30 dark:bg-muted/20",
+                  isItemLoading && "opacity-50"
                 )}
-                onClick={() => handleRowClick(item)}
+                onClick={() => handleViewItem(item)}
               >
                 <TableCell className="p-2">
                   <div className="relative w-12 h-12 rounded overflow-hidden">
-                    <ItemImage 
-                      itemId={item.id}
-                      size="thumbnail"
-                      isLoading={isItemLoading}
-                    />
-                    {item.isSold && (
-                      <Badge className="absolute top-0 right-0 bg-red-500 text-white text-xs px-1">
-                        Sold
-                      </Badge>
+                    {isItemLoading ? (
+                      <div className="w-full h-full flex items-center justify-center bg-muted/20">
+                        <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+                      </div>
+                    ) : (
+                      <ItemImage 
+                        itemId={item.id} 
+                        size="thumbnail" 
+                        priority={false}
+                      />
+                    )}
+                    {isSold && (
+                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                        <Badge className="bg-red-500 text-white text-xs">Sold</Badge>
+                      </div>
                     )}
                   </div>
                 </TableCell>
-                
                 <TableCell>
-                  <div className="font-medium">
-                    <HighlightedText 
-                      text={item.name}
-                      searchQuery={filters.search}
-                    />
-                  </div>
-                  {item.brand && (
-                    <div className="text-sm text-muted-foreground">
-                      <HighlightedText 
-                        text={item.brand}
-                        searchQuery={filters.search}
-                      />
-                    </div>
-                  )}
+                  <HighlightedText
+                    text={item.name}
+                    searchQuery={filters.search}
+                    highlightClassName="bg-yellow-200 dark:bg-yellow-800 font-medium"
+                  />
                 </TableCell>
-                
                 <TableCell>
-                  <HighlightedText 
+                  <HighlightedText
                     text={item.type}
                     searchQuery={filters.search}
                   />
                 </TableCell>
-                
                 <TableCell>
-                  <HighlightedText 
+                  <HighlightedText
                     text={item.franchise}
                     searchQuery={filters.search}
                   />
                 </TableCell>
-                
-                <TableCell>
-                  <HighlightedText 
-                    text={item.year ? item.year.toString() : ''}
-                    searchQuery={filters.search}
-                  />
-                </TableCell>
-                
-                <TableCell>
-                  <div className="font-medium">{formatCurrency(item.value || 0)}</div>
-                  {item.cost > 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      Cost: {formatCurrency(item.cost)}
-                    </div>
-                  )}
-                </TableCell>
-                
+                <TableCell>{yearDisplay}</TableCell>
+                <TableCell>{formatDate(item.acquired)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(item.cost)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(item.value)}</TableCell>
                 {showSold && (
-                  <TableCell>
-                    {item.isSold ? (
-                      <div>
-                        <div>{formatCurrency(item.soldPrice || 0)}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {item.soldDate ? formatDate(item.soldDate) : 'Unknown date'}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">Not sold</span>
-                    )}
+                  <TableCell className="text-right">
+                    {isSold && item.soldPrice ? formatCurrency(item.soldPrice) : '-'}
                   </TableCell>
                 )}
-                
-                <TableCell className="text-right">
-                  <div className="flex justify-end items-center space-x-1">
-                    {isItemLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                    ) : (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-blue-500 hover:text-blue-700"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRowClick(item);
-                          }}
-                          title="View Details"
+                <TableCell className="p-2" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="h-8 w-8 p-0"
+                        disabled={isItemLoading}
+                      >
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem 
+                          onClick={() => handleViewItem(item)}
                         >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-amber-500 hover:text-amber-700"
-                          onClick={(e) => handleEditClick(e, item)}
-                          title="Edit Item"
+                          <Eye className="mr-2 h-4 w-4" />
+                          <span>View Details</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleEditClick(item)}
+                          disabled={!onEdit || isItemLoading}
                         >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-red-500 hover:text-red-700"
-                          onClick={(e) => handleDeleteClick(e, item)}
-                          title="Delete Item"
+                          <Edit className="mr-2 h-4 w-4" />
+                          <span>Edit</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteClick(item)}
+                          disabled={!onDelete || isItemLoading}
+                          className="text-red-600 focus:text-red-600"
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
+                          <Trash className="mr-2 h-4 w-4" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             );

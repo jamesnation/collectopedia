@@ -2,6 +2,7 @@
  * Catalog Query Provider
  * 
  * Sets up React Query for catalog data fetching and state management.
+ * Updated to use named exports per TypeScript standards.
  */
 
 "use client"
@@ -10,11 +11,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { useState, ReactNode } from "react"
 
-interface CatalogQueryProviderProps {
+export interface CatalogQueryProviderProps {
   children: ReactNode
 }
 
-export default function CatalogQueryProvider({ children }: CatalogQueryProviderProps) {
+export function CatalogQueryProvider({ children }: CatalogQueryProviderProps) {
   // Create a client
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {

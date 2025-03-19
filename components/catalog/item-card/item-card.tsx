@@ -3,6 +3,7 @@
  * 
  * Displays a single item in the catalog with its image and basic details.
  * Used in both grid and list views.
+ * Updated to use named exports per TypeScript standards.
  */
 
 'use client';
@@ -11,13 +12,13 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import ItemImage from '../item-card/item-image';
+import { ItemImage } from './item-image';
 import { formatCurrency } from '../utils/format-utils';
 import { CatalogItem, hasEbayPrice } from '../utils/item-types';
 import { useCatalogContext } from '../context/catalog-context';
 import { HighlightedText } from '../utils/search-utils';
 
-interface ItemCardProps {
+export interface ItemCardProps {
   item: CatalogItem;
   showSold?: boolean;
   loadingItemId?: string | null;
@@ -25,7 +26,7 @@ interface ItemCardProps {
   className?: string;
 }
 
-export default function ItemCard({
+export function ItemCard({
   item,
   showSold = false,
   loadingItemId = null,

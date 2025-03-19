@@ -3,6 +3,7 @@
  * 
  * This component provides the main filter controls for the catalog,
  * including search, type filters, franchise filters, etc.
+ * Updated to use named exports per TypeScript standards.
  */
 
 'use client';
@@ -17,16 +18,20 @@ import {
 } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import SearchInput from './search-input';
-import FilterDropdown from './filter-dropdown';
-import ActiveFilters from './active-filters';
+import { SearchInput } from './search-input';
+import { FilterDropdown } from './filter-dropdown';
+import { ActiveFilters } from './active-filters';
 import { Badge } from "@/components/ui/badge";
 import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema";
+
+export interface FilterBarProps {
+  className?: string;
+}
 
 /**
  * Filter bar that contains all filtering and view controls
  */
-export default function FilterBar() {
+export function FilterBar({ className = '' }: FilterBarProps) {
   const {
     filters,
     setFilters,

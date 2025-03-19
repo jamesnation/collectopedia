@@ -2,6 +2,7 @@
  * Grid View Component
  * 
  * Displays items in a responsive grid layout.
+ * Updated to use named exports per TypeScript standards.
  */
 
 'use client';
@@ -12,7 +13,7 @@ import { ItemCard } from '../item-card';
 import { Package } from 'lucide-react';
 import { CatalogItem } from '../utils/item-types';
 
-interface GridViewProps {
+export interface GridViewProps {
   items: CatalogItem[];
   isLoading?: boolean;
   loadingItemId?: string | null;
@@ -22,7 +23,7 @@ interface GridViewProps {
   itemClassName?: string;
 }
 
-export default function GridView({
+export function GridView({
   items,
   isLoading = false,
   loadingItemId = null,

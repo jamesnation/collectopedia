@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { X, FilterX } from 'lucide-react';
 import { FilterState } from '../context/catalog-context';
 
-interface ActiveFiltersProps {
+export interface ActiveFiltersProps {
   filters: FilterState;
   onClearFilter: (key: keyof FilterState) => void;
   onClearAllFilters: () => void;
@@ -21,7 +21,7 @@ interface ActiveFiltersProps {
   className?: string;
 }
 
-export default function ActiveFilters({
+export function ActiveFilters({
   filters,
   onClearFilter,
   onClearAllFilters,

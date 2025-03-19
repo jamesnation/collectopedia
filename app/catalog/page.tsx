@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import Catalog from '@/components/catalog';
+import { Catalog } from '@/components/catalog';
 import { getItemsByUserIdAction } from '@/actions/items-actions';
 import { getCustomTypesAction } from '@/actions/custom-types-actions';
 import { getCustomFranchisesAction } from '@/actions/custom-franchises-actions';

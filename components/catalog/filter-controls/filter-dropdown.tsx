@@ -2,6 +2,7 @@
  * Filter Dropdown Component
  * 
  * A reusable dropdown component for selecting filter options.
+ * Updated to use named exports per TypeScript standards.
  */
 
 'use client';
@@ -21,7 +22,7 @@ import { FilterOption, CustomEntity } from './filter-types';
 // Special value for representing "no selection"
 export const EMPTY_SELECT_VALUE = "__all__";
 
-interface FilterDropdownProps {
+export interface FilterDropdownProps {
   value: string;
   onChange: (value: string) => void;
   options: FilterOption[] | string[] | CustomEntity[];
@@ -31,7 +32,7 @@ interface FilterDropdownProps {
   emptyOptionLabel?: string;
 }
 
-export default function FilterDropdown({
+export function FilterDropdown({
   value,
   onChange,
   options,

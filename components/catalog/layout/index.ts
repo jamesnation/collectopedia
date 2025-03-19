@@ -2,7 +2,10 @@
  * Layout Barrel Export
  * 
  * Exports grid and list view components.
+ * Updated to use named exports per TypeScript standards.
  */
 
-export { default as GridView } from './grid-view';
-export { default as ListView } from './list-view'; 
+export { GridView } from './grid-view';
+export { ListView } from './list-view';
+export type { GridViewProps } from './grid-view';
+export type { ListViewProps } from './list-view'; 

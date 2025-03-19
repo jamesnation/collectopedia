@@ -1,3 +1,10 @@
+/**
+ * Add Item Form Component
+ * 
+ * Form for adding new items to the collection.
+ * Updated to use named exports per TypeScript standards.
+ */
+
 "use client"
 
 import { useState } from 'react'
@@ -38,27 +45,43 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { CustomEntity } from "../filter-controls/filter-types"
+import { 
+  createCostValueSchema, 
+  createNullableStringSchema, 
+  createRequiredStringSchema 
+} from '../utils/form-utils'
 
 // Dynamically import the image upload component to avoid SSR issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
 
 // Define the form schema with Zod
 const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  type: z.string().min(1, "Type is required"),
-  franchise: z.string().min(1, "Franchise is required"),
+  name: createRequiredStringSchema(1, "Name is required").max(100, "Name must be less than 100 characters"),
+  type: createRequiredStringSchema(1, "Type is required"),
+  franchise: createRequiredStringSchema(1, "Franchise is required"),
   brand: z.string().optional(),
-  year: z.string().optional(),
+  year: z.preprocess(
+    // Convert empty string to undefined
+    (val) => val === '' ? undefined : val,
+    z.string().optional()
+  ),
   condition: z.enum(["New", "Used"]),
-  acquired: z.string().optional(),
-  cost: z.number().nonnegative().default(0),
-  value: z.number().nonnegative().default(0),
-  notes: z.string().optional(),
+  acquired: z.preprocess(
+    // Ensure consistent date format or default to today
+    (val) => {
+      if (!val || val === '') return new Date().toISOString().split('T')[0];
+      return val;
+    },
+    z.string()
+  ),
+  cost: createCostValueSchema(),
+  value: createCostValueSchema(),
+  notes: createNullableStringSchema(),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
-interface AddItemFormProps {
+export interface AddItemFormProps {
   onSubmit: (data: Omit<CatalogItem, 'id'>) => Promise<void>
   onCancel?: () => void
   customTypes: CustomEntity[]
@@ -70,7 +93,7 @@ interface AddItemFormProps {
   isSubmitting?: boolean
 }
 
-export default function AddItemForm({
+export function AddItemForm({
   onSubmit,
   onCancel,
   customTypes,
@@ -141,10 +164,14 @@ export default function AddItemForm({
     setUploadedImages(prev => prev.filter((_, i) => i !== index))
   }
 
-  // Form submission handler
-  const handleFormSubmit = async (values: FormValues) => {
-    // Convert the form data to the CatalogItem format
-    const newItem: Omit<CatalogItem, 'id'> = {
+  /**
+   * Map form values to a database entity with proper type conversions
+   */
+  const mapFormToEntity = (
+    values: FormValues, 
+    uploadedImages: string[] = []
+  ): Omit<CatalogItem, 'id'> => {
+    return {
       userId: '', // Will be set by the server
       name: values.name,
       type: values.type,
@@ -153,8 +180,8 @@ export default function AddItemForm({
       year: values.year ? parseInt(values.year, 10) : null,
       condition: values.condition,
       acquired: values.acquired ? new Date(values.acquired) : new Date(),
-      cost: values.cost,
-      value: values.value,
+      cost: typeof values.cost === 'number' ? values.cost : 0,
+      value: typeof values.value === 'number' ? values.value : 0,
       notes: values.notes || null,
       image: uploadedImages.length > 0 ? uploadedImages[0] : null,
       images: uploadedImages,
@@ -163,9 +190,14 @@ export default function AddItemForm({
       isSold: false,
       soldPrice: null,
       soldDate: null,
-    }
+    };
+  };
 
-    await onSubmit(newItem)
+  // Form submission handler
+  const handleFormSubmit = async (values: FormValues) => {
+    // Apply proper type conversions using the mapping function
+    const newItem = mapFormToEntity(values, uploadedImages);
+    await onSubmit(newItem);
   }
 
   return (
@@ -430,7 +462,7 @@ export default function AddItemForm({
           <FormField
             control={form.control}
             name="cost"
-            render={({ field: { onChange, ...rest } }) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Cost</FormLabel>
                 <FormControl>
@@ -439,13 +471,20 @@ export default function AddItemForm({
                     step="0.01" 
                     min="0"
                     placeholder="0.00" 
+                    value={field.value === 0 ? '' : field.value}
                     onChange={(e) => {
-                      const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                      onChange(isNaN(value) ? 0 : value);
+                      const rawValue = e.target.value;
+                      // Pass the raw value to let the schema preprocessing handle conversion
+                      field.onChange(rawValue === '' ? 0 : parseFloat(rawValue));
                     }}
-                    {...rest} 
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
                   />
                 </FormControl>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter the amount you paid (0 if unknown or gift)
+                </p>
                 <FormMessage />
               </FormItem>
             )}
@@ -456,7 +495,7 @@ export default function AddItemForm({
         <FormField
           control={form.control}
           name="value"
-          render={({ field: { onChange, ...rest } }) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Estimated Value</FormLabel>
               <FormControl>
@@ -465,13 +504,20 @@ export default function AddItemForm({
                   step="0.01" 
                   min="0"
                   placeholder="0.00" 
+                  value={field.value === 0 ? '' : field.value}
                   onChange={(e) => {
-                    const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                    onChange(isNaN(value) ? 0 : value);
+                    const rawValue = e.target.value;
+                    // Pass the raw value to let the schema preprocessing handle conversion
+                    field.onChange(rawValue === '' ? 0 : parseFloat(rawValue));
                   }}
-                  {...rest} 
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
                 />
               </FormControl>
+              <p className="text-xs text-muted-foreground mt-1">
+                Estimate the current market value of this item
+              </p>
               <FormMessage />
             </FormItem>
           )}
@@ -486,9 +532,14 @@ export default function AddItemForm({
               <FormLabel>Notes</FormLabel>
               <FormControl>
                 <Textarea 
-                  placeholder="Add any additional information about the item" 
-                  className="min-h-[100px]"
-                  {...field} 
+                  placeholder="Add any additional notes about this item here..." 
+                  className="min-h-32" 
+                  // Handle null values by converting to empty string for the textarea
+                  value={field.value === null ? '' : field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
                 />
               </FormControl>
               <FormMessage />

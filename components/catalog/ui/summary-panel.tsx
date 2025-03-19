@@ -2,6 +2,7 @@
  * Summary Panel Component
  * 
  * Displays key collection statistics in a row of cards at the top of the catalog page.
+ * Updated to use named exports per TypeScript standards.
  */
 
 import React from 'react';
@@ -25,7 +26,7 @@ export interface SummaryValues {
   totalSpent?: number;
 }
 
-interface SummaryPanelProps {
+export interface SummaryPanelProps {
   summaryValues: SummaryValues;
   showSold?: boolean;
   view?: 'grid' | 'list';
@@ -33,7 +34,7 @@ interface SummaryPanelProps {
   className?: string;
 }
 
-export default function SummaryPanel({
+export function SummaryPanel({
   summaryValues,
   showSold = false,
   view = 'grid',

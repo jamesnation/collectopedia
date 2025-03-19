@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
-import Catalog from './catalog'
+import { Catalog } from './catalog'
 import { useBackgroundUpdates } from '@/hooks/use-background-updates'
 
 interface CatalogPageProps {

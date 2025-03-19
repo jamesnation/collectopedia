@@ -2,6 +2,7 @@
  * Item Image Component
  * 
  * Displays an item's primary image with appropriate loading states.
+ * Updated to use named exports per TypeScript standards.
  */
 
 'use client';
@@ -31,8 +32,8 @@ const imageSizes = {
   large: { width: 800, height: 800 },
 };
 
-// Changed to default export
-export default function ItemImage({
+// Changed from default export to named export
+export function ItemImage({
   itemId,
   size = 'medium',
   priority = false,

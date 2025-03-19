@@ -3,6 +3,7 @@
  * 
  * This component serves as the primary content for the catalog page,
  * bringing together all the subcomponents like filters, grid/list views, etc.
+ * Updated to use named exports per TypeScript standards.
  */
 
 'use client';
@@ -12,15 +13,14 @@ import { useCatalogContext } from './context/catalog-context';
 import { Package, Plus, Grid, List as ListIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 // Direct import for filter bar component
-import FilterBar from './filter-controls/filter-bar';
-import GridView from './layout/grid-view';
-import ListView from './layout/list-view';
+import { FilterBar } from './filter-controls/filter-bar';
+import { GridView } from './layout/grid-view';
+import { ListView } from './layout/list-view';
 import { ImageCacheProvider } from './context/image-cache-context';
 import { CatalogProvider } from './context/catalog-provider';
 import { SortDropdown, defaultSortOptions } from './sorting';
 import { CatalogItem } from './utils';
-import SummaryPanel, { SummaryValues } from './ui/summary-panel';
-import AddItemModal from './ui/add-item-modal';
+import { SummaryPanel, SummaryValues, AddItemModal } from './ui';
 
 /**
  * SummaryPanelAdapter - Adapts context summary values to the expected SummaryPanel props

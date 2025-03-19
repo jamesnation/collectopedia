@@ -3,6 +3,7 @@
  * 
  * A modal dialog for adding new items to the collection.
  * This component has been updated to use React Query for mutations.
+ * Updated to use named exports per TypeScript standards.
  */
 
 "use client"
@@ -11,12 +12,12 @@ import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import AddItemForm from './add-item-form'
+import { AddItemForm } from './add-item-form'
 import { CatalogItem } from '../utils/item-types'
 import { CustomEntity } from "../filter-controls/filter-types"
 import { useAddItemMutation } from '../hooks/use-catalog-queries'
 
-interface AddItemModalProps {
+export interface AddItemModalProps {
   // Removed onAddItem prop as we'll use React Query mutation
   customTypes: CustomEntity[]
   customFranchises: CustomEntity[]
@@ -28,7 +29,7 @@ interface AddItemModalProps {
   trigger?: React.ReactNode
 }
 
-export default function AddItemModal({
+export function AddItemModal({
   // Removed onAddItem parameter 
   customTypes,
   customFranchises,

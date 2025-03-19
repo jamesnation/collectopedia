@@ -1,7 +1,8 @@
 /**
  * Search Input Component
  * 
- * A reusable search input component with icon and optional clear button.
+ * A specialized input for search with keyboard shortcut support.
+ * Updated to use named exports per TypeScript standards.
  */
 
 'use client';
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-interface SearchInputProps {
+export interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -22,7 +23,7 @@ interface SearchInputProps {
   showShortcutHint?: boolean;
 }
 
-export default function SearchInput({
+export function SearchInput({
   value,
   onChange,
   placeholder = "Search...",

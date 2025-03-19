@@ -3,6 +3,7 @@
  * 
  * This file has been refactored to use a component-based architecture
  * with context for state management and React Query for data fetching.
+ * Updated to use named exports per TypeScript standards.
  */
 
 "use client"
@@ -10,11 +11,11 @@
 import React from 'react'
 import { CatalogProvider } from './context/catalog-provider';
 import { ImageCacheProvider } from './context/image-cache-context';
-import CatalogPageContent from './catalog-page';
+import { CatalogPageContent } from './catalog-page';
 import { CatalogItem } from './utils/item-types';
-import CatalogQueryProvider from './catalog-query-provider';
+import { CatalogQueryProvider } from './catalog-query-provider';
 
-interface CatalogProps {
+export interface CatalogProps {
   initialItems: CatalogItem[];
   initialTypes: { id: string; name: string }[];
   initialFranchises: { id: string; name: string }[];
@@ -24,7 +25,7 @@ interface CatalogProps {
 /**
  * Main catalog component that wraps everything in context providers
  */
-export default function Catalog({
+export function Catalog({
   initialItems = [],
   initialTypes = [],
   initialFranchises = [],
