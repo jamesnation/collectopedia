@@ -6,8 +6,7 @@
  * This component is the main container for the item details page.
  * Refactored to use the ItemDetailsContext provider with React Query
  * for improved data fetching, caching, and optimistic updates.
- * Static skeleton loaders used for loading states while keeping
- * animations for the loaded content.
+ * Uses static skeleton loaders for loading states with no animations.
  */
 
 import { useRouter } from "next/navigation";
@@ -21,7 +20,7 @@ import { ItemGallerySection } from "./ui/item-gallery-section";
 import { ItemDetailsSection } from "./ui/item-details-section";
 import { ItemImageUploadDialog } from "./ui/item-image-upload-dialog";
 import { useItemDetails } from "./context";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 
 // Item type definition
 interface Item {
@@ -149,11 +148,7 @@ function ItemDetailsContent() {
   if (error || !item) {
     return (
       <div className="container py-6">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
-        >
+        <div>
           <Card className="p-6 flex flex-col items-center justify-center space-y-4">
             <h2 className="text-xl font-bold text-destructive">Error Loading Item</h2>
             <p className="text-center text-muted-foreground">{error || "Item not found."}</p>
@@ -161,7 +156,7 @@ function ItemDetailsContent() {
               Return to Collection
             </Button>
           </Card>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -171,11 +166,7 @@ function ItemDetailsContent() {
     <div className="min-h-screen bg-slate-50 dark:bg-black/30">
       <main className="container mx-auto px-2 sm:px-4 py-8 sm:py-12 max-w-7xl overflow-x-hidden">
         {/* Back Button */}
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3 }}
-        >
+        <div>
           <Button 
             variant="ghost" 
             className="inline-flex items-center text-muted-foreground hover:text-foreground hover:bg-muted/40 mb-4 sm:mb-8"
@@ -184,22 +175,17 @@ function ItemDetailsContent() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Collection
           </Button>
-        </motion.div>
+        </div>
         
         {/* Main content - two column layout with gallery on left, details on right */}
         <AnimatePresence mode="wait">
-          <motion.div 
-            className="grid md:grid-cols-2 gap-4 sm:gap-8 w-full overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-8 w-full overflow-hidden">
             {/* Image gallery column */}
             <ItemGallerySection />
             
             {/* Details column */}
             <ItemDetailsSection />
-          </motion.div>
+          </div>
         </AnimatePresence>
       </main>
       
