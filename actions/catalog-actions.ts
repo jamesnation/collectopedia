@@ -69,52 +69,50 @@ export async function fetchCatalogItems(params: CatalogQueryParams): Promise<Cat
  */
 export async function addCatalogItem(item: Omit<SelectItem, 'id'> & { userId: string, images?: string[] }): Promise<SelectItem> {
   console.time('addCatalogItem');
-  console.log("💡 [SERVER-ACTION] addCatalogItem received payload:", {
+  console.log("[SERVER-ACTION] addCatalogItem received:", {
     name: item.name,
-    hasImages: !!item.images && Array.isArray(item.images) && item.images.length > 0,
-    imageCount: item.images?.length || 0,
+    hasPrimaryImage: !!item.image
   });
-  
-  const isProduction = process.env.NODE_ENV === 'production';
-  const hasImages = !!item.images && Array.isArray(item.images) && item.images.length > 0;
   
   try {
     // Generate a unique ID
     const id = crypto.randomUUID();
     
-    // VERCEL OPTIMIZATION: For Vercel, create item first without ANY images
-    // and then handle images separately to avoid timeouts
-    const { images = [], ...itemData } = item; // Default to empty array
+    // CRITICAL: Only handle creating the basic item with at most one image
+    // Additional images will be handled one by one after item creation
+    const { images, ...itemData } = item;
     
-    // For the primary image, using the first image from the array
-    const primaryImage = hasImages && images.length > 0 ? images[0] : null;
+    console.log("[SERVER-ACTION] Creating item with ID:", id);
     
-    // Prepare data to match the expected createItemAction parameters
-    const { 
-      notes, 
-      soldDate, 
-      soldPrice, 
-      ebayListed, 
-      ebaySold,
-      image, // Ignore passed image and use primaryImage instead
-      ...rest 
-    } = itemData;
-    
-    console.log("[SERVER-ACTION] Creating item with" + (primaryImage ? " primary image" : "out images"));
-    
-    // Only pass necessary data to createItemAction to optimize the request
-    const result = await createItemAction({
+    // Prepare a clean object with all fields properly typed
+    const preparedData = {
       id,
-      ...rest,
-      notes: notes || '',
-      soldDate: soldDate || undefined,
-      soldPrice: soldPrice || undefined,
-      ebayListed: ebayListed || undefined,
-      ebaySold: ebaySold || undefined,
-      image: primaryImage || undefined, // Only include the primary image
-    }).catch(error => {
-      console.error("💡 [SERVER-ACTION] createItemAction error:", error);
-      throw error; // Re-throw to be caught by outer catch
+      userId: itemData.userId,
+      name: itemData.name,
+      type: itemData.type,
+      franchise: itemData.franchise,
+      brand: itemData.brand || undefined,
+      year: itemData.year || undefined,
+      condition: itemData.condition,
+      acquired: itemData.acquired,
+      cost: itemData.cost,
+      value: itemData.value,
+      notes: itemData.notes || '',
+      soldDate: itemData.soldDate || undefined,
+      soldPrice: itemData.soldPrice || undefined,
+      ebayListed: itemData.ebayListed || undefined,
+      ebaySold: itemData.ebaySold || undefined,
+      ebayLastUpdated: itemData.ebayLastUpdated || undefined,
+      image: itemData.image || undefined,
+      isSold: itemData.isSold,
+      createdAt: itemData.createdAt,
+      updatedAt: itemData.updatedAt,
+    };
+    
+    // Pass properly typed data to createItemAction
+    const result = await createItemAction(preparedData).catch(error => {
+      console.error("[SERVER-ACTION] createItemAction error:", error);
+      throw error;
     });
     
     if (!result.isSuccess || !result.data) {
@@ -122,88 +120,28 @@ export async function addCatalogItem(item: Omit<SelectItem, 'id'> & { userId: st
       throw new Error(result.error || "Failed to add catalog item");
     }
     
-    // VERCEL OPTIMIZATION: Process only a maximum of 3 images to avoid timeouts
-    if (hasImages && images.length > 0) {
-      const imagesToProcess = isProduction 
-        ? images.slice(0, 3) // In production, limit to 3 images initially
-        : images;
-        
-      console.log(`[SERVER-ACTION] Processing ${imagesToProcess.length} images (${isProduction ? 'limited for production' : 'all'})...`);
-      
-      try {
-        // Process images in batches of 1 for better reliability in production
-        const { createImageAction } = await import("./images-actions");
-        const batchSize = isProduction ? 1 : 3; // Single images in production
-        
-        for (let i = 0; i < imagesToProcess.length; i += batchSize) {
-          const batch = imagesToProcess.slice(i, i + batchSize);
-          console.log(`[SERVER-ACTION] Processing image batch ${Math.ceil(i/batchSize) + 1}/${Math.ceil(imagesToProcess.length/batchSize)}`);
-          
-          // Process each batch sequentially in production for reliability
-          if (isProduction) {
-            for (const url of batch) {
-              try {
-                console.log(`[SERVER-ACTION] Creating image record for URL: ${url.substring(0, 30)}...`);
-                await createImageAction({
-                  url,
-                  itemId: id,
-                  userId: item.userId,
-                  order: i // Preserve order
-                });
-              } catch (imgError) {
-                console.error(`[SERVER-ACTION] Error creating image:`, imgError);
-              }
-            }
-          } else {
-            // In development, process in parallel for speed
-            await Promise.all(batch.map(async (url, index) => {
-              try {
-                await createImageAction({
-                  url,
-                  itemId: id,
-                  userId: item.userId,
-                  order: i + index // Preserve order
-                });
-              } catch (imgError) {
-                console.error(`[SERVER-ACTION] Error creating image ${i + index}:`, imgError);
-              }
-            }));
-          }
-        }
-        
-        console.log('[SERVER-ACTION] Initial images processed');
-        
-        // VERCEL OPTIMIZATION: If there are more images, log them for separate processing
-        if (isProduction && images.length > 3) {
-          console.log(`[SERVER-ACTION] ${images.length - 3} additional images will need separate processing`);
-          // In a real system, you might queue these for background processing
-        }
-      } catch (imageError) {
-        console.error('[SERVER-ACTION] Error processing images:', imageError);
-        // Continue anyway - we've already created the item
-      }
+    // Revalidate paths
+    try {
+      const timestamp = Date.now();
+      revalidatePath(`/?t=${timestamp}`);
+      revalidatePath(`/my-collection?t=${timestamp}`);
+      revalidatePath(`/item/${id}?t=${timestamp}`);
+    } catch (revalidateError) {
+      console.error("[SERVER-ACTION] Error revalidating paths:", revalidateError);
+      // Non-critical error, don't throw
     }
     
-    // Revalidate paths with a one-second delay to ensure DB writes are complete
-    setTimeout(() => {
-      try {
-        // Generate a cache-busting timestamp for the item paths
-        const timestamp = Date.now();
-        console.log("[SERVER-ACTION] Revalidating paths...");
-        revalidatePath(`/?t=${timestamp}`);
-        revalidatePath(`/my-collection?t=${timestamp}`);
-        revalidatePath(`/item/${id}?t=${timestamp}`);
-      } catch (revalidateError) {
-        console.error("[SERVER-ACTION] Error revalidating paths:", revalidateError);
-      }
-    }, 1000);
-    
     console.timeEnd('addCatalogItem');
+    console.log("[SERVER-ACTION] Item created successfully:", {
+      id: result.data.id,
+      name: result.data.name
+    });
+    
     return result.data;
   } catch (error) {
     console.timeEnd('addCatalogItem');
     console.error("[SERVER-ACTION] addCatalogItem error:", error);
-    throw error; // Re-throw to be handled by the client
+    throw error;
   }
 }
 

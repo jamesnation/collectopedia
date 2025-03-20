@@ -186,12 +186,13 @@ export function AddItemForm({
 
   /**
    * Map form values to a database entity with proper type conversions
+   * But ONLY include the primary image, not all images
    */
   const mapFormToEntity = (
     values: FormValues, 
     imageUrls: string[] = []
   ): Omit<CatalogItem, 'id'> => {
-    // Include the primary image and all uploaded images
+    // Only take the first image as the primary image - this is key!
     const primaryImage = imageUrls.length > 0 ? imageUrls[0] : null;
     
     return {
@@ -206,8 +207,8 @@ export function AddItemForm({
       cost: typeof values.cost === 'number' ? values.cost : 0,
       value: typeof values.value === 'number' ? values.value : 0,
       notes: values.notes || null,
-      image: primaryImage, // Primary image
-      images: imageUrls, // CRITICAL FIX: Send ALL images, not just the first one
+      image: primaryImage, // Include ONLY the primary image
+      // Don't include the full images array - we'll add them individually after
       createdAt: new Date(),
       updatedAt: new Date(),
       isSold: false,
@@ -222,42 +223,94 @@ export function AddItemForm({
       // Set local submitting state
       setIsSubmittingForm(true)
       
-      console.log(`[ADD-FORM] Submitting form for item: ${values.name}, image count: ${uploadedImages.length}`);
-      console.log(`[ADD-FORM] Images:`, uploadedImages);
-      console.log(`[ADD-FORM] Form values:`, values);
+      // Create a copy of uploadedImages to avoid mutation during async operations
+      const imagesToUpload = [...uploadedImages];
+      const hasPrimaryImage = imagesToUpload.length > 0;
+      
+      console.log(`[ADD-FORM] Submitting form for item: ${values.name}, image count: ${imagesToUpload.length}`);
       
       // Show a toast to let the user know the form is submitting
       toast({
         title: "Processing",
-        description: uploadedImages.length > 0 
-          ? `Adding item with ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''}, please wait...` 
+        description: hasPrimaryImage 
+          ? `Adding item with primary image, please wait...` 
           : "Adding item...",
         duration: 5000,
       });
       
-      // Create the item with ALL uploaded images
-      const newItem = mapFormToEntity(values, uploadedImages);
-      
       try {
-        console.log(`[ADD-FORM] Submitting item with ${uploadedImages.length} images:`, 
-          uploadedImages.map(url => url.substring(0, 30) + '...').join(', '));
+        // Step 1: Create the item with ONLY the primary image - like item-details does
+        const newItem = mapFormToEntity(values, imagesToUpload);
+        console.log(`[ADD-FORM] Creating item with primary image only`);
         
-        // Submit the item with all images
+        // Submit the item with just the primary image
         const createdItem = await onSubmit(newItem);
+        console.log(`[ADD-FORM] Item created successfully: ${createdItem.id}`);
         
-        console.log(`[ADD-FORM] Item created successfully:`, createdItem);
-        
-        // Show success message
+        // Show initial success message
         toast({
           title: "Success",
-          description: `${values.name} added to your collection with ${uploadedImages.length} image(s).`,
+          description: "Item created successfully!",
           duration: 3000,
         });
         
-        // Reset form and images
+        // Reset form immediately for better UX
         form.reset();
-        setUploadedImages([]);
         
+        // Step 2: Add additional images one by one
+        const additionalImages = imagesToUpload.slice(1);
+        if (additionalImages.length > 0) {
+          toast({
+            title: "Processing",
+            description: `Adding ${additionalImages.length} additional image(s) in the background...`,
+            duration: 5000,
+          });
+          
+          console.log(`[ADD-FORM] Adding ${additionalImages.length} additional images`);
+          
+          try {
+            // Import the image action
+            const { createImageAction } = await import("@/actions/images-actions");
+            
+            // Process one image at a time for reliability
+            for (let i = 0; i < additionalImages.length; i++) {
+              const url = additionalImages[i];
+              try {
+                // Add a small delay between images to prevent overwhelming the server
+                if (i > 0) await new Promise(r => setTimeout(r, 500));
+                
+                console.log(`[ADD-FORM] Adding image ${i+1}/${additionalImages.length}`);
+                await createImageAction({
+                  url,
+                  itemId: createdItem.id,
+                  userId: createdItem.userId,
+                  order: i + 1 // Primary image is order 0
+                });
+              } catch (imgError) {
+                console.error(`[ADD-FORM] Error adding image ${i+1}:`, imgError);
+                // Continue with other images even if one fails
+              }
+            }
+            
+            console.log(`[ADD-FORM] Successfully added ${additionalImages.length} additional images`);
+            toast({
+              title: "Success",
+              description: `Added ${additionalImages.length} additional image(s)`,
+              duration: 3000,
+            });
+          } catch (imagesError) {
+            console.error(`[ADD-FORM] Error processing additional images:`, imagesError);
+            toast({
+              title: "Partial Success",
+              description: "Item was created but some images couldn't be uploaded.",
+              variant: "default",
+              duration: 5000,
+            });
+          }
+        }
+        
+        // Clear uploaded images after everything is done
+        setUploadedImages([]);
       } catch (error) {
         console.error(`[ADD-FORM] Error during submission:`, error);
         
@@ -267,7 +320,8 @@ export function AddItemForm({
           description: error instanceof Error 
             ? error.message 
             : "Failed to add item. Please try again.",
-          variant: "destructive"
+          variant: "destructive",
+          duration: 8000,
         });
       } finally {
         // Always reset submitting state

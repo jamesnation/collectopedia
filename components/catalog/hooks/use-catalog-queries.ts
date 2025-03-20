@@ -68,144 +68,65 @@ export function useAddItemMutation() {
   
   return useMutation({
     mutationFn: async (newItem: Omit<CatalogItem, 'id' | 'userId'>) => {
-      console.error(`[ADD-ITEM] Starting to add item: ${newItem.name}`);
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
       
-      // Calculate appropriate timeout based on environment and image count
-      const isProduction = process.env.NODE_ENV === 'production';
-      const imageCount = newItem.images?.length || 0;
+      // Simple log of what we're submitting
+      console.log(`[ADD-ITEM] Adding ${newItem.name} with primary image: ${newItem.image ? 'Yes' : 'No'}`);
       
-      // Use longer timeouts in production due to cold starts and serverless limitations
-      // Also scale timeout with image count - more images need more time
-      const timeoutDuration = isProduction 
-        ? Math.max(30000, imageCount * 5000) // Production: 30s minimum, +5s per image
-        : 15000; // Development: 15s fixed
-      
-      console.log(`[ADD-ITEM] Using timeout of ${timeoutDuration/1000}s for ${imageCount} images in ${isProduction ? 'production' : 'development'}`);
-      
-      // CRITICAL FIX: Create an absolute timeout for the entire operation
-      // This guarantees the function will complete within a reasonable time
-      return new Promise<CatalogItem>((resolve, reject) => {
-        // Set a hard timeout for the entire operation
-        const abortTimeout = setTimeout(() => {
-          console.error('[ADD-ITEM] Hard timeout reached, aborting operation');
-          reject(new Error(`Operation timed out after ${timeoutDuration/1000} seconds`));
-        }, timeoutDuration);
-        
-        // Run the actual operation as an async IIFE
-        (async () => {
-          try {
-            if (!userId) {
-              clearTimeout(abortTimeout);
-              reject(new Error("User not authenticated"));
-              return;
-            }
-            
-            // Convert catalog item to schema format
-            const schemaItem = mapCatalogItemToSchemaItem({
-              ...newItem,
-              id: crypto.randomUUID(),
-              userId
-            });
-            
-            // Simplify the item creation - focus on core data
-            const itemToAdd = {
-              userId,
-              name: schemaItem.name,
-              type: schemaItem.type,
-              franchise: schemaItem.franchise,
-              brand: schemaItem.brand,
-              year: schemaItem.year,
-              acquired: schemaItem.acquired,
-              cost: schemaItem.cost,
-              value: schemaItem.value,
-              notes: schemaItem.notes || '',
-              isSold: schemaItem.isSold,
-              soldDate: schemaItem.soldDate || null,
-              soldPrice: schemaItem.soldPrice || null,
-              ebayListed: schemaItem.ebayListed || null,
-              ebaySold: schemaItem.ebaySold || null,
-              ebayLastUpdated: schemaItem.ebayLastUpdated || null,
-              image: newItem.image,
-              images: newItem.images,
-              condition: schemaItem.condition,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
-            
-            console.error(`[ADD-ITEM] Calling server action for: ${itemToAdd.name}`);
-            console.log('[ADD-ITEM-DEBUG] ItemToAdd:', itemToAdd);
-            
-            // Create a timeout for just the server call - use the same duration as the overall timeout
-            const serverTimeout = timeoutDuration;
-            
-            // Using Promise.race to handle timeout for the server call
-            try {
-              console.log(`[ADD-ITEM] Calling server action for ${itemToAdd.name} with ${timeoutDuration/1000}s timeout`);
-              const result = await Promise.race([
-                addCatalogItem(itemToAdd).then(result => {
-                  console.log('[ADD-ITEM] Server action completed successfully');
-                  return result;
-                }),
-                new Promise<never>((_, rejectServer) => {
-                  return setTimeout(() => {
-                    console.log('[ADD-ITEM-DEBUG] SERVER TIMEOUT TRIGGERED');
-                    rejectServer(new Error("Server request timed out"));
-                  }, serverTimeout);
-                })
-              ]) as SelectItem;
-              
-              // If we get here, the server action completed successfully
-              console.error(`[ADD-ITEM] Server action successful for: ${result.id}`);
-              
-              // Clear the abort timeout since we succeeded
-              clearTimeout(abortTimeout);
-              
-              // Force refresh the catalog queries
-              setTimeout(() => {
-                queryClient.invalidateQueries({ 
-                  queryKey: ['catalog'],
-                  refetchType: 'none'
-                });
-              }, 500);
-              
-              // Resolve with the result
-              resolve(mapSchemaItemToCatalogItem(result));
-            } catch (serverError) {
-              // Server call failed or timed out
-              console.error(`[ADD-ITEM] Server action failed:`, serverError);
-              
-              // Trigger a catalog refresh in case the item was actually added
-              setTimeout(() => {
-                queryClient.invalidateQueries({ 
-                  queryKey: ['catalog'],
-                  refetchType: 'none'
-                });
-              }, 1000);
-              
-              // Clear the abort timeout and reject with the error
-              clearTimeout(abortTimeout);
-              reject(serverError);
-            }
-          } catch (outerError) {
-            // Something went wrong outside the server call
-            console.error(`[ADD-ITEM] Error in mutation:`, outerError);
-            
-            // Clear the abort timeout and reject with the error
-            clearTimeout(abortTimeout);
-            reject(outerError);
-          }
-        })();
+      // Convert catalog item to schema format
+      const schemaItem = mapCatalogItemToSchemaItem({
+        ...newItem,
+        id: crypto.randomUUID(),
+        userId
       });
+      
+      // Create a basic item request with essentials + primary image only
+      const itemToAdd = {
+        userId,
+        name: schemaItem.name,
+        type: schemaItem.type,
+        franchise: schemaItem.franchise,
+        brand: schemaItem.brand || null,
+        year: schemaItem.year || null,
+        acquired: schemaItem.acquired,
+        cost: schemaItem.cost,
+        value: schemaItem.value,
+        notes: schemaItem.notes || '',
+        condition: schemaItem.condition,
+        image: newItem.image, // Primary image only
+        isSold: schemaItem.isSold,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        // Add missing fields required by the type
+        soldPrice: null,
+        soldDate: null,
+        ebayListed: null,
+        ebaySold: null,
+        ebayLastUpdated: null,
+      };
+      
+      // Submit item to server
+      try {
+        console.log(`[ADD-ITEM] Submitting to server`);
+        const result = await addCatalogItem(itemToAdd);
+        console.log(`[ADD-ITEM] Server returned item: ${result.id}`);
+        
+        // Invalidate queries to ensure fresh data
+        queryClient.invalidateQueries({ 
+          queryKey: ['catalog'],
+          refetchType: 'none'
+        });
+        
+        return mapSchemaItemToCatalogItem(result);
+      } catch (error) {
+        console.error(`[ADD-ITEM] Server error:`, error);
+        throw error;
+      }
     },
     onSuccess: (newItem: CatalogItem) => {
-      console.error(`[ADD-ITEM] Success callback for: ${newItem.id}`);
-      
-      // Invalidate cache ONCE, with a specific query key
-      queryClient.invalidateQueries({ 
-        queryKey: ['catalog'],
-        // Don't refetch automatically - let components handle that
-        refetchType: 'none'
-      });
+      console.log(`[ADD-ITEM] Success: ${newItem.id}`);
       
       // Show success message
       toast({
@@ -214,32 +135,15 @@ export function useAddItemMutation() {
       });
     },
     onError: (error) => {
-      // Log error in a more noticeable way
-      console.error("████████████████████████████████████████");
-      console.error("█ [ADD-ITEM] ERROR ADDING ITEM:        █");
-      console.error("████████████████████████████████████████");
-      console.error(error);
+      console.error("Error adding item:", error);
       
-      // Store error in localStorage for debugging
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('lastAddItemError', JSON.stringify({
-            message: error instanceof Error ? error.message : "Unknown error",
-            time: new Date().toISOString(),
-            stack: error instanceof Error ? error.stack : null
-          }));
-        } catch (e) {
-          console.error("Could not save error to localStorage:", e);
-        }
-      }
-      
-      // Provide more helpful error messages for specific error cases
+      // Provide helpful error messages
       let errorMessage = "Failed to add item";
       if (error instanceof Error) {
         if (error.message.includes("timed out")) {
-          errorMessage = "The server took too long to respond. This could be due to network issues or high server load. Please try again with fewer images or try later.";
+          errorMessage = "The server took too long to respond. Try again with fewer images.";
         } else if (error.message.includes("User not authenticated")) {
-          errorMessage = "Your login session might have expired. Please refresh the page and try again.";
+          errorMessage = "Your login session expired. Please refresh and try again.";
         } else {
           errorMessage = error.message;
         }
@@ -249,13 +153,7 @@ export function useAddItemMutation() {
         title: "Error",
         description: errorMessage,
         variant: "destructive",
-        duration: 10000, // Show toast for 10 seconds
-      });
-      
-      // Invalidate queries to ensure UI is in sync with server state
-      queryClient.invalidateQueries({ 
-        queryKey: ['catalog'],
-        refetchType: 'none'
+        duration: 10000,
       });
     }
   });
