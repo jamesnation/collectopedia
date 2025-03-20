@@ -23,6 +23,7 @@ import {
 } from "@/hooks/items/use-item-query";
 import { isEqual } from "lodash";
 import { getImagesByItemIdAction, deleteImageAction } from "@/actions/images-actions";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Type for image data
 interface ImageType {
@@ -180,6 +181,9 @@ export function ItemDetailsProvider({
   const updateItemMutation = useUpdateItemMutation(updateItem);
   const deleteItemMutation = useDeleteItemMutation(deleteItem);
   const refreshPriceMutation = useRefreshAiPriceMutation(refreshAiPrice);
+  
+  // Get access to the queryClient for cache invalidation
+  const queryClient = useQueryClient();
   
   // Local state management (not moved to React Query)
   // Item state based on React Query data
@@ -399,6 +403,19 @@ export function ItemDetailsProvider({
           }
         });
         
+        // Invalidate catalog image cache for this item
+        if (typeof window !== 'undefined') {
+          console.log('[ITEM-DETAILS] Invalidating catalog image cache after image upload for:', item.id);
+          
+          // Trigger the DOM event for catalog's cache invalidation
+          const cacheEvent = new CustomEvent('invalidate-image-cache', {
+            detail: { itemId: item.id }
+          });
+          window.dispatchEvent(cacheEvent);
+          
+          // Also invalidate React Query cache
+          queryClient.invalidateQueries({ queryKey: ['images', item.id] });
+        }
       } else {
         throw new Error(result.error || "Failed to upload image");
       }
@@ -436,6 +453,20 @@ export function ItemDetailsProvider({
       
       // Delete the image from the API
       await deleteImageAction(imageId, item.id);
+      
+      // Invalidate catalog image cache for this item
+      if (typeof window !== 'undefined') {
+        console.log('[ITEM-DETAILS] Invalidating catalog image cache after image delete for:', item.id);
+        
+        // Trigger the DOM event for catalog's cache invalidation
+        const cacheEvent = new CustomEvent('invalidate-image-cache', {
+          detail: { itemId: item.id }
+        });
+        window.dispatchEvent(cacheEvent);
+        
+        // Also invalidate React Query cache
+        queryClient.invalidateQueries({ queryKey: ['images', item.id] });
+      }
       
       toast({
         title: "Success",
@@ -666,6 +697,20 @@ export function ItemDetailsProvider({
         }
         
         console.log('Successfully updated image orders');
+        
+        // Invalidate catalog image cache for this item
+        if (typeof window !== 'undefined') {
+          console.log('[ITEM-DETAILS] Invalidating catalog image cache after reordering for:', item.id);
+          
+          // Trigger the DOM event for catalog's cache invalidation
+          const cacheEvent = new CustomEvent('invalidate-image-cache', {
+            detail: { itemId: item.id }
+          });
+          window.dispatchEvent(cacheEvent);
+          
+          // Also invalidate React Query cache
+          queryClient.invalidateQueries({ queryKey: ['images', item.id] });
+        }
         
         // Indicate success with a toast
         toast({

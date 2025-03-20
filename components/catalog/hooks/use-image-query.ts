@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useImageService } from '@/services/image-service';
 import { getImagesByItemIdAction } from '@/actions/images-actions';
 import { SelectImage } from '@/db/schema/images-schema';
+import { useEffect, useRef } from 'react';
 
 // Type for image loading result
 interface ImageQueryResult {
@@ -31,6 +32,21 @@ function isSupabaseStorageUrl(url?: string | null): boolean {
          (url.includes('supabase') && url.includes('.in')) ||
          // Also check for data URLs which come from image uploads
          url.startsWith('data:');
+}
+
+/**
+ * Extract item ID from a Supabase URL
+ */
+function extractItemIdFromUrl(url?: string | null): string {
+  if (!url) return 'unknown';
+  
+  // Pattern for Supabase URLs like "...storage/v1/object/public/items/[ITEM_ID]/..."
+  const itemsMatch = url.match(/\/items\/([^\/]+)/);
+  if (itemsMatch && itemsMatch[1]) {
+    return itemsMatch[1];
+  }
+  
+  return 'unknown';
 }
 
 /**
@@ -108,8 +124,34 @@ export function useOptimizedImage(
   // Detect if we're dealing with a Supabase URL
   const isSupabaseUrl = !!url && isSupabaseStorageUrl(url);
   
+  // Extract item ID from URL for debugging - improved extraction
+  const itemId = isSupabaseUrl ? extractItemIdFromUrl(url) : 'unknown';
+  
+  // Always use a unique cache key for Supabase URLs to force fresh loads every time
+  // This ensures we always show the most recent image without caching issues
+  const uniqueId = useRef(Date.now() + Math.random());
+  const cacheKey = isSupabaseUrl 
+    ? [`optimizedImage`, url, size, uniqueId.current] // Completely unique key for Supabase URLs
+    : [`optimizedImage`, url, size];
+    
+  console.log(`[IMAGE-DEBUG] useOptimizedImage called for ${itemId}, url: ${url?.substring(0, 50)}..., isSupabaseUrl: ${isSupabaseUrl}`);
+  
+  // For Supabase URLs, always clear any existing cached data
+  useEffect(() => {
+    if (isSupabaseUrl && url) {
+      // Remove any existing queries for this URL to ensure fresh data
+      queryClient.removeQueries({ queryKey: ['optimizedImage', url] });
+    }
+  }, [isSupabaseUrl, url, queryClient]);
+  
+  // Used for normal URLs only
+  const cachedData = isSupabaseUrl ? null : queryClient.getQueryData(cacheKey);
+  if (cachedData) {
+    console.log(`[IMAGE-DEBUG] Found cached data for ${itemId}, url: ${url?.substring(0, 50)}...`);
+  }
+  
   const result = useQuery({
-    queryKey: ['optimizedImage', url, size],
+    queryKey: cacheKey,
     queryFn: async () => {
       if (!url) return {
         url: null,
@@ -119,13 +161,13 @@ export function useOptimizedImage(
       };
       
       try {
-        console.log(`[use-image-query] Loading image: ${url.substring(0, 50)}...`);
+        console.log(`[IMAGE-DEBUG] Loading image for ${itemId}, url: ${url.substring(0, 50)}..., isSupabaseUrl: ${isSupabaseUrl}`);
         
         // For Supabase URLs, return them directly without optimization
         if (isSupabaseUrl) {
-          console.log('[use-image-query] Direct Supabase URL handling:', url.substring(0, 50));
+          console.log(`[IMAGE-DEBUG] Direct Supabase URL handling for ${itemId}: ${url.substring(0, 50)}...`);
           return {
-            url,
+            url: url + `?t=${Date.now()}`, // Add cache buster to URL
             isLoading: false,
             isLoaded: true,
             hasError: false,
@@ -135,12 +177,13 @@ export function useOptimizedImage(
         
         // Use the image service to load and optimize the image
         const result = await imageService.loadImageAsync(url, size, priority);
+        console.log(`[IMAGE-DEBUG] Image load completed for ${itemId}, url: ${url.substring(0, 50)}..., success: ${!!result.url}`);
         return {
           ...result,
           size
         };
       } catch (error) {
-        console.error('[use-image-query] Error loading image:', error);
+        console.error(`[IMAGE-DEBUG] Error loading image for ${itemId}:`, error);
         
         // For Supabase URLs, return original URL on error
         if (isSupabaseUrl) {
@@ -158,14 +201,15 @@ export function useOptimizedImage(
     },
     // Only run this query if we have a URL
     enabled: !!url,
-    // Use stale-while-revalidate pattern for images, but shorter stale time for Supabase images
-    staleTime: isSupabaseUrl ? 1000 : 60 * 60 * 1000, // 1 second for Supabase images, 1 hour for others
-    // Cache images for longer, but shorter for Supabase
-    gcTime: isSupabaseUrl ? 60 * 1000 : 24 * 60 * 60 * 1000, // 1 minute for Supabase images, 24 hours for others
-    // Refetch settings 
-    refetchOnWindowFocus: isSupabaseUrl, // Refetch Supabase URLs on window focus
-    refetchOnMount: isSupabaseUrl, // Refetch Supabase URLs on mount
-    refetchOnReconnect: isSupabaseUrl // Refetch Supabase URLs on reconnect
+    // For Supabase URLs, disable all caching
+    staleTime: isSupabaseUrl ? 0 : 60 * 60 * 1000, // No stale time for Supabase
+    gcTime: isSupabaseUrl ? 0 : 24 * 60 * 60 * 1000, // No cache retention for Supabase
+    // For Supabase, force refetch on every change
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    // Special flags for Supabase URLs to ensure fresh data
+    retry: false // Don't retry failures
   });
   
   // Provide a default value that matches the ImageQueryResult interface

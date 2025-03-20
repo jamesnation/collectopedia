@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { FiltersDropdown } from './filter-controls/filters-dropdown';
 import { GridView } from './layout/grid-view';
 import { ListView } from './layout/list-view';
-import { ImageCacheProvider } from './context/image-cache-context';
+import { ImageCacheProvider, useImageCache } from './context/image-cache-context';
 import { CatalogProvider } from './context/catalog-provider';
 import { SortDropdown, defaultSortOptions } from './sorting';
 import { CatalogItem } from './utils';
@@ -90,6 +90,50 @@ export function CatalogPageContent() {
     loadCustomFranchises,
     loadCustomBrands
   } = useCatalogContext();
+  
+  // Get access to image cache for invalidation
+  const { invalidateCache, imageCache, loadImages } = useImageCache();
+  
+  // Force refresh images when the catalog page mounts or returns to focus
+  useEffect(() => {
+    // Skip if there are no items yet
+    if (!items?.length) return;
+    
+    console.log('[CATALOG-DEBUG] Component mounted, loading images for all items');
+    
+    // Initial load - load images for all items to ensure they show up
+    const allItemIds = items.map(item => item.id);
+    console.log('[CATALOG-DEBUG] Loading images for', allItemIds.length, 'items');
+    
+    // Call the imageCache.loadImages directly instead of invalidating
+    // This is more reliable than invalidation which might not trigger a reload
+    loadImages(allItemIds);
+    
+    // Define visibility change handler - use a callback ref to avoid dependency issues
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[VISIBILITY-DEBUG] Page returned to focus, refreshing data');
+        
+        // Refresh items first to get latest data from server
+        refetchItems().then(() => {
+          if (items?.length > 0) {
+            // Extract all item IDs after refetch
+            const visibleItemIds = items.map(item => item.id);
+            // Load images directly
+            loadImages(visibleItemIds);
+          }
+        });
+      }
+    };
+    
+    // Add visibility change listener
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [items, loadImages, refetchItems]);
 
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {

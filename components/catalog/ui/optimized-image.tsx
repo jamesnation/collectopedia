@@ -9,7 +9,7 @@
  * - Enhanced error handling
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image, { ImageProps } from 'next/image';
 import { cn } from '@/lib/utils';
 import { useOptimizedImage } from '../hooks/use-image-query';
@@ -44,17 +44,13 @@ export function OptimizedImage({
   // Convert Next.js priority to our priority system
   const loadPriority = nextPriority ? 100 : (isIntersecting ? 80 : 40);
   
-  // Parse the item ID from the src URL if it's a Supabase URL
-  const itemId = src?.includes('/items/') 
-    ? src.split('/items/')[1]?.split('/')[0]
-    : null;
+  // Parse the item ID from the src URL if it's a Supabase URL - stabilize with useRef
+  const itemIdRef = useRef<string | null>(null);
+  if (!itemIdRef.current && src?.includes('/items/')) {
+    itemIdRef.current = src.split('/items/')[1]?.split('/')[0] || null;
+  }
   
-  // Debug loading state at component level
-  useEffect(() => {
-    if (src && itemId) {
-      console.log(`[OPTIMIZED-IMAGE] Component mounted for item ${itemId} with src: ${src.substring(0, 50)}...`);
-    }
-  }, [src, itemId]);
+  const itemId = itemIdRef.current;
   
   // Use our optimized image hook
   const { url, isLoading, isLoaded, hasError } = useOptimizedImage(
@@ -63,13 +59,18 @@ export function OptimizedImage({
     loadPriority
   );
   
-  // Update component loading state when hook reports loading complete
-  useEffect(() => {
-    if (isLoaded && !imageLoaded) {
-      console.log(`[OPTIMIZED-IMAGE] Image loaded from hook: ${url?.substring(0, 50)}...`);
+  // Update component loading state when hook reports loading complete - with useCallback
+  const updateImageLoaded = useCallback(() => {
+    if (!imageLoaded) {
       setImageLoaded(true);
     }
-  }, [isLoaded, imageLoaded, url]);
+  }, [imageLoaded]);
+  
+  useEffect(() => {
+    if (isLoaded && !imageLoaded) {
+      updateImageLoaded();
+    }
+  }, [isLoaded, imageLoaded, updateImageLoaded]);
   
   // Log issues with image loading
   useEffect(() => {
@@ -84,15 +85,20 @@ export function OptimizedImage({
     setImageLoaded(false);
   }, [src]);
   
-  // Set up intersection observer
+  // Set up intersection observer with stable callback
   useEffect(() => {
     // Skip if already prioritized or no ref
     if (nextPriority || !imageRef.current) return;
     
+    const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (entry.isIntersecting) {
+        setIsIntersecting(true);
+      }
+    };
+    
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsIntersecting(entry.isIntersecting);
-      },
+      handleIntersection,
       {
         rootMargin: '200px', // Start loading before it enters viewport
         threshold: 0.1
@@ -106,17 +112,15 @@ export function OptimizedImage({
     };
   }, [nextPriority]);
   
-  // Handle Next.js Image error
-  const handleImageError = () => {
-    console.error(`[OPTIMIZED-IMAGE] Next.js Image error for: ${url || src || 'unknown'}`);
+  // Handle Next.js Image error - with useCallback
+  const handleImageError = useCallback(() => {
     setImgError(true);
-  };
+  }, []);
   
-  // Handle image load success
-  const handleImageLoad = () => {
-    console.log(`[OPTIMIZED-IMAGE] Next.js Image loaded: ${url?.substring(0, 50) || src?.substring(0, 50) || 'unknown'}`);
+  // Handle image load success - with useCallback
+  const handleImageLoad = useCallback(() => {
     setImageLoaded(true);
-  };
+  }, []);
   
   // Determine image state class
   const imageStateClass = isLoading ? 'animate-pulse' : 

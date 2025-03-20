@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ImageOff, Package, Loader2 } from 'lucide-react';
 import { useImageCache } from '../context/image-cache-context';
 import { cn } from '@/lib/utils';
@@ -37,37 +37,53 @@ export function ItemImage({
   className = '',
   showPlaceholder = true,
 }: ItemImageProps) {
-  const { imageCache, hasCompletedLoading, invalidateCache } = useImageCache();
-  const hasInitiallyLoaded = useRef(false);
+  const { imageCache, loadImages } = useImageCache();
+  const refreshAttempted = useRef(false);
+  const lastVisibilityChange = useRef(0);
   
-  // Effect to ensure images are loaded when the component mounts - only once
+  // Use a stable key
+  const imgKey = `img-${itemId}`;
+  
+  // Request images once on mount
   useEffect(() => {
-    // Only run once per component mount for this specific item
-    if (itemId && !hasInitiallyLoaded.current) {
-      const shouldLoadImages = !hasCompletedLoading[itemId] || 
-                              !imageCache[itemId] || 
-                              imageCache[itemId].length === 0;
+    if (!refreshAttempted.current) {
+      refreshAttempted.current = true;
       
-      if (shouldLoadImages) {
-        console.log(`[ITEM-IMAGE] Image component mounted for ${itemId}, requesting image load`);
-        invalidateCache(itemId);
-        hasInitiallyLoaded.current = true;
-      }
+      // Just directly load images rather than invalidating
+      loadImages([itemId]);
     }
-  }, [itemId]); // Only depend on itemId to avoid loops
+  }, [itemId, loadImages]);
+  
+  // Handle visibility changes to refresh images when tab becomes visible - with debounce
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const now = Date.now();
+      
+      // Prevent rapid visibility changes (debounce by 1000ms)
+      if (now - lastVisibilityChange.current < 1000) {
+        return;
+      }
+      
+      lastVisibilityChange.current = now;
+      
+      if (document.visibilityState === 'visible') {
+        // Only refresh if we don't already have images
+        if (!imageCache[itemId] || imageCache[itemId].length === 0) {
+          loadImages([itemId]);
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [itemId, imageCache, loadImages]);
 
   // Extract the primary image from cache
   const images = imageCache[itemId] || [];
   const primaryImage = images[0];
   const hasImage = images.length > 0 && primaryImage;
-  
-  // Log debug info about image availability, but don't loop
-  useEffect(() => {
-    if (itemId && !hasImage && !isLoading) {
-      console.log(`[ITEM-IMAGE] No image for item ${itemId}, cache state:`, 
-        hasCompletedLoading[itemId] ? 'completed loading' : 'not loaded');
-    }
-  }, [itemId, hasImage]);
   
   // Show loader during item operations
   if (isLoading) {
@@ -97,6 +113,7 @@ export function ItemImage({
   // Use OptimizedImage component with React Query integration
   return (
     <OptimizedImage
+      key={imgKey}
       src={primaryImage.url}
       alt={`Image of item`}
       size={size}
