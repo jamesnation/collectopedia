@@ -269,7 +269,7 @@ function CatalogInner({
         }
         
         // Also load the rest normally 
-        const otherIds = itemIds.filter(id => id !== invalidatedItemId);
+        const otherIds = itemIds.filter((id: string) => id !== invalidatedItemId);
         if (otherIds.length > 0) {
           loadImages(otherIds); // Load other items normally
         }
