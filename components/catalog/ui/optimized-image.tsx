@@ -38,10 +38,23 @@ export function OptimizedImage({
 }: OptimizedImageProps) {
   const [isIntersecting, setIsIntersecting] = useState(!!nextPriority);
   const [imgError, setImgError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const imageRef = useRef<HTMLDivElement>(null);
   
   // Convert Next.js priority to our priority system
   const loadPriority = nextPriority ? 100 : (isIntersecting ? 80 : 40);
+  
+  // Parse the item ID from the src URL if it's a Supabase URL
+  const itemId = src?.includes('/items/') 
+    ? src.split('/items/')[1]?.split('/')[0]
+    : null;
+  
+  // Debug loading state at component level
+  useEffect(() => {
+    if (src && itemId) {
+      console.log(`[OPTIMIZED-IMAGE] Component mounted for item ${itemId} with src: ${src.substring(0, 50)}...`);
+    }
+  }, [src, itemId]);
   
   // Use our optimized image hook
   const { url, isLoading, isLoaded, hasError } = useOptimizedImage(
@@ -49,6 +62,14 @@ export function OptimizedImage({
     size,
     loadPriority
   );
+  
+  // Update component loading state when hook reports loading complete
+  useEffect(() => {
+    if (isLoaded && !imageLoaded) {
+      console.log(`[OPTIMIZED-IMAGE] Image loaded from hook: ${url?.substring(0, 50)}...`);
+      setImageLoaded(true);
+    }
+  }, [isLoaded, imageLoaded, url]);
   
   // Log issues with image loading
   useEffect(() => {
@@ -60,6 +81,7 @@ export function OptimizedImage({
   // Reset error state if src changes
   useEffect(() => {
     setImgError(false);
+    setImageLoaded(false);
   }, [src]);
   
   // Set up intersection observer
@@ -90,10 +112,16 @@ export function OptimizedImage({
     setImgError(true);
   };
   
+  // Handle image load success
+  const handleImageLoad = () => {
+    console.log(`[OPTIMIZED-IMAGE] Next.js Image loaded: ${url?.substring(0, 50) || src?.substring(0, 50) || 'unknown'}`);
+    setImageLoaded(true);
+  };
+  
   // Determine image state class
   const imageStateClass = isLoading ? 'animate-pulse' : 
                          (hasError || imgError) ? 'opacity-50' : 
-                         isLoaded ? 'opacity-100' : 
+                         isLoaded || imageLoaded ? 'opacity-100' : 
                          'opacity-0';
   
   // Handle missing or error state
@@ -117,11 +145,12 @@ export function OptimizedImage({
         )}
         priority={nextPriority}
         onError={handleImageError}
+        onLoad={handleImageLoad}
         {...props}
       />
       
       {/* Loading indicator */}
-      {isLoading && !isLoaded && !imgError && (
+      {(isLoading && !isLoaded && !imageLoaded && !imgError) && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
           <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
         </div>

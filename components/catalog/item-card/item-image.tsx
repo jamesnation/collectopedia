@@ -8,7 +8,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ImageOff, Package, Loader2 } from 'lucide-react';
 import { useImageCache } from '../context/image-cache-context';
 import { cn } from '@/lib/utils';
@@ -37,12 +37,37 @@ export function ItemImage({
   className = '',
   showPlaceholder = true,
 }: ItemImageProps) {
-  const { imageCache } = useImageCache();
+  const { imageCache, hasCompletedLoading, invalidateCache } = useImageCache();
+  const hasInitiallyLoaded = useRef(false);
+  
+  // Effect to ensure images are loaded when the component mounts - only once
+  useEffect(() => {
+    // Only run once per component mount for this specific item
+    if (itemId && !hasInitiallyLoaded.current) {
+      const shouldLoadImages = !hasCompletedLoading[itemId] || 
+                              !imageCache[itemId] || 
+                              imageCache[itemId].length === 0;
+      
+      if (shouldLoadImages) {
+        console.log(`[ITEM-IMAGE] Image component mounted for ${itemId}, requesting image load`);
+        invalidateCache(itemId);
+        hasInitiallyLoaded.current = true;
+      }
+    }
+  }, [itemId]); // Only depend on itemId to avoid loops
 
   // Extract the primary image from cache
   const images = imageCache[itemId] || [];
   const primaryImage = images[0];
   const hasImage = images.length > 0 && primaryImage;
+  
+  // Log debug info about image availability, but don't loop
+  useEffect(() => {
+    if (itemId && !hasImage && !isLoading) {
+      console.log(`[ITEM-IMAGE] No image for item ${itemId}, cache state:`, 
+        hasCompletedLoading[itemId] ? 'completed loading' : 'not loaded');
+    }
+  }, [itemId, hasImage]);
   
   // Show loader during item operations
   if (isLoading) {

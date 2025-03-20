@@ -25,7 +25,12 @@ interface ImageQueryResult {
  */
 function isSupabaseStorageUrl(url?: string | null): boolean {
   if (!url) return false;
-  return url.includes('supabase.co/storage');
+  
+  // Check for both supabase.co/storage and supabase URLs with .in pattern
+  return url.includes('supabase.co/storage') || 
+         (url.includes('supabase') && url.includes('.in')) ||
+         // Also check for data URLs which come from image uploads
+         url.startsWith('data:');
 }
 
 /**
@@ -98,6 +103,10 @@ export function useOptimizedImage(
 ): ImageQueryResult {
   const baseImageService = useImageService();
   const imageService = extendImageService(baseImageService);
+  const queryClient = useQueryClient();
+  
+  // Detect if we're dealing with a Supabase URL
+  const isSupabaseUrl = !!url && isSupabaseStorageUrl(url);
   
   const result = useQuery({
     queryKey: ['optimizedImage', url, size],
@@ -110,6 +119,20 @@ export function useOptimizedImage(
       };
       
       try {
+        console.log(`[use-image-query] Loading image: ${url.substring(0, 50)}...`);
+        
+        // For Supabase URLs, return them directly without optimization
+        if (isSupabaseUrl) {
+          console.log('[use-image-query] Direct Supabase URL handling:', url.substring(0, 50));
+          return {
+            url,
+            isLoading: false,
+            isLoaded: true,
+            hasError: false,
+            size
+          };
+        }
+        
         // Use the image service to load and optimize the image
         const result = await imageService.loadImageAsync(url, size, priority);
         return {
@@ -120,7 +143,7 @@ export function useOptimizedImage(
         console.error('[use-image-query] Error loading image:', error);
         
         // For Supabase URLs, return original URL on error
-        if (isSupabaseStorageUrl(url)) {
+        if (isSupabaseUrl) {
           return {
             url,
             isLoading: false,
@@ -135,14 +158,14 @@ export function useOptimizedImage(
     },
     // Only run this query if we have a URL
     enabled: !!url,
-    // Use stale-while-revalidate pattern for images
-    staleTime: 60 * 60 * 1000, // 1 hour
-    // Cache images for longer
-    gcTime: 24 * 60 * 60 * 1000, // 24 hours
-    // Optimized images don't change often, so reduce refetch frequency
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false
+    // Use stale-while-revalidate pattern for images, but shorter stale time for Supabase images
+    staleTime: isSupabaseUrl ? 1000 : 60 * 60 * 1000, // 1 second for Supabase images, 1 hour for others
+    // Cache images for longer, but shorter for Supabase
+    gcTime: isSupabaseUrl ? 60 * 1000 : 24 * 60 * 60 * 1000, // 1 minute for Supabase images, 24 hours for others
+    // Refetch settings 
+    refetchOnWindowFocus: isSupabaseUrl, // Refetch Supabase URLs on window focus
+    refetchOnMount: isSupabaseUrl, // Refetch Supabase URLs on mount
+    refetchOnReconnect: isSupabaseUrl // Refetch Supabase URLs on reconnect
   });
   
   // Provide a default value that matches the ImageQueryResult interface

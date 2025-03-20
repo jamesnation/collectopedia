@@ -126,10 +126,22 @@ export function useAddItemMutation() {
       // Also invalidate the image cache for this item
       // This ensures the UI will display the new images
       if (typeof window !== 'undefined') {
+        console.log('[MUTATION] Adding item succeeded, invalidating image cache for:', newItem.id);
+        
+        // First invalidate React Query cache for item images
+        queryClient.invalidateQueries({ queryKey: ['images', newItem.id] });
+        
+        // Then trigger the DOM event for local cache invalidation
         const cacheEvent = new CustomEvent('invalidate-image-cache', {
           detail: { itemId: newItem.id }
         });
         window.dispatchEvent(cacheEvent);
+        
+        // Also trigger a direct page refresh, since this is a new item
+        // This helps ensure images are reloaded correctly after adding a new item
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['catalog'] });
+        }, 500);
       }
       
       toast({
@@ -244,6 +256,12 @@ export function useUpdateItemMutation() {
     onSuccess: (updatedItem) => {
       // Also invalidate the image cache for this item
       if (typeof window !== 'undefined') {
+        console.log('[MUTATION] Update succeeded, invalidating image cache for:', updatedItem.id);
+        
+        // First invalidate React Query cache
+        queryClient.invalidateQueries({ queryKey: ['images', updatedItem.id] });
+        
+        // Then trigger DOM event for local cache
         const cacheEvent = new CustomEvent('invalidate-image-cache', {
           detail: { itemId: updatedItem.id }
         });

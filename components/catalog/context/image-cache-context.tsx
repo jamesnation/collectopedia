@@ -3,6 +3,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { getImagesByItemIdAction } from '@/actions/images-actions';
 import { SelectImage } from '@/db/schema/images-schema';
+import { useQueryClient } from '@tanstack/react-query';
+
+// Define the result type from the action
+interface ImageActionResult {
+  isSuccess: boolean;
+  data?: SelectImage[];
+  error?: string;
+}
 
 // Enhanced context type with more granular loading states
 interface ImageCacheContextType {
@@ -33,6 +41,8 @@ export const useImageCache = () => useContext(ImageCacheContext);
 
 // Provider component
 export function ImageCacheProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
+  
   // Initialize state from localStorage if available
   const [imageCache, setImageCache] = useState<Record<string, SelectImage[]>>(() => {
     if (typeof window === 'undefined') return {};
@@ -117,18 +127,24 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     // Filter out items that are already loading to avoid double loading
     const idsToLoad = itemIds.filter(id => !isLoading[id]);
     
-    // Even if an item has completed loading before, we should reload it 
-    // if there's a URL parameter indicating we should refresh
+    // Even if an item has completed loading before, we should always check newly added items
+    // This is crucial for displaying newly uploaded images
     let shouldForceReload = false;
     if (typeof window !== 'undefined') {
       shouldForceReload = new URLSearchParams(window.location.search).get('refresh') === 'true';
     }
     
-    // If not forcing reload, further filter out items that have already completed loading
-    // This is key to preventing reloads when toggling filters
+    // For newly created items, we need to force a reload
+    // We'll check for presence in cache but enforce a reload if the item is new
     const filteredIdsToLoad = shouldForceReload 
       ? idsToLoad 
-      : idsToLoad.filter(id => !hasCompletedLoading[id]);
+      : idsToLoad.filter(id => {
+          // Either the item hasn't completed loading OR isn't in the cache at all
+          const notLoaded = !hasCompletedLoading[id];
+          // New items (not in cache) should always be loaded, even if they were previously "completed"
+          const isNewItem = !imageCache[id];
+          return notLoaded || isNewItem;
+        });
     
     if (!filteredIdsToLoad.length) {
       console.log('[CACHE] All requested images already cached or loading - no new loads needed');
@@ -148,7 +164,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     });
 
     // Process in batches with increased batch size for faster loading
-    const batchSize = 50; // Increased from 25
+    const batchSize = 50;
     
     // Split into batches
     for (let i = 0; i < filteredIdsToLoad.length; i += batchSize) {
@@ -161,7 +177,24 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
           batchIds.map(async (itemId) => {
             try {
               console.log('[CACHE] Fetching images for item', itemId);
-              const result = await getImagesByItemIdAction(itemId);
+              
+              // Use query client to fetch/refetch the images
+              const cachedData = queryClient.getQueryData<ImageActionResult>(['images', itemId]);
+              
+              // If there's already cached data in React Query, use that first
+              let result: ImageActionResult;
+              if (cachedData && cachedData.isSuccess) {
+                console.log('[CACHE] Using React Query cached data for item', itemId);
+                result = cachedData;
+              } else {
+                // Otherwise fetch fresh data
+                result = await getImagesByItemIdAction(itemId);
+                
+                // Cache the result in React Query
+                if (result.isSuccess && result.data) {
+                  queryClient.setQueryData<ImageActionResult>(['images', itemId], result);
+                }
+              }
               
               if (result.isSuccess && result.data) {
                 console.log('[CACHE] Successfully fetched', result.data.length, 'images for item', itemId);
@@ -212,9 +245,9 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     // Combine both arrays and deduplicate using Set
     const allItemIds = [...new Set([...soldItemIds, ...unsoldItemIds])];
     
-    // Skip items that are already loading or completed
+    // For preloading, we should check for new items not in the cache
     const filteredItemIds = allItemIds.filter(id => 
-      !isLoading[id] && !hasCompletedLoading[id]
+      !isLoading[id] || !imageCache[id]
     );
     
     console.log('[CACHE] Combined unique items to load:', allItemIds.length);
@@ -232,23 +265,46 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   const invalidateCache = (itemId?: string) => {
     if (itemId) {
       console.log('[CACHE] Invalidating cache for item', itemId);
+      
+      // Invalidate React Query cache
+      queryClient.invalidateQueries({ queryKey: ['images', itemId] });
+      
+      // Clear item from local cache
       setImageCache(prev => {
         const newCache = { ...prev };
         delete newCache[itemId];
         return newCache;
       });
+      
       setIsLoading(prev => {
         const newState = { ...prev };
         delete newState[itemId];
         return newState;
       });
+      
       setHasCompletedLoading(prev => {
         const newState = { ...prev };
         delete newState[itemId];
         return newState;
       });
+      
+      // Instead of immediately calling loadImages, schedule it for the next tick
+      // to avoid potential infinite loops
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          // Check if we're still mounted before attempting to load
+          if (document.body.contains(document.getElementById('image-cache-provider'))) {
+            loadImages([itemId]);
+          }
+        }, 100);
+      }
+      
     } else {
       console.log('[CACHE] Invalidating entire cache');
+      
+      // Invalidate all image queries
+      queryClient.invalidateQueries({ queryKey: ['images'] });
+      
       setImageCache({});
       setIsLoading({});
       setHasCompletedLoading({});
@@ -265,7 +321,9 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       hasImages,
       hasCompletedLoading
     }}>
-      {children}
+      <div id="image-cache-provider" style={{ display: 'contents' }}>
+        {children}
+      </div>
     </ImageCacheContext.Provider>
   );
 } 
