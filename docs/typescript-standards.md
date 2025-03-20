@@ -4,7 +4,7 @@
 
 To ensure consistency throughout the codebase and avoid TypeScript module resolution issues, we'll follow these standards:
 
-### Export Standards
+### Export Standards!
 
 1. **Barrel Exports**
    - Each component directory should have an `index.ts` file that re-exports its contents
