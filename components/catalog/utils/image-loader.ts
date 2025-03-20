@@ -14,6 +14,12 @@ export const vercelImageLoader = ({ src, width, quality = 75 }: ImageLoaderParam
   if (src.startsWith('data:') || src.includes('/_next/image')) {
     return src;
   }
+  
+  // Skip optimization for Supabase storage URLs to prevent 400 errors
+  if (src.includes('supabase.co/storage')) {
+    console.log('[IMAGE-LOADER] Skipping optimization for Supabase URL', src);
+    return src;
+  }
 
   // If it's a relative URL, let Next.js handle it
   if (src.startsWith('/')) {
@@ -43,6 +49,11 @@ export const getResponsiveImageUrl = (
 ): string => {
   if (!src) return '';
   
+  // Skip optimization for Supabase storage URLs
+  if (src.includes('supabase.co/storage')) {
+    return src;
+  }
+  
   // Define width by size
   const widths = {
     thumbnail: 128,
@@ -63,5 +74,11 @@ export const getResponsiveImageUrl = (
  */
 export const getSizedImageUrl = (src: string, width: number, quality = 75): string => {
   if (!src) return '';
+  
+  // Skip optimization for Supabase storage URLs
+  if (src.includes('supabase.co/storage')) {
+    return src;
+  }
+  
   return vercelImageLoader({ src, width, quality });
 }; 

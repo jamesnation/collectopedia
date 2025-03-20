@@ -9,6 +9,7 @@
 export { SummaryPanel } from './summary-panel';
 export { AddItemModal } from './add-item-modal';
 export { AddItemForm } from './add-item-form';
+export { OptimizedImage } from './optimized-image';
 
 // Export types
 export type { SummaryValues, SummaryPanelProps } from './summary-panel';

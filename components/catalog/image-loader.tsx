@@ -1,13 +1,14 @@
 /*
  * Image Loader Component
  * 
- * This component uses the unified image service to handle image loading
+ * This component uses React Query and the unified image service to handle image loading
  * for catalog items with optimizations for performance and mobile devices.
+ * Updated to use the React Query integration for improved caching and invalidation.
  */
 
 import { useEffect, useRef } from 'react';
-import { useImageService } from '@/services/image-service';
 import { SelectImage } from '@/db/schema/images-schema';
+import { useImagePreloader } from './hooks/use-image-query';
 
 interface ImageLoaderProps {
   itemIds: string[];
@@ -16,11 +17,11 @@ interface ImageLoaderProps {
 }
 
 /**
- * Optimized image loader component that uses the centralized image service
+ * Optimized image loader component that uses React Query and the image service
  * to efficiently load and cache images with proper prioritization
  */
 export function ImageLoader({ itemIds, images, isLoading = false }: ImageLoaderProps) {
-  const imageService = useImageService();
+  const { preloadItemImages, prioritizeVisibleImages } = useImagePreloader();
   const processedItemsRef = useRef<Set<string>>(new Set());
   const visibleItemsRef = useRef<string[]>([]);
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
@@ -32,15 +33,15 @@ export function ImageLoader({ itemIds, images, isLoading = false }: ImageLoaderP
     const newItems = itemIds.filter(id => !processedItemsRef.current.has(id));
     
     if (newItems.length > 0) {
-      console.log(`[IMAGE-LOADER] Loading images for ${newItems.length} new items`);
+      console.log(`[IMAGE-LOADER] Loading images for ${newItems.length} new items using React Query`);
       
       // Preload images with appropriate priority
-      imageService.preloadItemImages(newItems, images);
+      preloadItemImages(newItems, images);
       
       // Mark items as processed
       newItems.forEach(id => processedItemsRef.current.add(id));
     }
-  }, [itemIds, images, isLoading, imageService]);
+  }, [itemIds, images, isLoading, preloadItemImages]);
   
   // Set up intersection observer to prioritize visible images
   useEffect(() => {
@@ -73,9 +74,10 @@ export function ImageLoader({ itemIds, images, isLoading = false }: ImageLoaderP
               }
             });
             
-            // Prioritize visible images
+            // Prioritize visible images using React Query
             if (visibleImageUrls.length > 0) {
-              imageService.prioritizeVisibleImages(visibleImageUrls);
+              console.log(`[IMAGE-LOADER] Prioritizing ${visibleImageUrls.length} visible images`);
+              prioritizeVisibleImages(visibleImageUrls);
             }
             
             // Update visible items ref
@@ -105,28 +107,7 @@ export function ImageLoader({ itemIds, images, isLoading = false }: ImageLoaderP
         intersectionObserverRef.current.disconnect();
       }
     };
-  }, [itemIds, images, imageService]);
-  
-  // Log statistics periodically
-  useEffect(() => {
-    const logStats = () => {
-      const stats = imageService.getCacheStats();
-      console.log('[IMAGE-LOADER] Cache stats:', stats);
-    };
-    
-    // Log stats once on mount
-    logStats();
-    
-    // Set up interval to log stats periodically (only in development)
-    let intervalId: NodeJS.Timeout | null = null;
-    if (process.env.NODE_ENV === 'development') {
-      intervalId = setInterval(logStats, 10000);
-    }
-    
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [imageService]);
+  }, [itemIds, images, prioritizeVisibleImages]);
   
   // This component doesn't render anything visible
   return null;
