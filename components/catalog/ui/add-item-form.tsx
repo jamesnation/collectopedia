@@ -110,8 +110,6 @@ export function AddItemForm({
   const [isLoadingFranchises, setIsLoadingFranchises] = useState(false)
   const [isLoadingBrands, setIsLoadingBrands] = useState(false)
   const [isSubmittingForm, setIsSubmittingForm] = useState(false)
-  const [useDirectSubmit, setUseDirectSubmit] = useState(false)
-  const [isTestingApi, setIsTestingApi] = useState(false)
   const yearOptions = generateYearOptions()
   const { toast } = useToast()
 
@@ -183,7 +181,7 @@ export function AddItemForm({
     values: FormValues, 
     imageUrls: string[] = []
   ): Omit<CatalogItem, 'id'> => {
-    // Only use the primary image in the initial submission for faster processing
+    // Include the primary image and all uploaded images
     const primaryImage = imageUrls.length > 0 ? imageUrls[0] : null;
     
     return {
@@ -198,8 +196,8 @@ export function AddItemForm({
       cost: typeof values.cost === 'number' ? values.cost : 0,
       value: typeof values.value === 'number' ? values.value : 0,
       notes: values.notes || null,
-      image: primaryImage, // Primary image only
-      images: imageUrls.slice(0, 1), // Just include the first image (primary) initially
+      image: primaryImage, // Primary image
+      images: imageUrls, // CRITICAL FIX: Send ALL images, not just the first one
       createdAt: new Date(),
       updatedAt: new Date(),
       isSold: false,
@@ -215,8 +213,8 @@ export function AddItemForm({
       setIsSubmittingForm(true)
       
       console.log(`[ADD-FORM] Submitting form for item: ${values.name}, image count: ${uploadedImages.length}`);
+      console.log(`[ADD-FORM] Images:`, uploadedImages);
       console.log(`[ADD-FORM] Form values:`, values);
-      console.log(`[ADD-FORM] Using direct submit mode: ${useDirectSubmit}`);
       
       // Show a toast to let the user know the form is submitting
       toast({
@@ -224,51 +222,25 @@ export function AddItemForm({
         description: uploadedImages.length > 0 
           ? `Adding item with ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''}, please wait...` 
           : "Adding item...",
+        duration: 5000,
       });
       
-      // Create a copy of form data with all images
+      // Create the item with ALL uploaded images
       const newItem = mapFormToEntity(values, uploadedImages);
-      console.log(`[ADD-FORM] Mapped entity:`, newItem);
-      
-      // Save current values for optimistic UI updates and error handling
-      const currentName = values.name;
       
       try {
-        let createdItem;
+        console.log(`[ADD-FORM] Submitting item with ${uploadedImages.length} images:`, 
+          uploadedImages.map(url => url.substring(0, 30) + '...').join(', '));
         
-        if (useDirectSubmit) {
-          // DIRECT MODE: Just call onSubmit directly without timeouts for debugging
-          console.log(`[ADD-FORM-DEBUG] Using DIRECT submission mode`);
-          createdItem = await onSubmit(newItem);
-        } else {
-          // NORMAL MODE: Use Promise.race with timeout
-          // Set a timeout to prevent the form from hanging indefinitely
-          const timeoutPromise = new Promise<CatalogItem>((_, reject) => {
-            console.log(`[ADD-FORM] Setting 5-second timeout`);
-            return setTimeout(() => {
-              console.log(`[ADD-FORM] TIMEOUT TRIGGERED - Request timed out after 5 seconds`);
-              reject(new Error("Request timed out after 5 seconds"));
-            }, 5000); // Reduced timeout for testing
-          });
-          
-          console.log(`[ADD-FORM] Starting server submission with timeout for '${currentName}'`);
-          
-          // Submit with a timeout
-          createdItem = await Promise.race([
-            onSubmit(newItem).then(result => {
-              console.log(`[ADD-FORM] onSubmit resolved with result:`, result);
-              return result;
-            }),
-            timeoutPromise
-          ]);
-        }
+        // Submit the item with all images
+        const createdItem = await onSubmit(newItem);
         
-        console.log(`[ADD-FORM] Item created successfully: ${createdItem.id}`);
+        console.log(`[ADD-FORM] Item created successfully:`, createdItem);
         
         // Show success message
         toast({
           title: "Success",
-          description: `${currentName} added to your collection.`,
+          description: `${values.name} added to your collection with ${uploadedImages.length} image(s).`,
           duration: 3000,
         });
         
@@ -317,49 +289,6 @@ export function AddItemForm({
     // Call the provided onCancel function
     if (onCancel) {
       onCancel();
-    }
-  };
-
-  // Debug API test function
-  const testDebugApi = async () => {
-    try {
-      setIsTestingApi(true);
-      console.log('[DEBUG] Testing debug API...');
-      
-      toast({
-        title: "Testing",
-        description: "Testing direct API call...",
-      });
-      
-      const res = await fetch('/api/debug');
-      const data = await res.json();
-      
-      console.log('[DEBUG] Debug API response:', data);
-      
-      if (data.success) {
-        toast({
-          title: "Success",
-          description: `Debug item created: ${data.item.name}`,
-          duration: 5000,
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: data.error || "Unknown error",
-          variant: "destructive",
-          duration: 5000,
-        });
-      }
-    } catch (error) {
-      console.error('[DEBUG] API test error:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-        duration: 5000,
-      });
-    } finally {
-      setIsTestingApi(false);
     }
   };
 
@@ -755,41 +684,6 @@ export function AddItemForm({
               No images uploaded yet. Upload images to showcase your item.
             </div>
           )}
-        </div>
-
-        {/* Debug controls */}
-        <div className="border border-dashed border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 p-3 rounded-md">
-          <h4 className="font-medium text-sm mb-2">Debug Controls</h4>
-          
-          <div className="space-y-2">
-            {/* Direct submit checkbox */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <input 
-                type="checkbox" 
-                id="debug-mode" 
-                checked={useDirectSubmit} 
-                onChange={e => setUseDirectSubmit(e.target.checked)} 
-              />
-              <label htmlFor="debug-mode">Use direct submission (no timeout)</label>
-            </div>
-            
-            {/* Debug API test button */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50"
-              onClick={testDebugApi}
-              disabled={isTestingApi}
-            >
-              {isTestingApi ? (
-                <>
-                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  Testing API...
-                </>
-              ) : 'Test Debug API'}
-            </Button>
-          </div>
         </div>
 
         {/* Form Actions */}

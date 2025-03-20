@@ -146,16 +146,18 @@ export async function addCatalogItem(item: Omit<SelectItem, 'id'> & { userId: st
     }
     
     // Now handle additional images separately if there are any
-    if (hasImages && allImages.length > 0 && allImages.length > 1) {
-      console.log(`[SERVER-ACTION] Processing ${allImages.length} additional images...`);
+    if (hasImages && allImages.length > 0) {
+      console.log(`[SERVER-ACTION] Processing ${allImages.length} images...`);
+      console.log(`[SERVER-ACTION] Image URLs:`, allImages.map(url => url.substring(0, 30) + '...'));
       
       try {
         // Process images in batches for better performance
         const { createImageAction } = await import("./images-actions");
         const batchSize = 3; // Process 3 images at a time
         
-        // Skip the first image if it's the same as the primary image
-        const startIndex = (primaryImage && allImages[0] === primaryImage) ? 1 : 0;
+        // IMPORTANT: Don't skip the first image anymore
+        // const startIndex = (primaryImage && allImages[0] === primaryImage) ? 1 : 0;
+        const startIndex = 0; // Always start from the first image
         
         for (let i = startIndex; i < allImages.length; i += batchSize) {
           const batch = allImages.slice(i, i + batchSize);
@@ -163,25 +165,25 @@ export async function addCatalogItem(item: Omit<SelectItem, 'id'> & { userId: st
           
           // Process each batch in parallel
           await Promise.all(batch.map(async (url, index) => {
-            if (url && url !== primaryImage) {
-              try {
-                await createImageAction({
-                  url,
-                  itemId: id,
-                  userId: item.userId,
-                  order: i + index // Preserve order
-                });
-              } catch (imgError) {
-                console.error(`[SERVER-ACTION] Error creating image ${i + index}:`, imgError);
-                // Continue with other images even if one fails
-              }
+            // Don't skip any image
+            try {
+              console.log(`[SERVER-ACTION] Creating image record for URL: ${url.substring(0, 30)}...`);
+              await createImageAction({
+                url,
+                itemId: id,
+                userId: item.userId,
+                order: i + index // Preserve order
+              });
+            } catch (imgError) {
+              console.error(`[SERVER-ACTION] Error creating image ${i + index}:`, imgError);
+              // Continue with other images even if one fails
             }
           }));
         }
         
-        console.log('[SERVER-ACTION] All additional images processed');
+        console.log('[SERVER-ACTION] All images processed');
       } catch (imageError) {
-        console.error('[SERVER-ACTION] Error processing additional images:', imageError);
+        console.error('[SERVER-ACTION] Error processing images:', imageError);
         // Continue anyway - we've already created the item
       }
     }
