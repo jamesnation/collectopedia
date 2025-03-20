@@ -8,7 +8,7 @@ import { SelectImage } from '@/db/schema/images-schema';
 interface ImageCacheContextType {
   imageCache: Record<string, SelectImage[]>;
   isLoading: Record<string, boolean>;
-  loadImages: (itemIds: string[]) => void;
+  loadImages: (itemIds: string[], force?: boolean) => void;
   preloadItemImages: (soldItemIds: string[], unsoldItemIds: string[]) => void;
   invalidateCache: (itemId?: string) => void;
   // New helper to determine if an item has actual images
@@ -85,10 +85,10 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   }, [imageCache, hasCompletedLoading]);
   
   // Function to load images for multiple items in batches
-  const loadImages = async (itemIds: string[]) => {
+  const loadImages = async (itemIds: string[], force = false) => {
     if (!itemIds.length) return;
     
-    console.log('[CACHE] loadImages called with', itemIds.length, 'items');
+    console.log('[CACHE] loadImages called with', itemIds.length, 'items', force ? '(forced reload)' : '');
     
     // Store the last requested items for debugging
     setLastRequestedItems(itemIds);
@@ -97,11 +97,18 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     const idsToLoad = itemIds.filter(id => !isLoading[id]);
     
     // Even if an item has completed loading before, we should reload it 
-    // if there's a URL parameter indicating we should refresh
-    let shouldForceReload = false;
-    if (typeof window !== 'undefined') {
+    // if there's a URL parameter indicating we should refresh or the force flag is true
+    let shouldForceReload = force;
+    if (!force && typeof window !== 'undefined') {
       shouldForceReload = new URLSearchParams(window.location.search).get('refresh') === 'true';
     }
+    
+    // Add more detailed diagnostics
+    console.log('[CACHE DEBUG] Detailed item load decisions:');
+    itemIds.slice(0, 5).forEach(id => { // Just log first 5 to avoid flooding console
+      console.log(`[CACHE DEBUG] Item ${id}: isLoading=${!!isLoading[id]}, hasCompletedLoading=${!!hasCompletedLoading[id]}, cached=${!!imageCache[id]}, cachedImages=${imageCache[id]?.length || 0}`);
+    });
+    console.log(`[CACHE DEBUG] shouldForceReload=${shouldForceReload}, localStorage cache size=${typeof window !== 'undefined' ? Object.keys(JSON.parse(localStorage.getItem('collectopedia-image-cache') || '{}')).length : 'N/A'}`);
     
     // If not forcing reload, further filter out items that have already completed loading
     // This is key to preventing reloads when toggling filters
@@ -211,26 +218,60 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   const invalidateCache = (itemId?: string) => {
     if (itemId) {
       console.log('[CACHE] Invalidating cache for item', itemId);
+      
+      // Clear from memory cache
       setImageCache(prev => {
         const newCache = { ...prev };
         delete newCache[itemId];
         return newCache;
       });
+      
+      // Reset loading state
       setIsLoading(prev => {
         const newState = { ...prev };
         delete newState[itemId];
         return newState;
       });
+      
+      // Important: Reset hasCompletedLoading to ensure the item will be reloaded next time
       setHasCompletedLoading(prev => {
         const newState = { ...prev };
         delete newState[itemId];
+        console.log('[CACHE] Reset hasCompletedLoading for item', itemId);
         return newState;
       });
+      
+      // Clear from localStorage if available
+      if (typeof window !== 'undefined') {
+        try {
+          const savedCache = localStorage.getItem('collectopedia-image-cache');
+          if (savedCache) {
+            const parsedCache = JSON.parse(savedCache);
+            if (parsedCache[itemId]) {
+              delete parsedCache[itemId];
+              localStorage.setItem('collectopedia-image-cache', JSON.stringify(parsedCache));
+              console.log('[CACHE] Removed item', itemId, 'from localStorage cache');
+            }
+          }
+        } catch (e) {
+          console.error('[CACHE] Error updating localStorage cache:', e);
+        }
+      }
     } else {
       console.log('[CACHE] Invalidating entire cache');
       setImageCache({});
       setIsLoading({});
       setHasCompletedLoading({});
+      
+      // Clear entire localStorage cache
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('collectopedia-image-cache');
+          console.log('[CACHE] Cleared entire localStorage cache');
+        } catch (e) {
+          console.error('[CACHE] Error clearing localStorage cache:', e);
+        }
+      }
     }
   };
 

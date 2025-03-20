@@ -169,12 +169,21 @@ function CatalogInner({
   const createImagesMap = useCallback(() => {
     const imagesMap: Record<string, SelectImage[]> = {};
     
+    // Add debug logs
+    console.log('[CATALOG DEBUG] Creating images map from cache with', Object.keys(imageCache).length, 'cached items');
+    
     // Process images from items
     items.forEach((item: SelectItemType) => {
       // Check if the item has images
       if (imageCache[item.id] && imageCache[item.id].length > 0) {
         // imageCache already contains SelectImage objects, so just use them directly
         imagesMap[item.id] = imageCache[item.id];
+        
+        // Log the first few items for debugging
+        if (Object.keys(imagesMap).length <= 3) {
+          console.log(`[CATALOG DEBUG] Item ${item.id} (${item.name}) using ${imageCache[item.id].length} images from cache:`, 
+            imageCache[item.id].map(img => img.url.substring(0, 30) + '...'));
+        }
       }
     });
     
@@ -196,6 +205,80 @@ function CatalogInner({
       }
     }
   }, [items.length, isLoading, imageService, createImagesMap]);
+
+  // Add an effect to refresh image cache when navigating back to catalog
+  useEffect(() => {
+    // This effect should run when the component mounts or if items change
+    if (!isLoading && items.length > 0) {
+      console.log('[CATALOG] Component mounted or items changed, refreshing image cache');
+      
+      // Check if we're coming back from an item detail page with invalidated cache
+      let invalidatedItemId: string | null = null;
+      if (typeof window !== 'undefined') {
+        invalidatedItemId = sessionStorage.getItem('invalidated_item');
+        const timestamp = sessionStorage.getItem('invalidated_timestamp');
+        
+        if (invalidatedItemId && timestamp) {
+          // Only consider it valid if it happened in the last 10 seconds
+          const timestampNum = parseInt(timestamp);
+          const now = Date.now();
+          const isRecent = (now - timestampNum) < 10000; // 10 seconds
+          
+          if (isRecent) {
+            console.log(`[CATALOG] Detected recently invalidated item: ${invalidatedItemId}`);
+            
+            // Clear the session storage
+            sessionStorage.removeItem('invalidated_item');
+            sessionStorage.removeItem('invalidated_timestamp');
+          } else {
+            // Too old, ignore it
+            invalidatedItemId = null;
+          }
+        }
+      }
+      
+      // Add debug logging for localStorage cache
+      if (typeof window !== 'undefined') {
+        try {
+          const savedCache = localStorage.getItem('collectopedia-image-cache');
+          if (savedCache) {
+            const parsedCache = JSON.parse(savedCache);
+            console.log('[CATALOG DEBUG] localStorage cache contains', Object.keys(parsedCache).length, 'items');
+            // Log a sample of items in the cache
+            const sampleIds = Object.keys(parsedCache).slice(0, 3);
+            console.log('[CATALOG DEBUG] Sample cached items:', sampleIds);
+            sampleIds.forEach((id: string) => {
+              console.log(`[CATALOG DEBUG] Item ${id} has ${parsedCache[id]?.length || 0} cached images`);
+            });
+          } else {
+            console.log('[CATALOG DEBUG] No localStorage cache found');
+          }
+        } catch (e) {
+          console.error('[CATALOG DEBUG] Error reading localStorage cache:', e);
+        }
+      }
+      
+      // Extract IDs of items that might need fresh images
+      const itemIds = items.map((item: SelectItemType) => item.id);
+      
+      if (invalidatedItemId) {
+        // If we have a recently invalidated item, force reload just that one
+        if (itemIds.includes(invalidatedItemId)) {
+          console.log(`[CATALOG] Force reloading images for invalidated item: ${invalidatedItemId}`);
+          loadImages([invalidatedItemId], true); // Force reload just this item
+        }
+        
+        // Also load the rest normally 
+        const otherIds = itemIds.filter(id => id !== invalidatedItemId);
+        if (otherIds.length > 0) {
+          loadImages(otherIds); // Load other items normally
+        }
+      } else {
+        // No recently invalidated items, just load everything normally
+        loadImages(itemIds);
+      }
+    }
+  }, [isLoading, items]); // Depend on items to refresh when items array changes
 
   const handleShowSoldChange = (show: boolean) => {
     console.log('[CATALOG] Toggling showSold to', show);

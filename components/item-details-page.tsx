@@ -36,6 +36,8 @@ import { GripVertical } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { arrayMove } from '@dnd-kit/sortable'; // Keep arrayMove for the handleImageReorder function
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+// Import the image cache context
+import { useImageCache } from './catalog/context/image-cache-context'
 
 // Create dynamic imports for our DnD components
 const DndWrapper = dynamic(() => import('./dnd-wrapper'), { 
@@ -87,6 +89,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [debugData, setDebugData] = useState<any>(null);
   const { isDebugMode, isInitialized } = useEbayDebugMode();
   const { formatCurrency, currencySymbol, region } = useRegionContext();
+  // Access the image cache context
+  const { invalidateCache } = useImageCache();
 
   const defaultBrands = [
     'DC',
@@ -177,10 +181,35 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     const result = await getImagesByItemIdAction(itemId);
     if (result.isSuccess && result.data) {
       setImages(result.data);
+      
+      // Always invalidate the cache when fetching fresh images
+      // This ensures the catalog will reload the latest images
+      console.log(`[ITEM-DETAILS] Invalidating cache for item ${itemId} after fetching new images`);
+      invalidateCache(itemId);
     } else {
       console.error("Failed to fetch images:", result.error);
     }
   };
+  
+  // Add a function to handle navigation away from the page
+  // This ensures the cache is invalidated when the user leaves the page
+  useEffect(() => {
+    // Define cleanup function to run when component unmounts
+    return () => {
+      if (item?.id) {
+        console.log(`[ITEM-DETAILS] Component unmounting - invalidating cache for item ${item.id}`);
+        invalidateCache(item.id);
+        
+        // Force reload by adding timestamp to URL when returning to catalog
+        if (typeof window !== 'undefined') {
+          const timestamp = Date.now();
+          // Cache this in sessionStorage so catalog component can detect it
+          sessionStorage.setItem('invalidated_item', item.id);
+          sessionStorage.setItem('invalidated_timestamp', timestamp.toString());
+        }
+      }
+    };
+  }, [item?.id]);
 
   const loadCustomBrands = async () => {
     const result = await getCustomBrandsAction();
@@ -351,6 +380,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
           // Set the current image index to show the new image
           setCurrentImageIndex(images.length);
           
+          // Invalidate the image cache for this item
+          invalidateCache(item.id);
+          
           // Revalidate the path to update all components
           toast({
             title: "Image uploaded",
@@ -378,6 +410,10 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
       if (result.isSuccess) {
         setImages(prevImages => prevImages.filter(img => img.id !== imageId));
         setCurrentImageIndex(prevIndex => Math.min(prevIndex, images.length - 2));
+        
+        // Invalidate the image cache for this item
+        invalidateCache(item.id);
+        
         toast({
           title: "Image deleted",
           description: "The image has been removed from the item.",
@@ -851,13 +887,35 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               // This ensures the primary image is correctly identified for AI price estimation
               fetchImages(item.id);
               
+              // Invalidate the image cache for this item
+              console.log(`[ITEM-DETAILS] Invalidating cache for item ${item.id} after reordering images`);
+              invalidateCache(item.id);
+              
+              // Check localStorage after invalidation
+              setTimeout(() => {
+                if (typeof window !== 'undefined') {
+                  try {
+                    const savedCache = localStorage.getItem('collectopedia-image-cache');
+                    if (savedCache) {
+                      const parsedCache = JSON.parse(savedCache);
+                      console.log(`[ITEM-DETAILS DEBUG] After invalidation, item ${item.id} ${parsedCache[item.id] ? 'still exists' : 'removed'} in localStorage cache`);
+                      if (parsedCache[item.id]) {
+                        console.log(`[ITEM-DETAILS DEBUG] Item ${item.id} has ${parsedCache[item.id].length} images in localStorage cache after invalidation`);
+                      }
+                    }
+                  } catch (e) {
+                    console.error('[ITEM-DETAILS DEBUG] Error checking localStorage after invalidation:', e);
+                  }
+                }
+              }, 100); // Small delay to ensure state updates have processed
+              
               toast({
                 title: "Success",
                 description: "Image order updated successfully",
                 variant: "default",
               });
             })
-            .catch(error => {
+            .catch((error: Error) => {
               console.error('Failed to update image order:', error);
               toast({
                 title: "Error",
