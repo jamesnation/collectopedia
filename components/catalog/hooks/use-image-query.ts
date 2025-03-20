@@ -127,103 +127,104 @@ export function useOptimizedImage(
   // Extract item ID from URL for debugging - improved extraction
   const itemId = isSupabaseUrl ? extractItemIdFromUrl(url) : 'unknown';
   
-  // Always use a unique cache key for Supabase URLs to force fresh loads every time
-  // This ensures we always show the most recent image without caching issues
-  const uniqueId = useRef(Date.now() + Math.random());
-  const cacheKey = isSupabaseUrl 
-    ? [`optimizedImage`, url, size, uniqueId.current] // Completely unique key for Supabase URLs
-    : [`optimizedImage`, url, size];
-    
-  console.log(`[IMAGE-DEBUG] useOptimizedImage called for ${itemId}, url: ${url?.substring(0, 50)}..., isSupabaseUrl: ${isSupabaseUrl}`);
+  // Using a smarter approach to caching Supabase URLs:
+  // 1. Check if URL contains timestamp info already
+  // 2. For stable content, use normal caching
+  // 3. For recently updated content, use unique cache key
   
-  // For Supabase URLs, always clear any existing cached data
-  useEffect(() => {
-    if (isSupabaseUrl && url) {
-      // Remove any existing queries for this URL to ensure fresh data
-      queryClient.removeQueries({ queryKey: ['optimizedImage', url] });
-    }
-  }, [isSupabaseUrl, url, queryClient]);
+  // Check if URL has a timestamp indicating when it was last modified
+  const hasTimestamp = isSupabaseUrl && url?.includes('?t=');
+  const timestampMatch = hasTimestamp && url?.match(/\?t=(\d+)/);
+  const timestamp = timestampMatch ? parseInt(timestampMatch[1]) : null;
   
-  // Used for normal URLs only
-  const cachedData = isSupabaseUrl ? null : queryClient.getQueryData(cacheKey);
-  if (cachedData) {
-    console.log(`[IMAGE-DEBUG] Found cached data for ${itemId}, url: ${url?.substring(0, 50)}...`);
+  // If timestamp exists and is recent (within 1 hour), force fresh load
+  const isRecentlyUpdated = timestamp && (Date.now() - timestamp) < 60 * 60 * 1000;
+  
+  // Only use a unique cache key for recently updated content
+  const uniqueId = useRef(isRecentlyUpdated ? Date.now() + Math.random() : null);
+  
+  // Choose appropriate cache key based on content stability
+  const cacheKey = isSupabaseUrl && isRecentlyUpdated
+    ? [`optimizedImage`, url, size, uniqueId.current] // Unique key for recent Supabase URLs
+    : [`optimizedImage`, url, size]; // Stable key for normal URLs and older Supabase content
+  
+  // Reduce verbose logging
+  if (isSupabaseUrl && isRecentlyUpdated) {
+    // Only log for recently updated content that needs special handling
+    console.log(`[IMAGE] Fresh load for recently updated image: ${itemId}`);
   }
   
-  const result = useQuery({
+  // For recently updated Supabase URLs, clear existing cache
+  useEffect(() => {
+    if (isSupabaseUrl && isRecentlyUpdated && url) {
+      // Only remove specific queries for recently updated content
+      queryClient.removeQueries({ queryKey: ['optimizedImage', url] });
+    }
+  }, [isSupabaseUrl, url, queryClient, isRecentlyUpdated]);
+  
+  // Used for normal URLs only
+  const cachedData = isSupabaseUrl && isRecentlyUpdated ? null : queryClient.getQueryData(cacheKey);
+  
+  // Use React Query for loading the image
+  const { data, isLoading, error } = useQuery({
     queryKey: cacheKey,
     queryFn: async () => {
-      if (!url) return {
-        url: null,
-        isLoaded: false,
-        hasError: false,
-        size
-      };
+      if (!url) throw new Error('No URL provided');
       
       try {
-        console.log(`[IMAGE-DEBUG] Loading image for ${itemId}, url: ${url.substring(0, 50)}..., isSupabaseUrl: ${isSupabaseUrl}`);
-        
-        // For Supabase URLs, return them directly without optimization
+        // For Supabase URLs, use different approach based on recency
         if (isSupabaseUrl) {
-          console.log(`[IMAGE-DEBUG] Direct Supabase URL handling for ${itemId}: ${url.substring(0, 50)}...`);
-          return {
-            url: url + `?t=${Date.now()}`, // Add cache buster to URL
-            isLoading: false,
-            isLoaded: true,
-            hasError: false,
-            size
-          };
+          // For recent content, always fetch fresh
+          if (isRecentlyUpdated) {
+            // Add cache busting for fresh content
+            const cacheBuster = `${url.includes('?') ? '&' : '?'}cb=${Date.now()}`;
+            const freshUrl = url + cacheBuster;
+            return {
+              url: freshUrl,
+              isLoading: false,
+              isLoaded: true,
+              hasError: false
+            };
+          } else {
+            // For stable content, allow browser caching
+            return {
+              url,
+              isLoading: false,
+              isLoaded: true,
+              hasError: false
+            };
+          }
         }
         
-        // Use the image service to load and optimize the image
+        // For non-Supabase URLs, use standard image service
         const result = await imageService.loadImageAsync(url, size, priority);
-        console.log(`[IMAGE-DEBUG] Image load completed for ${itemId}, url: ${url.substring(0, 50)}..., success: ${!!result.url}`);
-        return {
-          ...result,
-          size
-        };
-      } catch (error) {
-        console.error(`[IMAGE-DEBUG] Error loading image for ${itemId}:`, error);
-        
-        // For Supabase URLs, return original URL on error
-        if (isSupabaseUrl) {
-          return {
-            url,
-            isLoading: false,
-            isLoaded: false,
-            hasError: true,
-            size
-          };
-        }
-        
-        throw error;
+        return result;
+      } catch (err) {
+        console.error(`[IMAGE-ERROR] Failed to load image: ${url?.substring(0, 50)}...`);
+        throw err;
       }
     },
-    // Only run this query if we have a URL
+    staleTime: isSupabaseUrl && isRecentlyUpdated 
+      ? 0  // No caching for recent Supabase content
+      : isSupabaseUrl 
+        ? 5 * 60 * 1000  // 5 minutes for stable Supabase content
+        : 30 * 60 * 1000, // 30 minutes for other content
     enabled: !!url,
-    // For Supabase URLs, disable all caching
-    staleTime: isSupabaseUrl ? 0 : 60 * 60 * 1000, // No stale time for Supabase
-    gcTime: isSupabaseUrl ? 0 : 24 * 60 * 60 * 1000, // No cache retention for Supabase
-    // For Supabase, force refetch on every change
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    // Special flags for Supabase URLs to ensure fresh data
-    retry: false // Don't retry failures
+    retry: 1
   });
   
   // Provide a default value that matches the ImageQueryResult interface
-  if (!result.data) {
+  if (!data) {
     return {
       url: url || null,
-      isLoading: result.isLoading,
+      isLoading: isLoading,
       isLoaded: false,
-      hasError: result.isError,
+      hasError: !!error,
       size: size
     };
   }
   
-  return result.data as ImageQueryResult;
+  return data as ImageQueryResult;
 }
 
 /**

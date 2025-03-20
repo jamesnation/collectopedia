@@ -23,6 +23,47 @@ interface UseCatalogFiltersProps {
   sortDescriptor?: SortDescriptor;
 }
 
+/**
+ * Deep equality check for filter parameter objects to prevent unnecessary recalculations
+ */
+function areFiltersEqual(prevFilters: any, nextFilters: any): boolean {
+  // Quick identity check
+  if (prevFilters === nextFilters) return true;
+  
+  // If one is null and the other isn't, they're not equal
+  if (!prevFilters || !nextFilters) return false;
+  
+  // Check if both objects have the same keys
+  const prevKeys = Object.keys(prevFilters);
+  const nextKeys = Object.keys(nextFilters);
+  
+  if (prevKeys.length !== nextKeys.length) return false;
+  
+  // Check if all keys have the same values
+  return prevKeys.every(key => {
+    const prevValue = prevFilters[key];
+    const nextValue = nextFilters[key];
+    
+    // Handle arrays (like images)
+    if (Array.isArray(prevValue) && Array.isArray(nextValue)) {
+      if (prevValue.length !== nextValue.length) return false;
+      return prevValue.every((val, idx) => val === nextValue[idx]);
+    }
+    
+    // Handle objects recursively
+    if (
+      typeof prevValue === 'object' && prevValue !== null &&
+      typeof nextValue === 'object' && nextValue !== null
+    ) {
+      return areFiltersEqual(prevValue, nextValue);
+    }
+    
+    // Handle primitive values
+    return prevValue === nextValue;
+  });
+}
+
+// The main hook implementation
 export function useCatalogFilters({ 
   items,
   searchQuery = '',
@@ -46,9 +87,40 @@ export function useCatalogFilters({
     direction: 'ascending'
   };
 
+  // Store previous filter parameters for comparison
+  const [prevFilterParams, setPrevFilterParams] = useState<any>(null);
+  const [cachedResults, setCachedResults] = useState<CatalogItem[]>([]);
+  
+  // Combine all filter parameters into a single object for comparison
+  const currentFilterParams = {
+    itemsLength: items.length,
+    searchQuery,
+    typeFilter,
+    franchiseFilter,
+    yearFilter,
+    showSold,
+    soldYearFilter,
+    showWithImages,
+    sortDescriptor: actualSortDescriptor
+  };
+  
   // Create a filtered and sorted list of items
   const filteredAndSortedItems = useMemo(() => {
-    // Use minimal logging for performance
+    // Check if we've already calculated results for these exact filter parameters
+    if (
+      prevFilterParams && 
+      areFiltersEqual(prevFilterParams, currentFilterParams) &&
+      cachedResults.length > 0
+    ) {
+      // Skip recalculation if nothing changed
+      console.log('[CATALOG FILTER] Using cached results - filters unchanged');
+      return cachedResults;
+    }
+    
+    // Store current parameters for future comparison
+    setPrevFilterParams(currentFilterParams);
+    
+    // Continue with the regular filtering logic
     console.log('[CATALOG FILTER] Filtering', items.length, 'items with filters:', { 
       search: searchQuery, 
       type: typeFilter,
@@ -61,6 +133,7 @@ export function useCatalogFilters({
     // Debug to see what items we have before filtering
     if (items.length === 0) {
       console.log('[CATALOG FILTER] No items to filter!');
+      setCachedResults([]);
       return [];
     }
     
@@ -256,17 +329,20 @@ export function useCatalogFilters({
     }
 
     console.log('[CATALOG FILTER] Returning', result.length, 'filtered items');
+    
+    // Cache the results for future comparisons
+    setCachedResults(result);
     return result;
   }, [
-    items, 
-    searchQuery, 
-    typeFilter, 
-    franchiseFilter, 
-    yearFilter, 
-    actualSortDescriptor, 
-    showSold, 
+    items,
+    searchQuery,
+    typeFilter,
+    franchiseFilter,
+    yearFilter,
+    showSold,
     soldYearFilter,
     showWithImages,
+    actualSortDescriptor,
     imageCache
   ]);
 

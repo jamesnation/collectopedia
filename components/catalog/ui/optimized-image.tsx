@@ -9,7 +9,7 @@
  * - Enhanced error handling
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import Image, { ImageProps } from 'next/image';
 import { cn } from '@/lib/utils';
 import { useOptimizedImage } from '../hooks/use-image-query';
@@ -26,7 +26,7 @@ interface OptimizedImageProps extends Omit<ImageProps, 'src'> {
  * Enhanced image component that integrates with our React Query image system
  * with improved error handling
  */
-export function OptimizedImage({
+function OptimizedImageBase({
   src,
   alt,
   size = 'medium',
@@ -50,8 +50,6 @@ export function OptimizedImage({
     itemIdRef.current = src.split('/items/')[1]?.split('/')[0] || null;
   }
   
-  const itemId = itemIdRef.current;
-  
   // Use our optimized image hook
   const { url, isLoading, isLoaded, hasError } = useOptimizedImage(
     src,
@@ -72,10 +70,10 @@ export function OptimizedImage({
     }
   }, [isLoaded, imageLoaded, updateImageLoaded]);
   
-  // Log issues with image loading
+  // Log issues with image loading only for errors, not for every image
   useEffect(() => {
     if (hasError && src) {
-      console.warn(`[OPTIMIZED-IMAGE] Failed to load image from React Query cache: ${src}`);
+      console.warn(`[IMAGE] Failed to load image: ${src.substring(0, 50)}...`);
     }
   }, [hasError, src]);
   
@@ -90,6 +88,7 @@ export function OptimizedImage({
     // Skip if already prioritized or no ref
     if (nextPriority || !imageRef.current) return;
     
+    // Use a consistent observer instance to reduce memory consumption
     const handleIntersection = (entries: IntersectionObserverEntry[]) => {
       const [entry] = entries;
       if (entry.isIntersecting) {
@@ -169,5 +168,8 @@ export function OptimizedImage({
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export const OptimizedImage = memo(OptimizedImageBase);
 
 export default OptimizedImage; 

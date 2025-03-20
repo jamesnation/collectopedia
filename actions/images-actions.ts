@@ -13,43 +13,60 @@ type ActionResult<T> = {
 
 export const getImagesByItemIdAction = async (itemId: string): Promise<ActionResult<SelectImage[]>> => {
   try {
-    console.log(`Fetching images for item ${itemId}`);
     const images = await getImagesByItemId(itemId);
-    console.log(`Successfully fetched ${images.length} images for item ${itemId}`);
-    return { isSuccess: true, data: images };
+    
+    const result = {
+      isSuccess: true,
+      data: images.map(img => ({
+        ...img,
+        _lastModified: img.updatedAt || img.createdAt || new Date().toISOString()
+      }))
+    };
+    
+    return result;
   } catch (error) {
     console.error(`Failed to get images for item ${itemId}:`, error);
     return { 
       isSuccess: false, 
       error: error instanceof Error ? error.message : "Failed to get images",
-      data: [] // Return empty array instead of undefined for easier handling
+      data: []
     };
   }
 };
 
 export const createImageAction = async (image: Omit<InsertImage, 'id'>): Promise<ActionResult<SelectImage>> => {
   try {
-    // Get the current images to determine the next order
     const currentImages = await getImagesByItemId(image.itemId);
     const nextOrder = currentImages.length;
     
     const imageWithId = { 
       ...image, 
       id: crypto.randomUUID(),
-      order: nextOrder // Set the order to be at the end of the list
+      order: nextOrder
     };
     
     const [createdImage] = await insertImage(imageWithId);
     
-    // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();
     
-    // Revalidate all paths that might display this item's images
-    revalidatePath(`/?t=${timestamp}`);  // Home page with catalog
-    revalidatePath(`/item/${image.itemId}?t=${timestamp}`);  // Item details page
-    revalidatePath(`/my-collection?t=${timestamp}`);  // Collection page
+    const resultWithTimestamp = {
+      ...createdImage,
+      _lastModified: new Date().toISOString(),
+      _timestamp: timestamp
+    };
     
-    return { isSuccess: true, data: createdImage };
+    revalidatePath(`/?t=${timestamp}`);
+    revalidatePath(`/item/${image.itemId}?t=${timestamp}`);
+    revalidatePath(`/my-collection?t=${timestamp}`);
+    
+    if (typeof window !== 'undefined') {
+      const event = new CustomEvent('invalidate-image-cache', { 
+        detail: { itemId: image.itemId } 
+      });
+      window.dispatchEvent(event);
+    }
+    
+    return { isSuccess: true, data: resultWithTimestamp };
   } catch (error) {
     console.error("Failed to create image:", error);
     return { isSuccess: false, error: "Failed to create image" };
@@ -60,15 +77,13 @@ export const deleteImageAction = async (id: string, itemId?: string): Promise<Ac
   try {
     await deleteImage(id);
     
-    // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();
     
-    // Revalidate all paths that might display this item's images
-    revalidatePath(`/?t=${timestamp}`);  // Home page with catalog
+    revalidatePath(`/?t=${timestamp}`);
     if (itemId) {
-      revalidatePath(`/item/${itemId}?t=${timestamp}`);  // Item details page
+      revalidatePath(`/item/${itemId}?t=${timestamp}`);
     }
-    revalidatePath(`/my-collection?t=${timestamp}`);  // Collection page
+    revalidatePath(`/my-collection?t=${timestamp}`);
     
     return { isSuccess: true };
   } catch (error) {
@@ -102,13 +117,11 @@ export const updateImageOrderAction = async (
   try {
     const [updatedImage] = await updateImageOrder(imageId, newOrder);
     
-    // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();
     
-    // Revalidate all paths that might display this item's images
-    revalidatePath(`/?t=${timestamp}`);  // Home page with catalog
-    revalidatePath(`/item/${itemId}?t=${timestamp}`);  // Item details page
-    revalidatePath(`/my-collection?t=${timestamp}`);  // Collection page
+    revalidatePath(`/?t=${timestamp}`);
+    revalidatePath(`/item/${itemId}?t=${timestamp}`);
+    revalidatePath(`/my-collection?t=${timestamp}`);
     
     return { isSuccess: true, data: updatedImage };
   } catch (error) {
@@ -124,13 +137,11 @@ export const reorderImagesAction = async (
   try {
     await updateMultipleImageOrders(imageOrders);
     
-    // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();
     
-    // Revalidate all paths that might display this item's images
-    revalidatePath(`/?t=${timestamp}`);  // Home page with catalog
-    revalidatePath(`/item/${itemId}?t=${timestamp}`);  // Item details page
-    revalidatePath(`/my-collection?t=${timestamp}`);  // Collection page
+    revalidatePath(`/?t=${timestamp}`);
+    revalidatePath(`/item/${itemId}?t=${timestamp}`);
+    revalidatePath(`/my-collection?t=${timestamp}`);
     
     return { isSuccess: true };
   } catch (error) {

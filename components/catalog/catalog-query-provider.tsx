@@ -3,6 +3,7 @@
  * 
  * Sets up React Query for catalog data fetching and state management.
  * Updated to use named exports per TypeScript standards.
+ * Improved mutation handling to prevent stuck states.
  */
 
 "use client"
@@ -23,6 +24,14 @@ export function CatalogQueryProvider({ children }: CatalogQueryProviderProps) {
         staleTime: 5 * 60 * 1000, // 5 minutes
         refetchOnWindowFocus: false,
         retry: 1
+      },
+      mutations: {
+        // Set a relatively short retry timing
+        retry: false,
+        // Don't cache mutations to prevent stuck states - use gcTime instead of cacheTime (which is deprecated)
+        gcTime: 0,
+        // Prevent mutations from blocking other operations
+        networkMode: 'always',
       },
     },
   }))

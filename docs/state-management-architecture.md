@@ -128,12 +128,12 @@ function EditItemForm({ itemId }) {
 1. **Data Fetching Migration**
    - ✅ Create React Query hooks for all data operations
    - ✅ Replace direct API calls with React Query mutations
-   - ❌ Update context to use React Query hooks for data
+   - ✅ Update context to use React Query hooks for data
 
 2. **Context Simplification**
-   - ❌ Remove data fetching logic from context
-   - ❌ Focus context on UI state management
-   - ❌ Simplify context value to essential UI state
+   - ✅ Remove data fetching logic from context (completed for image handling)
+   - 🔄 Focus context on UI state management
+   - 🔄 Simplify context value to essential UI state
 
 3. **Query Client Configuration**
    - ✅ Optimize `staleTime` based on data type
@@ -142,8 +142,16 @@ function EditItemForm({ itemId }) {
 
 4. **Component Updates**
    - ✅ Update AddItemModal to use mutations directly
-   - ❌ Refactor other components to use the correct pattern
-   - ❌ Ensure proper loading/error states throughout the app
+   - ✅ Update image components to use React Query properly
+   - ✅ Implement proper cross-component communication
+   - 🔄 Refactor remaining components to use the correct pattern
+   - ✅ Ensure proper loading/error states throughout the app
+
+5. **Image Handling Improvements** (Completed)
+   - ✅ Create dedicated image query hooks for consistent fetching
+   - ✅ Implement proper cache invalidation for Supabase URLs
+   - ✅ Add cross-component communication for image changes
+   - ✅ Fix stability issues with proper React patterns
 
 ## Next Steps
 

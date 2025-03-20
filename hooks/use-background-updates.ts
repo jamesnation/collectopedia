@@ -37,9 +37,21 @@ export function useBackgroundUpdates() {
     // Don't run on server
     if (typeof window === 'undefined') return;
     
+    // SAFETY: Skip if we're looping - add a short-term check to prevent rapid re-triggers
+    const lastTriggerTime = safeLocalStorage.getItem('lastEbayTriggerAttempt');
+    const now = Date.now();
+    
+    // If we tried to trigger within the last 5 minutes, skip
+    if (lastTriggerTime && now - parseInt(lastTriggerTime) < 5 * 60 * 1000) {
+      console.log('Skipping background update check - checked recently');
+      return;
+    }
+    
+    // Record this check attempt
+    safeLocalStorage.setItem('lastEbayTriggerAttempt', now.toString());
+    
     // Check when we last triggered an update
     const lastUpdateTime = safeLocalStorage.getItem(LAST_UPDATE_KEY);
-    const now = Date.now();
     
     // If we've never updated or it's been more than the update interval
     if (!lastUpdateTime || now - parseInt(lastUpdateTime) > UPDATE_INTERVAL) {

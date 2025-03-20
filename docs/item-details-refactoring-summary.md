@@ -18,6 +18,9 @@
 - **Gallery Component**: Created a dedicated gallery component with skeleton placeholders during loading.
 - **Upload Dialog**: Developed modal dialog for image uploads connected to storage services.
 - **Delete Functionality**: Added image deletion with optimistic UI updates.
+- **Cross-Component Synchronization**: Implemented event-based cache invalidation to ensure catalog sees image changes.
+- **Stability Improvements**: Fixed infinite update loops and reference stability issues with proper React patterns.
+- **Supabase Integration**: Enhanced handling of Supabase storage URLs with proper cache invalidation.
 
 ### 4. State Management Improvements
 - **Atomic State Design**: Divided state into logical groupings (item, images, editing, etc.) to prevent unnecessary re-renders.

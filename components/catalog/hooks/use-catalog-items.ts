@@ -23,8 +23,13 @@ export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}
   const { userId } = useAuth();
   const { toast } = useToast();
 
-  const fetchItems = useCallback(async () => {
+  const fetchItems = useCallback(async (options?: { force?: boolean }) => {
     if (!userId) return;
+    
+    if (items.length > 0 && !options?.force) {
+      console.log('[ITEMS DATA] Using existing items, skipping fetch. Use fetchItems({force: true}) to force refresh.');
+      return items;
+    }
     
     setIsLoading(true);
     try {
@@ -67,7 +72,7 @@ export function useCatalogItems({ initialItems = [] }: UseCatalogItemsProps = {}
     } finally {
       setIsLoading(false);
     }
-  }, [userId, toast]);
+  }, [userId, toast, items.length]);
 
   const addItem = useCallback(async (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
     if (!userId) return false;

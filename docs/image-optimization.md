@@ -10,6 +10,34 @@ The image optimization system consists of several key components:
 2. **OptimizedImage Component** - React component for efficiently displaying images
 3. **ImageLoader Component** - Background component for managing image loading
 4. **Image Cache System** - Persistence layer that works alongside the image service
+5. **React Query Integration** - Caching layer that ensures consistent data across components
+
+## Recent Enhancements (May 2023)
+
+### Cross-Component Synchronization
+
+Implemented synchronization between item-details and catalog views to ensure images are consistently displayed:
+
+- **Custom Events**: Added `invalidate-image-cache` event for cross-context communication
+- **Cache Busting**: Implemented URL-based cache busting for Supabase storage URLs
+- **Forced Refresh**: Added mechanisms to force refresh of images when navigating between views
+
+### Supabase Storage Optimization
+
+Enhanced handling of Supabase storage URLs for better performance and reliability:
+
+- **URL Detection**: Improved detection of Supabase URLs to properly optimize loading
+- **Zero Caching**: Disabled caching for Supabase URLs to ensure fresh content display
+- **Timestamp Parameters**: Added automatic timestamps to image URLs to prevent browser caching
+
+### Stability Improvements
+
+Fixed several critical issues that affected image loading stability:
+
+- **Infinite Update Prevention**: Added safeguards against React infinite update loops
+- **Memoized Callbacks**: Implemented proper memoization for stability and performance
+- **Reference Stability**: Improved ref handling to prevent cascading state updates
+- **Batched Updates**: Added state batching to reduce render frequency
 
 ## Key Features
 

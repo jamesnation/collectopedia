@@ -59,6 +59,9 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   const pendingOperations = useRef<Set<string>>(new Set());
   const invalidationTimeout = useRef<NodeJS.Timeout | null>(null);
   
+  // CRITICAL FIX: Add a ref to track if we've already loaded on this session
+  const initialLoadCompleted = useRef<boolean>(false);
+  
   // Add event listener for cache invalidation
   useEffect(() => {
     const handleInvalidateCache = (event: CustomEvent<{ itemId: string }>) => {
@@ -104,16 +107,46 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   const loadImagesCallback = useCallback(async (itemIds: string[]) => {
     if (!itemIds?.length) return;
     
-    console.log('[CACHE] loadImages called with', itemIds.length, 'items');
+    // CRITICAL FIX: Skip loading if we've already done it once and have data
+    if (initialLoadCompleted.current && Object.keys(imageCache).length > 0) {
+      console.log('[CACHE] Initial load already completed, using cached data');
+      return;
+    }
+    
+    // Only log summary information, not every item
+    console.log(`[CACHE] Loading images for ${itemIds.length} items`);
     
     // Store the last requested items for debugging
     setLastRequestedItems(itemIds);
 
-    // Always load all items, regardless of cache state
-    // This is crucial for showing recently updated images
-    const idsToLoad = itemIds;
+    // Check if all images are already in cache to prevent unnecessary loading
+    const alreadyCachedItems = itemIds.filter(id => 
+      imageCache[id] && 
+      imageCache[id].length > 0 && 
+      hasCompletedLoading[id]
+    );
     
-    console.log('[CACHE] Will load images for all', idsToLoad.length, 'items to ensure freshness');
+    if (alreadyCachedItems.length === itemIds.length) {
+      console.log('[CACHE] All items already cached, skipping load');
+      initialLoadCompleted.current = true;
+      return;
+    }
+    
+    // Filter to only load items that need refreshing:
+    // 1. Items with no images in cache
+    // 2. Items not yet loaded
+    const idsToLoad = itemIds.filter(id => {
+      // Always load if not in cache or not completed loading
+      return !imageCache[id] || !hasCompletedLoading[id];
+    });
+    
+    // Skip if nothing to load
+    if (idsToLoad.length === 0) {
+      console.log('[CACHE] No items need refreshing');
+      return;
+    } else {
+      console.log(`[CACHE] Loading ${idsToLoad.length} items that need refreshing`);
+    }
     
     // Set loading state for all items about to be loaded
     setIsLoading(prev => {
@@ -121,7 +154,8 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       idsToLoad.forEach(id => {
         newState[id] = true;
       });
-      console.log('[CACHE] Updated loading state for', Object.keys(newState).filter(id => newState[id]).length, 'items');
+      
+      // Simplified logging - just the count
       return newState;
     });
 
@@ -131,16 +165,18 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     // Split into batches
     for (let i = 0; i < idsToLoad.length; i += batchSize) {
       const batchIds = idsToLoad.slice(i, i + batchSize);
-      console.log('[CACHE] Processing batch', Math.floor(i/batchSize) + 1, 'with', batchIds.length, 'items');
+      
+      // Only log batch summaries, not each batch
+      if (i === 0 || i + batchSize >= idsToLoad.length) {
+        console.log(`[CACHE] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(idsToLoad.length/batchSize)}`);
+      }
       
       try {
         // Load images for current batch in parallel
         const results = await Promise.all(
           batchIds.map(async (itemId) => {
             try {
-              console.log('[CACHE] Fetching fresh images for item', itemId);
-              
-              // Fetch fresh data
+              // Removed verbose logging for each item
               const result = await getImagesByItemIdAction(itemId);
               return { itemId, result };
             } catch (error) {
@@ -156,7 +192,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
         // Process successful results
         results.forEach(({ itemId, result, error }) => {
           if (result && result.isSuccess && result.data) {
-            console.log('[CACHE] Successfully fetched', result.data.length, 'fresh images for item', itemId);
+            // Don't log for each successfully fetched item - too noisy
             
             // Cache the result in React Query
             queryClient.setQueryData<ImageActionResult>(['images', itemId], result);
@@ -164,21 +200,26 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
             // Collect for state update
             newCacheEntries[itemId] = result.data || [];
             
-            // For Supabase URLs, ensure we invalidate any cached versions
-            if (result.data.length > 0 && isSupabaseUrl(result.data[0]?.url)) {
-              // Clear any cached optimized image queries for this item
-              result.data.forEach(image => {
-                if (image.url) {
-                  // Invalidate all variations of this image URL
+            // For Supabase URLs, use smarter caching
+            if (result.data.length > 0) {
+              const image = result.data[0];
+              if (image.url && isSupabaseUrl(image.url)) {
+                // Only invalidate if it's a recent upload (modified in last hour)
+                // Check timestamp or updatedAt if available
+                const isRecent = image.createdAt ? 
+                  (Date.now() - new Date(image.createdAt).getTime() < 60 * 60 * 1000) : false;
+                
+                if (isRecent) {
+                  // Only invalidate recent images
                   queryClient.invalidateQueries({ 
                     queryKey: ['optimizedImage', image.url],
                     refetchType: 'all'
                   });
                 }
-              });
+              }
             }
-          } else {
-            console.warn('[CACHE] Failed to fetch images for item', itemId, result?.error || error);
+          } else if (error) {
+            console.warn(`[CACHE] Failed to fetch images for item ${itemId}`);
           }
           
           // Mark loading as complete for this item
@@ -198,7 +239,8 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
         if (Object.keys(newCacheEntries).length > 0) {
           setImageCache(prev => {
             const updatedCache = { ...prev, ...newCacheEntries };
-            console.log('[CACHE] Updated cache with', Object.keys(newCacheEntries).length, 'items. Total items in cache:', Object.keys(updatedCache).length);
+            // Log only a summary
+            console.log(`[CACHE] Updated ${Object.keys(newCacheEntries).length} items in cache`);
             return updatedCache;
           });
         }
@@ -208,7 +250,10 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     }
     
     console.log('[CACHE] Completed loading all image batches');
-  }, [queryClient, setIsLoading, setImageCache, setHasCompletedLoading, setLastRequestedItems]);
+    
+    // CRITICAL FIX: Mark initial load as completed
+    initialLoadCompleted.current = true;
+  }, [queryClient, setIsLoading, setImageCache, setHasCompletedLoading, setLastRequestedItems, imageCache, hasCompletedLoading]);
 
   // Memoize the preloadItemImages function
   const preloadItemImagesCallback = useCallback(async (soldItemIds: string[], unsoldItemIds: string[]) => {

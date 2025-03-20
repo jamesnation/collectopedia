@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import CatalogContext, { FilterState, SortOption } from './catalog-context';
 import { useCatalogItems } from '../hooks/use-catalog-items';
 import { useCatalogFilters } from '../hooks/use-catalog-filters';
@@ -140,9 +140,23 @@ export function CatalogProvider({
     availableSoldYears,
   } = useCatalogFilters(filterParams);
 
-  // Create enhanced summary values to match expected structure
+  // Create enhanced summary values to match expected structure - with debouncing
+  const summaryValuesRef = useRef<any>(null);
+  const lastOriginalSummaryRef = useRef<any>(null);
+  
   const summaryValues = useMemo(() => {
-    console.log('[CATALOG-PROVIDER] Original summary values:', originalSummaryValues);
+    // CRITICAL FIX: Skip recalculation if the values haven't changed
+    if (
+      lastOriginalSummaryRef.current && 
+      summaryValuesRef.current &&
+      JSON.stringify(originalSummaryValues) === JSON.stringify(lastOriginalSummaryRef.current) &&
+      filteredAndSortedItems.length === summaryValuesRef.current.totalItems
+    ) {
+      return summaryValuesRef.current;
+    }
+    
+    // Only log if we're recalculating
+    console.log('[CATALOG-PROVIDER] Recalculating summary values');
     
     const soldItems = items.filter(item => item.isSold);
     const unsoldItems = items.filter(item => !item.isSold);
@@ -152,7 +166,8 @@ export function CatalogProvider({
     const totalProfit = totalValue - totalCost;
     const profitMargin = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
     
-    return {
+    // Calculate once and save in ref
+    const result = {
       totalItems: filteredAndSortedItems.length,
       totalValue: totalValue,
       totalCost: totalCost,
@@ -166,38 +181,76 @@ export function CatalogProvider({
       unsoldTotalCost: originalSummaryValues?.unsoldTotalCost || 0,
       aiEstimate: originalSummaryValues?.ebayListedValue || 0, // Use eBay value as AI estimate
     };
+    
+    // Store for future comparison
+    lastOriginalSummaryRef.current = originalSummaryValues;
+    summaryValuesRef.current = result;
+    
+    return result;
   }, [originalSummaryValues, items, filteredAndSortedItems.length]);
 
-  // Debug: log filtered items - only log in development
+  // Debug: log filtered items - but only do it once per significant change
+  const lastFilteredCountRef = useRef<number>(0);
+  
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    if (
+      process.env.NODE_ENV === 'development' && 
+      Math.abs(lastFilteredCountRef.current - filteredAndSortedItems.length) > 5
+    ) {
       console.log('[CATALOG-PROVIDER] Filtered items count:', filteredAndSortedItems.length);
+      lastFilteredCountRef.current = filteredAndSortedItems.length;
     }
   }, [filteredAndSortedItems.length]);
 
   // Fetch items on first mount or if we don't have any
   useEffect(() => {
+    // CRITICAL FIX: Don't fetch if we already have items from SSR
     if (!firstLoadCompleted) {
-      console.log('[CATALOG-PROVIDER] Performing initial fetch');
-      fetchItems().then(result => {
-        console.log('[CATALOG-PROVIDER] Initial fetchItems completed, result items:', result?.length || 0);
+      console.log('[CATALOG-PROVIDER] Initial items count:', initialItems.length);
+      
+      // Only perform fetch if we don't have initial items from SSR
+      if (initialItems.length === 0) {
+        console.log('[CATALOG-PROVIDER] No initial items, performing fetch');
+        fetchItems().then(result => {
+          console.log('[CATALOG-PROVIDER] Initial fetchItems completed, result items:', result?.length || 0);
+          setFirstLoadCompleted(true);
+        }).catch(error => {
+          console.error('[CATALOG-PROVIDER] Initial fetchItems error:', error);
+          setFirstLoadCompleted(true);
+        });
+      } else {
+        console.log('[CATALOG-PROVIDER] Using initial items from SSR, skipping fetch');
         setFirstLoadCompleted(true);
-      }).catch(error => {
-        console.error('[CATALOG-PROVIDER] Initial fetchItems error:', error);
-        setFirstLoadCompleted(true);
-      });
+      }
     }
-  }, [firstLoadCompleted, fetchItems]);
+  }, [firstLoadCompleted, fetchItems, initialItems.length]);
 
   // Clear all filters
   const clearFilters = useCallback(() => {
     setFilters(initialFilters);
   }, []);
 
-  // Refetch items
+  // Refetch items - with debouncing to prevent loops
   const refetchItems = useCallback(async () => {
-    console.log('[CATALOG-PROVIDER] Manually refetching items');
-    await fetchItems();
+    console.log('[CATALOG-PROVIDER] Manual refetch requested');
+    
+    // Use a timestamp in localStorage to prevent rapid refetches
+    const now = Date.now();
+    const lastRefetch = localStorage.getItem('lastCatalogRefetch');
+    
+    if (lastRefetch) {
+      const timeSinceLastRefetch = now - parseInt(lastRefetch);
+      if (timeSinceLastRefetch < 5000) { // 5 seconds minimum between manual refetches
+        console.log(`[CATALOG-PROVIDER] Skipping refetch - last refetch was ${timeSinceLastRefetch}ms ago`);
+        return;
+      }
+    }
+    
+    localStorage.setItem('lastCatalogRefetch', now.toString());
+    console.log('[CATALOG-PROVIDER] Performing manual refetch');
+    
+    // Force refresh by passing {force: true} to fetchItems
+    await fetchItems({ force: true });
   }, [fetchItems]);
 
   // Calculate total items count

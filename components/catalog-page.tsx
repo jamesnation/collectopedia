@@ -4,6 +4,12 @@ import React, { useEffect, useState } from 'react'
 import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
 import { Catalog } from './catalog'
 import { useBackgroundUpdates } from '@/hooks/use-background-updates'
+import dynamic from 'next/dynamic'
+
+// Dynamically import the debug tracker so it only loads in development
+const DebugFetchTracker = dynamic(() => import('./debug-fetch-tracker'), { 
+  ssr: false 
+});
 
 interface CatalogPageProps {
   initialBrands: { id: string; name: string }[];
@@ -19,6 +25,7 @@ export default function CatalogPage({
   initialItems
 }: CatalogPageProps) {
   const [mounted, setMounted] = useState(false);
+  const [showDebug] = useState(process.env.NODE_ENV === 'development');
 
   // Trigger background eBay price updates once per day
   useBackgroundUpdates();
@@ -42,6 +49,9 @@ export default function CatalogPage({
           initialBrands={initialBrands}
         />
       </div>
+      
+      {/* Debug tracker only visible in development */}
+      {showDebug && <DebugFetchTracker />}
     </div>
   );
 } 

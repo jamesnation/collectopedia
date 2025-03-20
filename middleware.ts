@@ -27,9 +27,8 @@ export default clerkMiddleware(async (auth, req) => {
   if (isStaticAsset(req)) {
     response.headers.set(
       "Cache-Control",
-      "public, max-age=31536000, immutable"
+      "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
     );
-    return response;
   }
 
   // Add shorter caching for public pages

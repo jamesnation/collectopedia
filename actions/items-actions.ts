@@ -79,17 +79,15 @@ export const createItemAction = async (item: {
   images?: string[];
 }) => {
   try {
-    console.log('🚀 SERVER ACTION - Received item data for creation:', {
+    console.log('🚀 [ITEM-CREATE-START] Received item data:', {
       id: item.id,
       name: item.name,
       userId: item.userId,
       type: item.type,
       franchise: item.franchise,
-      // Log more critical fields
-      acquired: item.acquired instanceof Date ? item.acquired.toISOString() : 'Not a date object',
-      cost: item.cost,
-      value: item.value,
-      hasNotes: !!item.notes
+      // Log image information to track what's received
+      hasMainImage: !!item.image,
+      imagesCount: item.images?.length || 0
     });
 
     // Remove the enum validation since we now support custom types and franchises
@@ -100,7 +98,7 @@ export const createItemAction = async (item: {
       soldPrice: item.soldPrice ? Math.round(item.soldPrice) : undefined,
       ebayListed: item.ebayListed ? Math.round(item.ebayListed) : undefined,
       ebaySold: item.ebaySold ? Math.round(item.ebaySold) : undefined,
-      image: item.image || item.images?.[0], // Use the first image as the main image
+      image: item.image || (item.images && item.images.length > 0 ? item.images[0] : undefined), // Use the first image as the main image
     };
 
     // Diagnostic check for critically required fields
@@ -113,48 +111,90 @@ export const createItemAction = async (item: {
     if (!(insertData.acquired instanceof Date)) missingFields.push('acquired (not a Date object)');
     
     if (missingFields.length > 0) {
-      console.error('❌ SERVER ACTION - Critical fields missing:', missingFields);
+      console.error('❌ [ITEM-CREATE-ERROR] Critical fields missing:', missingFields);
       return { 
         isSuccess: false, 
         error: `Missing required fields: ${missingFields.join(', ')}` 
       };
     }
 
-    console.log('🚀 SERVER ACTION - Prepared data for insertion:', {
+    console.log('🚀 [ITEM-CREATE] Prepared data for insertion:', {
       id: insertData.id,
       name: insertData.name,
       userId: insertData.userId,
       type: insertData.type,
       franchise: insertData.franchise,
+      // Include image information in logs
+      image: insertData.image ? 'Set' : 'Undefined',
       cost: insertData.cost,
       value: insertData.value
     });
 
     try {
-      console.log('🚀 SERVER ACTION - Executing database insert operation...');
+      console.log('🚀 [ITEM-CREATE] Executing database insert operation...');
       const result = await db.insert(itemsTable).values(insertData).returning();
-      console.log('🚀 SERVER ACTION - Database insert operation completed with result:', result);
+      console.log('🚀 [ITEM-CREATE] Database insert returned:', {
+        success: !!result && result.length > 0,
+        itemId: result[0]?.id,
+        itemName: result[0]?.name
+      });
 
       // Insert additional images
       if (item.images && item.images.length > 0) {
-        console.log('🚀 SERVER ACTION - Inserting additional images...');
-        const imageInserts = item.images.map(url => ({
-          id: crypto.randomUUID(),
-          itemId: result[0].id,
-          userId: item.userId,
-          url,
-        }));
-        await db.insert(imagesTable).values(imageInserts);
-        console.log('🚀 SERVER ACTION - Images inserted successfully');
+        console.log('🚀 [ITEM-CREATE] Processing additional images:', item.images.length);
+        
+        try {
+          // Prepare all image inserts as a single batch
+          const imageInserts = item.images.map((url, index) => ({
+            id: crypto.randomUUID(),
+            itemId: result[0].id,
+            userId: item.userId,
+            url,
+            order: index, // Add explicit order field
+          }));
+          
+          console.log('🚀 [ITEM-CREATE] Inserting images into database as batch...');
+          
+          // Process in smaller batches if there are many images
+          const batchSize = 5; // Process 5 images at a time
+          const imageBatches = [];
+          
+          for (let i = 0; i < imageInserts.length; i += batchSize) {
+            const batch = imageInserts.slice(i, i + batchSize);
+            imageBatches.push(batch);
+          }
+          
+          console.log(`🚀 [ITEM-CREATE] Processing ${imageBatches.length} batches of images`);
+          
+          // Process each batch sequentially
+          for (let i = 0; i < imageBatches.length; i++) {
+            const batch = imageBatches[i];
+            try {
+              await db.insert(imagesTable).values(batch);
+              console.log(`🚀 [ITEM-CREATE] Processed batch ${i+1}/${imageBatches.length} with ${batch.length} images`);
+            } catch (batchError) {
+              console.error(`❌ [ITEM-CREATE-ERROR] Error processing batch ${i+1}:`, batchError);
+              // Continue with next batch
+            }
+          }
+          
+          console.log('🚀 [ITEM-CREATE] All image batches processed');
+        } catch (imageError) {
+          console.error('❌ [ITEM-CREATE-ERROR] Failed to insert images:', imageError);
+          // Continue anyway - we've already created the item
+          // Don't throw so we still return the created item
+        }
+      } else {
+        console.log('🚀 [ITEM-CREATE] No additional images to insert');
       }
 
-      console.log('✅ SERVER ACTION - Item created successfully:', {
+      console.log('✅ [ITEM-CREATE-SUCCESS] Item created successfully:', {
         id: result[0].id,
         name: result[0].name
       });
       return { isSuccess: true, data: result[0] };
     } catch (dbError) {
-      console.error('❌ SERVER ACTION - Database operation error:', dbError);
+      console.error('❌ [ITEM-CREATE-ERROR] Database operation error:', dbError);
       // Extract and log more specific database error information
       const errorDetails = {
         message: dbError instanceof Error ? dbError.message : 'No error message',
@@ -164,11 +204,11 @@ export const createItemAction = async (item: {
         table: (dbError as any)?.table || 'No table information',
         column: (dbError as any)?.column || 'No column information'
       };
-      console.error('❌ SERVER ACTION - Detailed database error:', errorDetails);
+      console.error('❌ [ITEM-CREATE-ERROR] Detailed database error:', errorDetails);
       throw dbError; // Re-throw to be caught by the outer catch
     }
   } catch (error: unknown) {
-    console.error('❌ SERVER ACTION - Detailed error creating item:', error);
+    console.error('❌ [ITEM-CREATE-FATAL] Detailed error creating item:', error);
     if (error instanceof Error) {
       return { isSuccess: false, error: `Failed to create item: ${error.message}` };
     } else {

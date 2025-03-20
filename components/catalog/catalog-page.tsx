@@ -12,7 +12,7 @@
 
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useCatalogContext } from './context/catalog-context';
 import { Package, Plus, Grid, List as ListIcon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -94,10 +94,23 @@ export function CatalogPageContent() {
   // Get access to image cache for invalidation
   const { invalidateCache, imageCache, loadImages } = useImageCache();
   
+  // CRITICAL FIX: Add refs to track initializations and prevent infinite loops
+  const didLoadImagesRef = useRef(false);
+  const didInitializeRef = useRef(false);
+  
   // Force refresh images when the catalog page mounts or returns to focus
   useEffect(() => {
     // Skip if there are no items yet
     if (!items?.length) return;
+    
+    // CRITICAL FIX: Only run once per component mount 
+    if (didLoadImagesRef.current) {
+      console.log('[CATALOG-DEBUG] Images already loaded, skipping');
+      return;
+    }
+    
+    // Mark as loaded to prevent future runs
+    didLoadImagesRef.current = true;
     
     console.log('[CATALOG-DEBUG] Component mounted, loading images for all items');
     
@@ -105,11 +118,10 @@ export function CatalogPageContent() {
     const allItemIds = items.map(item => item.id);
     console.log('[CATALOG-DEBUG] Loading images for', allItemIds.length, 'items');
     
-    // Call the imageCache.loadImages directly instead of invalidating
-    // This is more reliable than invalidation which might not trigger a reload
+    // Call the imageCache.loadImages directly
     loadImages(allItemIds);
     
-    // Define visibility change handler - use a callback ref to avoid dependency issues
+    // Define visibility change handler
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         console.log('[VISIBILITY-DEBUG] Page returned to focus, refreshing data');
@@ -133,7 +145,7 @@ export function CatalogPageContent() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [items, loadImages, refetchItems]);
+  }, [items, loadImages, refetchItems]);  // Keep only essential dependencies
 
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
@@ -186,6 +198,14 @@ export function CatalogPageContent() {
 
   // Trigger a manual fetch to ensure data is loaded
   useEffect(() => {
+    // CRITICAL FIX: Only run once per component mount
+    if (didInitializeRef.current) {
+      return;
+    }
+    
+    // Mark as initialized to prevent future runs
+    didInitializeRef.current = true;
+    
     console.log('[CATALOG-PAGE] Initializing, will fetch items if empty');
     if (items.length === 0 && !isLoading) {
       console.log('[CATALOG-PAGE] No items, triggering refetch');

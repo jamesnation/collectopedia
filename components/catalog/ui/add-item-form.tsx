@@ -50,6 +50,7 @@ import {
   createNullableStringSchema, 
   createRequiredStringSchema 
 } from '../utils/form-utils'
+import { useToast } from "@/components/ui/use-toast"
 
 // Dynamically import the image upload component to avoid SSR issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
@@ -82,7 +83,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>
 
 export interface AddItemFormProps {
-  onSubmit: (data: Omit<CatalogItem, 'id'>) => Promise<void>
+  onSubmit: (data: Omit<CatalogItem, 'id'>) => Promise<CatalogItem>
   onCancel?: () => void
   customTypes: CustomEntity[]
   customFranchises: CustomEntity[]
@@ -104,11 +105,15 @@ export function AddItemForm({
   onLoadCustomBrands,
   isSubmitting = false,
 }: AddItemFormProps) {
+  const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [isLoadingTypes, setIsLoadingTypes] = useState(false)
   const [isLoadingFranchises, setIsLoadingFranchises] = useState(false)
   const [isLoadingBrands, setIsLoadingBrands] = useState(false)
-  const [uploadedImages, setUploadedImages] = useState<string[]>([])
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false)
+  const [useDirectSubmit, setUseDirectSubmit] = useState(false)
+  const [isTestingApi, setIsTestingApi] = useState(false)
   const yearOptions = generateYearOptions()
+  const { toast } = useToast()
 
   // Initialize the form
   const form = useForm<FormValues>({
@@ -157,6 +162,13 @@ export function AddItemForm({
   // Handle image upload
   const handleImageUpload = (url: string) => {
     setUploadedImages(prev => [...prev, url])
+    
+    // Show user feedback for each successful upload
+    toast({
+      title: "Image Uploaded",
+      description: `Image ${uploadedImages.length + 1} added successfully. ${uploadedImages.length === 0 ? 'This will be the primary image.' : ''}`,
+      duration: 3000,
+    })
   }
 
   // Handle image removal
@@ -169,8 +181,11 @@ export function AddItemForm({
    */
   const mapFormToEntity = (
     values: FormValues, 
-    uploadedImages: string[] = []
+    imageUrls: string[] = []
   ): Omit<CatalogItem, 'id'> => {
+    // Only use the primary image in the initial submission for faster processing
+    const primaryImage = imageUrls.length > 0 ? imageUrls[0] : null;
+    
     return {
       userId: '', // Will be set by the server
       name: values.name,
@@ -183,8 +198,8 @@ export function AddItemForm({
       cost: typeof values.cost === 'number' ? values.cost : 0,
       value: typeof values.value === 'number' ? values.value : 0,
       notes: values.notes || null,
-      image: uploadedImages.length > 0 ? uploadedImages[0] : null,
-      images: uploadedImages,
+      image: primaryImage, // Primary image only
+      images: imageUrls.slice(0, 1), // Just include the first image (primary) initially
       createdAt: new Date(),
       updatedAt: new Date(),
       isSold: false,
@@ -195,10 +210,158 @@ export function AddItemForm({
 
   // Form submission handler
   const handleFormSubmit = async (values: FormValues) => {
-    // Apply proper type conversions using the mapping function
-    const newItem = mapFormToEntity(values, uploadedImages);
-    await onSubmit(newItem);
+    try {
+      // Set local submitting state
+      setIsSubmittingForm(true)
+      
+      console.log(`[ADD-FORM] Submitting form for item: ${values.name}, image count: ${uploadedImages.length}`);
+      console.log(`[ADD-FORM] Form values:`, values);
+      console.log(`[ADD-FORM] Using direct submit mode: ${useDirectSubmit}`);
+      
+      // Show a toast to let the user know the form is submitting
+      toast({
+        title: "Processing",
+        description: uploadedImages.length > 0 
+          ? `Adding item with ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''}, please wait...` 
+          : "Adding item...",
+      });
+      
+      // Create a copy of form data with all images
+      const newItem = mapFormToEntity(values, uploadedImages);
+      console.log(`[ADD-FORM] Mapped entity:`, newItem);
+      
+      // Save current values for optimistic UI updates and error handling
+      const currentName = values.name;
+      
+      try {
+        let createdItem;
+        
+        if (useDirectSubmit) {
+          // DIRECT MODE: Just call onSubmit directly without timeouts for debugging
+          console.log(`[ADD-FORM-DEBUG] Using DIRECT submission mode`);
+          createdItem = await onSubmit(newItem);
+        } else {
+          // NORMAL MODE: Use Promise.race with timeout
+          // Set a timeout to prevent the form from hanging indefinitely
+          const timeoutPromise = new Promise<CatalogItem>((_, reject) => {
+            console.log(`[ADD-FORM] Setting 5-second timeout`);
+            return setTimeout(() => {
+              console.log(`[ADD-FORM] TIMEOUT TRIGGERED - Request timed out after 5 seconds`);
+              reject(new Error("Request timed out after 5 seconds"));
+            }, 5000); // Reduced timeout for testing
+          });
+          
+          console.log(`[ADD-FORM] Starting server submission with timeout for '${currentName}'`);
+          
+          // Submit with a timeout
+          createdItem = await Promise.race([
+            onSubmit(newItem).then(result => {
+              console.log(`[ADD-FORM] onSubmit resolved with result:`, result);
+              return result;
+            }),
+            timeoutPromise
+          ]);
+        }
+        
+        console.log(`[ADD-FORM] Item created successfully: ${createdItem.id}`);
+        
+        // Show success message
+        toast({
+          title: "Success",
+          description: `${currentName} added to your collection.`,
+          duration: 3000,
+        });
+        
+        // Reset form and images
+        form.reset();
+        setUploadedImages([]);
+        
+      } catch (error) {
+        console.error(`[ADD-FORM] Error during submission:`, error);
+        
+        // Show error toast
+        toast({
+          title: "Error",
+          description: error instanceof Error 
+            ? error.message 
+            : "Failed to add item. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        // Always reset submitting state
+        setIsSubmittingForm(false);
+      }
+    } catch (formError) {
+      console.error("Form error:", formError);
+      toast({
+        title: "Error",
+        description: "Please check the form for errors.",
+        variant: "destructive"
+      });
+      setIsSubmittingForm(false);
+    }
   }
+
+  // Handle cancel with force reset option
+  const handleCancel = () => {
+    // If the form is stuck in submitting state, force reset
+    if (isSubmittingForm) {
+      setIsSubmittingForm(false);
+      toast({
+        title: "Cancelled",
+        description: "Form submission was cancelled.",
+        duration: 3000,
+      });
+    }
+    
+    // Call the provided onCancel function
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
+  // Debug API test function
+  const testDebugApi = async () => {
+    try {
+      setIsTestingApi(true);
+      console.log('[DEBUG] Testing debug API...');
+      
+      toast({
+        title: "Testing",
+        description: "Testing direct API call...",
+      });
+      
+      const res = await fetch('/api/debug');
+      const data = await res.json();
+      
+      console.log('[DEBUG] Debug API response:', data);
+      
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: `Debug item created: ${data.item.name}`,
+          duration: 5000,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Unknown error",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error('[DEBUG] API test error:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsTestingApi(false);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -594,25 +757,62 @@ export function AddItemForm({
           )}
         </div>
 
+        {/* Debug controls */}
+        <div className="border border-dashed border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 p-3 rounded-md">
+          <h4 className="font-medium text-sm mb-2">Debug Controls</h4>
+          
+          <div className="space-y-2">
+            {/* Direct submit checkbox */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input 
+                type="checkbox" 
+                id="debug-mode" 
+                checked={useDirectSubmit} 
+                onChange={e => setUseDirectSubmit(e.target.checked)} 
+              />
+              <label htmlFor="debug-mode">Use direct submission (no timeout)</label>
+            </div>
+            
+            {/* Debug API test button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50"
+              onClick={testDebugApi}
+              disabled={isTestingApi}
+            >
+              {isTestingApi ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Testing API...
+                </>
+              ) : 'Test Debug API'}
+            </Button>
+          </div>
+        </div>
+
         {/* Form Actions */}
         <div className="flex justify-end space-x-2 pt-2">
           {onCancel && (
             <Button
               type="button"
               variant="outline"
-              onClick={onCancel}
+              onClick={handleCancel}
+              disabled={isSubmitting && !isSubmittingForm}
             >
-              Cancel
+              {isSubmittingForm ? "Force Cancel" : "Cancel"}
             </Button>
           )}
           <Button 
             type="submit" 
-            disabled={isSubmitting}
+            disabled={isSubmittingForm || isSubmitting}
+            className={(isSubmittingForm || isSubmitting) ? "opacity-80" : ""}
           >
-            {isSubmitting ? (
+            {isSubmittingForm || isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Adding...
+                Adding{uploadedImages.length > 0 ? " item..." : "..."}
               </>
             ) : (
               'Add Item'
