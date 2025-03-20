@@ -69,23 +69,32 @@ export function useAddItemMutation() {
   return useMutation({
     mutationFn: async (newItem: Omit<CatalogItem, 'id' | 'userId'>) => {
       console.error(`[ADD-ITEM] Starting to add item: ${newItem.name}`);
-      console.log(`[ADD-ITEM-DEBUG] Item data:`, newItem);
+      
+      // Calculate appropriate timeout based on environment and image count
+      const isProduction = process.env.NODE_ENV === 'production';
+      const imageCount = newItem.images?.length || 0;
+      
+      // Use longer timeouts in production due to cold starts and serverless limitations
+      // Also scale timeout with image count - more images need more time
+      const timeoutDuration = isProduction 
+        ? Math.max(30000, imageCount * 5000) // Production: 30s minimum, +5s per image
+        : 15000; // Development: 15s fixed
+      
+      console.log(`[ADD-ITEM] Using timeout of ${timeoutDuration/1000}s for ${imageCount} images in ${isProduction ? 'production' : 'development'}`);
       
       // CRITICAL FIX: Create an absolute timeout for the entire operation
       // This guarantees the function will complete within a reasonable time
       return new Promise<CatalogItem>((resolve, reject) => {
-        // Set a hard timeout for the entire operation - REDUCED from 3 minutes to 15 seconds
+        // Set a hard timeout for the entire operation
         const abortTimeout = setTimeout(() => {
           console.error('[ADD-ITEM] Hard timeout reached, aborting operation');
-          reject(new Error('Operation timed out after 15 seconds'));
-        }, 15000); // 15 second hard timeout - much shorter for testing
+          reject(new Error(`Operation timed out after ${timeoutDuration/1000} seconds`));
+        }, timeoutDuration);
         
         // Run the actual operation as an async IIFE
         (async () => {
           try {
-            console.log('[ADD-ITEM-DEBUG] Starting async operation');
             if (!userId) {
-              console.log('[ADD-ITEM-DEBUG] No userId, aborting');
               clearTimeout(abortTimeout);
               reject(new Error("User not authenticated"));
               return;
@@ -126,19 +135,18 @@ export function useAddItemMutation() {
             console.error(`[ADD-ITEM] Calling server action for: ${itemToAdd.name}`);
             console.log('[ADD-ITEM-DEBUG] ItemToAdd:', itemToAdd);
             
-            // Create a timeout for just the server call - REDUCED from 3 minutes to 15 seconds
-            const serverTimeout = 15000; // 15 seconds server timeout - reduced for testing
+            // Create a timeout for just the server call - use the same duration as the overall timeout
+            const serverTimeout = timeoutDuration;
             
             // Using Promise.race to handle timeout for the server call
             try {
-              console.log('[ADD-ITEM-DEBUG] About to call addCatalogItem with timeout:', serverTimeout);
+              console.log(`[ADD-ITEM] Calling server action for ${itemToAdd.name} with ${timeoutDuration/1000}s timeout`);
               const result = await Promise.race([
                 addCatalogItem(itemToAdd).then(result => {
-                  console.log('[ADD-ITEM-DEBUG] addCatalogItem returned successfully:', result);
+                  console.log('[ADD-ITEM] Server action completed successfully');
                   return result;
                 }),
                 new Promise<never>((_, rejectServer) => {
-                  console.log('[ADD-ITEM-DEBUG] Setting up server timeout');
                   return setTimeout(() => {
                     console.log('[ADD-ITEM-DEBUG] SERVER TIMEOUT TRIGGERED');
                     rejectServer(new Error("Server request timed out"));
@@ -225,9 +233,21 @@ export function useAddItemMutation() {
         }
       }
       
+      // Provide more helpful error messages for specific error cases
+      let errorMessage = "Failed to add item";
+      if (error instanceof Error) {
+        if (error.message.includes("timed out")) {
+          errorMessage = "The server took too long to respond. This could be due to network issues or high server load. Please try again with fewer images or try later.";
+        } else if (error.message.includes("User not authenticated")) {
+          errorMessage = "Your login session might have expired. Please refresh the page and try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add item",
+        description: errorMessage,
         variant: "destructive",
         duration: 10000, // Show toast for 10 seconds
       });

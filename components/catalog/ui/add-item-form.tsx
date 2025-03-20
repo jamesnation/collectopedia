@@ -167,6 +167,16 @@ export function AddItemForm({
       description: `Image ${uploadedImages.length + 1} added successfully. ${uploadedImages.length === 0 ? 'This will be the primary image.' : ''}`,
       duration: 3000,
     })
+    
+    // Add warning toast if too many images are uploaded (only in production)
+    const isProd = process.env.NODE_ENV === 'production';
+    if (isProd && uploadedImages.length >= 2) {
+      toast({
+        title: "Performance Notice",
+        description: "Adding many images at once may cause timeouts. For best results, add your first 2-3 images now, and add more after creating the item.",
+        duration: 6000,
+      });
+    }
   }
 
   // Handle image removal
