@@ -11,7 +11,7 @@ The image optimization system consists of several key components:
 3. **ImageLoader Component** - Background component for managing image loading
 4. **Image Cache System** - Persistence layer that works alongside the image service
 
-## Key Features
+## Key Featurez
 
 ### 1. Device-Aware Loading
 
