@@ -188,7 +188,7 @@ export function ItemGridView({
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className="object-contain transition-all duration-500"
           priority={isPriority}
-          size="medium"
+          size="thumbnail"
           onLoad={() => handleImageLoad(itemId)}
           containerClassName="w-full h-full"
         />
