@@ -263,11 +263,14 @@ export const checkItemsImageUpdatesAction = async (
 ): Promise<ActionResult<string[]>> => {
   try {
     if (!itemIds.length) {
-      console.log('[CHECK-UPDATES] No item IDs provided for checking');
+      // Don't log empty calls
       return { isSuccess: true, data: [] };
     }
     
-    console.log(`[CHECK-UPDATES] Checking updates for ${itemIds.length} items`);
+    // Only log when checking a small number of items or in development
+    if (itemIds.length < 10 || process.env.NODE_ENV === 'development') {
+      console.log(`[CHECK-UPDATES] Checking updates for ${itemIds.length} items`);
+    }
     
     // Query all items to check their imagesUpdatedAt timestamps
     // Instead of complex filtering in the query, we'll get the items and filter in JS
@@ -281,13 +284,15 @@ export const checkItemsImageUpdatesAction = async (
       or(...itemIds.map(id => eq(itemsTable.id, id)))
     );
     
-    console.log(`[CHECK-UPDATES] Found ${items.length} items in database (out of ${itemIds.length} requested)`);
-    
-    // Check for any items with null timestamps
-    const nullTimestamps = items.filter(item => !item.imagesUpdatedAt);
-    if (nullTimestamps.length > 0) {
-      console.log(`[CHECK-UPDATES] Warning: ${nullTimestamps.length} items have null timestamps:`);
-      nullTimestamps.forEach(item => console.log(`- Item ${item.id}`));
+    // Only log null warnings in development
+    if (process.env.NODE_ENV === 'development') {
+      // Check for any items with null timestamps
+      const nullTimestamps = items.filter(item => !item.imagesUpdatedAt);
+      if (nullTimestamps.length > 0) {
+        console.log(`[CHECK-UPDATES] Warning: ${nullTimestamps.length} items have null timestamps`);
+        // Only log first 3 examples max
+        nullTimestamps.slice(0, 3).forEach(item => console.log(`- Item ${item.id}`));
+      }
     }
     
     // Find items that have been updated since they were cached
@@ -295,14 +300,12 @@ export const checkItemsImageUpdatesAction = async (
       .filter(item => {
         // Skip items with no imagesUpdatedAt timestamp
         if (!item.imagesUpdatedAt) {
-          console.log(`[CHECK-UPDATES] Item ${item.id} has no timestamp, skipping`);
           return false;
         }
         
         // Get the timestamp when this item was cached
         const cachedAt = cachedTimestamps[item.id];
         if (!cachedAt) {
-          console.log(`[CHECK-UPDATES] Item ${item.id} has no cache timestamp, skipping`);
           return false;
         }
         
@@ -312,15 +315,19 @@ export const checkItemsImageUpdatesAction = async (
         // Item needs update if the database timestamp is newer than when it was cached
         const needsUpdate = dbTimestamp > cachedAt;
         
-        if (needsUpdate) {
-          console.log(`[CHECK-UPDATES] Item ${item.id} needs update: DB timestamp ${new Date(dbTimestamp).toISOString()} > Cache timestamp ${new Date(cachedAt).toISOString()}`);
+        // Only log when there are actual updates to report
+        if (needsUpdate && process.env.NODE_ENV === 'development') {
+          console.log(`[CHECK-UPDATES] Item ${item.id} needs update: DB:${new Date(dbTimestamp).toISOString().split('T')[1].split('.')[0]} > Cache:${new Date(cachedAt).toISOString().split('T')[1].split('.')[0]}`);
         }
         
         return needsUpdate;
       })
       .map(item => item.id);
     
-    console.log(`[CHECK-UPDATES] Found ${updatedItemIds.length} items with newer images than cache`);
+    // Only log if there are items that need updates
+    if (updatedItemIds.length > 0) {
+      console.log(`[CHECK-UPDATES] Found ${updatedItemIds.length} items with newer images than cache`);
+    }
     
     return { isSuccess: true, data: updatedItemIds };
   } catch (error) {
@@ -346,7 +353,10 @@ export const updateAllItemsImagesTimestampAction = async (): Promise<ActionResul
     // Find items with null imagesUpdatedAt
     const itemsToUpdate = allItems.filter(item => item.imagesUpdatedAt === null || item.imagesUpdatedAt === undefined);
     
-    console.log(`Found ${itemsToUpdate.length} items with null imagesUpdatedAt`);
+    // Only log if there are items to update or in development mode
+    if (itemsToUpdate.length > 0 || process.env.NODE_ENV === 'development') {
+      console.log(`Found ${itemsToUpdate.length} items with null imagesUpdatedAt`);
+    }
     
     // Update each item one by one
     let updatedCount = 0;
@@ -359,7 +369,10 @@ export const updateAllItemsImagesTimestampAction = async (): Promise<ActionResul
       }
     }
     
-    console.log(`Successfully updated ${updatedCount} items with imagesUpdatedAt timestamp`);
+    // Only log if there were actually items updated or in development mode
+    if (updatedCount > 0 || process.env.NODE_ENV === 'development') {
+      console.log(`Successfully updated ${updatedCount} items with imagesUpdatedAt timestamp`);
+    }
     
     return { isSuccess: true, data: updatedCount };
   } catch (error) {

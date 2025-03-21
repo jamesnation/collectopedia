@@ -36,6 +36,14 @@ interface CatalogProps {
   initialBrands: { id: string; name: string }[];
 }
 
+// Add a debug logger helper at the top of the file
+const debugLog = (message: string, ...args: any[]) => {
+  // Only log in development environment
+  if (process.env.NODE_ENV === 'development') {
+    console.log(message, ...args);
+  }
+};
+
 export default function Catalog({
   initialItems = [],
   initialTypes = [],
@@ -166,12 +174,15 @@ function CatalogInner({
     resetFilters
   } = useCatalogFilters({ items });
 
-  // Map catalog items to image map for the new ImageLoader
+  // Update the createImagesMap function to reduce logging
   const createImagesMap = useCallback(() => {
     const imagesMap: Record<string, SelectImage[]> = {};
     
-    // Add debug logs
-    console.log('[CATALOG DEBUG] Creating images map from cache with', Object.keys(imageCache).length, 'cached items');
+    // Only log in development
+    if (process.env.NODE_ENV === 'development') {
+      // Use debug logger instead of console.log
+      debugLog('[CATALOG DEBUG] Creating images map from cache with', Object.keys(imageCache).length, 'cached items');
+    }
     
     // Process images from items
     items.forEach((item: SelectItemType) => {
@@ -180,10 +191,12 @@ function CatalogInner({
         // imageCache already contains SelectImage objects, so just use them directly
         imagesMap[item.id] = imageCache[item.id];
         
-        // Log the first few items for debugging
-        if (Object.keys(imagesMap).length <= 3) {
-          console.log(`[CATALOG DEBUG] Item ${item.id} (${item.name}) using ${imageCache[item.id].length} images from cache:`, 
-            imageCache[item.id].map(img => img.url.substring(0, 30) + '...'));
+        // Only log a few sample items in development mode
+        if (process.env.NODE_ENV === 'development') {
+          // Log only the first item as a sample
+          if (Object.keys(imagesMap).length === 1) {
+            debugLog(`[CATALOG DEBUG] Sample item ${item.id} (${item.name}) using ${imageCache[item.id].length} images from cache`);
+          }
         }
       }
     });
@@ -191,7 +204,7 @@ function CatalogInner({
     return imagesMap;
   }, [items, imageCache]);
 
-  // Pre-process item images with our new service
+  // Update the useEffect to reduce logging
   useEffect(() => {
     if (!isLoading && items.length > 0) {
       // Extract all unique item IDs
@@ -201,17 +214,17 @@ function CatalogInner({
       
       // Use the service to preload images
       if (Object.keys(imagesMap).length > 0) {
-        console.log(`[CATALOG] Preloading images for ${Object.keys(imagesMap).length} items with the image service`);
+        debugLog(`[CATALOG] Preloading images for ${Object.keys(imagesMap).length} items with the image service`);
         imageService.preloadItemImages(allItemIds, imagesMap);
       }
     }
   }, [items.length, isLoading, imageService, createImagesMap]);
 
-  // Add an effect to refresh image cache when navigating back to catalog
+  // Update the refresh cache effect
   useEffect(() => {
     // This effect should run when the component mounts or if items change
     if (!isLoading && items.length > 0) {
-      console.log('[CATALOG] Component mounted or items changed, refreshing image cache');
+      debugLog('[CATALOG] Component mounted or items changed, refreshing image cache');
       
       // Check if we're coming back from an item detail page with invalidated cache
       let invalidatedItemId: string | null = null;
@@ -238,21 +251,13 @@ function CatalogInner({
         }
       }
       
-      // Add debug logging for localStorage cache
-      if (typeof window !== 'undefined') {
+      // Remove most of the debug logging for localStorage cache
+      if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
         try {
           const savedCache = localStorage.getItem('collectopedia-image-cache');
           if (savedCache) {
             const parsedCache = JSON.parse(savedCache);
-            console.log('[CATALOG DEBUG] localStorage cache contains', Object.keys(parsedCache).length, 'items');
-            // Log a sample of items in the cache
-            const sampleIds = Object.keys(parsedCache).slice(0, 3);
-            console.log('[CATALOG DEBUG] Sample cached items:', sampleIds);
-            sampleIds.forEach((id: string) => {
-              console.log(`[CATALOG DEBUG] Item ${id} has ${parsedCache[id]?.length || 0} cached images`);
-            });
-          } else {
-            console.log('[CATALOG DEBUG] No localStorage cache found');
+            debugLog('[CATALOG DEBUG] localStorage cache contains', Object.keys(parsedCache).length, 'items');
           }
         } catch (e) {
           console.error('[CATALOG DEBUG] Error reading localStorage cache:', e);
@@ -281,16 +286,31 @@ function CatalogInner({
     }
   }, [isLoading, items]); // Depend on items to refresh when items array changes
 
-  // Run a one-time check to ensure all items have image timestamps set
+  // Modify the timestamp check useEffect
   useEffect(() => {
     if (!isLoading && items.length > 0) {
+      // We only need to run this timestamp initialization once per day at most
+      // Check if we've run this check recently (within 24 hours)
+      const lastCheckTimestamp = localStorage.getItem('last-timestamp-check');
+      if (lastCheckTimestamp) {
+        const lastCheck = parseInt(lastCheckTimestamp);
+        const now = Date.now();
+        const hoursSinceLastCheck = (now - lastCheck) / (1000 * 60 * 60);
+        
+        // Skip if checked within the last 24 hours
+        if (hoursSinceLastCheck < 24) {
+          debugLog(`[CATALOG] Skipping timestamp check (last checked ${hoursSinceLastCheck.toFixed(1)} hours ago)`);
+          return;
+        }
+      }
+        
       const checkImageTimestamps = async () => {
         try {
           // Call the API to update timestamps for items that don't have them
           const response = await fetch('/api/update-image-timestamps');
           const data = await response.json();
           
-          console.log('[CATALOG] Checking for items with missing image timestamps');
+          debugLog('[CATALOG] Checking for items with missing image timestamps');
           
           if (data.success) {
             if (data.updatedCount > 0) {
@@ -301,18 +321,22 @@ function CatalogInner({
               invalidateCache(); // Clear entire cache
               loadImages(allItemIds, true); // Force reload all images
             } else {
-              console.log('[CATALOG] All items already have timestamps set');
+              debugLog('[CATALOG] All items already have timestamps set');
             }
           }
+          
+          // Store the current timestamp to prevent running too frequently
+          // Use localStorage instead of sessionStorage to persist across browser sessions
+          localStorage.setItem('last-timestamp-check', Date.now().toString());
         } catch (error) {
           console.error('[CATALOG] Error checking image timestamps:', error);
         }
       };
       
-      // Always run the timestamp check when the catalog first loads
+      // Run the timestamp check
       checkImageTimestamps();
     }
-  }, [isLoading, items, invalidateCache, loadImages]);
+  }, [isLoading, items.length]); // Only depend on items.length to avoid excess runs
 
   const handleShowSoldChange = (show: boolean) => {
     console.log('[CATALOG] Toggling showSold to', show);

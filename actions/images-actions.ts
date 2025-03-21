@@ -12,11 +12,23 @@ type ActionResult<T> = {
   error?: string;
 };
 
+// Helper for conditional logging based on environment
+const debugLog = (message: string, ...args: any[]) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(message, ...args);
+  }
+};
+
 export const getImagesByItemIdAction = async (itemId: string): Promise<ActionResult<SelectImage[]>> => {
   try {
-    console.log(`Fetching images for item ${itemId}`);
+    // Minimize logging to reduce console output
     const images = await getImagesByItemId(itemId);
-    console.log(`Successfully fetched ${images.length} images for item ${itemId}`);
+    
+    // Only log if there are actually images found
+    if (images.length > 0) {
+      debugLog(`Successfully fetched ${images.length} images for item ${itemId}`);
+    }
+    
     return { isSuccess: true, data: images };
   } catch (error) {
     console.error(`Failed to get images for item ${itemId}:`, error);
@@ -43,12 +55,13 @@ export const createImageAction = async (image: Omit<InsertImage, 'id'>): Promise
     const [createdImage] = await insertImage(imageWithId);
     
     // Update the imagesUpdatedAt timestamp on the item
+    // Always log this for troubleshooting the sync issue
     console.log(`[IMAGES] Updating imagesUpdatedAt timestamp for item ${image.itemId}`);
     const now = new Date();
     await updateItem(image.itemId, { 
       imagesUpdatedAt: now
     });
-    console.log(`[IMAGES] Timestamp updated to ${now.toISOString()}`);
+    debugLog(`[IMAGES] Timestamp updated to ${now.toISOString()}`);
     
     // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();
@@ -71,12 +84,13 @@ export const deleteImageAction = async (id: string, itemId?: string): Promise<Ac
     
     // Update the imagesUpdatedAt timestamp on the item if itemId is provided
     if (itemId) {
+      // Always log this for troubleshooting the sync issue
       console.log(`[IMAGES] Updating imagesUpdatedAt timestamp for item ${itemId} after deleting image`);
       const now = new Date();
       await updateItem(itemId, { 
         imagesUpdatedAt: now
       });
-      console.log(`[IMAGES] Timestamp updated to ${now.toISOString()}`);
+      debugLog(`[IMAGES] Timestamp updated to ${now.toISOString()}`);
     }
     
     // Add a cache-busting timestamp to ensure fresh data
@@ -144,12 +158,13 @@ export const reorderImagesAction = async (
     await updateMultipleImageOrders(imageOrders);
     
     // Update the imagesUpdatedAt timestamp on the item
+    // Always log this for troubleshooting the sync issue
     console.log(`[IMAGES] Updating imagesUpdatedAt timestamp for item ${itemId} after reordering images`);
     const now = new Date();
     await updateItem(itemId, { 
       imagesUpdatedAt: now
     });
-    console.log(`[IMAGES] Timestamp updated to ${now.toISOString()}`);
+    debugLog(`[IMAGES] Timestamp updated to ${now.toISOString()}`);
     
     // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();

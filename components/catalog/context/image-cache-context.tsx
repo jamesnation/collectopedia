@@ -5,6 +5,14 @@ import { getImagesByItemIdAction } from '@/actions/images-actions';
 import { SelectImage } from '@/db/schema/images-schema';
 import { checkItemsImageUpdatesAction } from '@/actions/items-actions';
 
+// Add a debug logger helper at the top of the file
+const debugLog = (message: string, ...args: any[]) => {
+  // Only log in development environment
+  if (process.env.NODE_ENV === 'development') {
+    console.log(message, ...args);
+  }
+};
+
 // Enhanced context type with more granular loading states
 interface ImageCacheContextType {
   imageCache: Record<string, SelectImage[]>;
@@ -106,7 +114,8 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined' && Object.keys(cachedData).length > 0) {
       try {
         localStorage.setItem('collectopedia-image-cache', JSON.stringify(cachedData));
-        console.log('[CACHE] Saved cache to localStorage with', Object.keys(cachedData).length, 'items');
+        // Use debug logger instead of console.log
+        debugLog('[CACHE] Saved cache to localStorage with', Object.keys(cachedData).length, 'items');
       } catch (e) {
         console.error('[CACHE] Failed to save image cache to localStorage:', e);
       }
@@ -137,7 +146,8 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     
     // Check against server timestamps
     try {
-      console.log('[CACHE] Checking for updated images on', cachedItemIds.length, 'items');
+      // Use debug logger instead of console.log
+      debugLog('[CACHE] Checking for updated images on', cachedItemIds.length, 'items');
       const result = await checkItemsImageUpdatesAction(cachedItemIds, cachedTimestamps);
       
       if (result.isSuccess && result.data && result.data.length > 0) {
@@ -155,7 +165,8 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   const loadImages = async (itemIds: string[], force = false) => {
     if (!itemIds.length) return;
     
-    console.log('[CACHE] loadImages called with', itemIds.length, 'items', force ? '(forced reload)' : '');
+    // Use debug logger instead of console.log
+    debugLog('[CACHE] loadImages called with', itemIds.length, 'items', force ? '(forced reload)' : '');
     
     // Store the last requested items for debugging
     setLastRequestedItems(itemIds);
@@ -180,11 +191,14 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     // Combine forced items with explicitly forced flag
     const shouldForceReload = force || itemsToForceReload.length > 0;
     
-    // Add more detailed diagnostics
-    console.log('[CACHE DEBUG] Detailed item load decisions:');
-    itemIds.slice(0, 5).forEach(id => { // Just log first 5 to avoid flooding console
-      console.log(`[CACHE DEBUG] Item ${id}: isLoading=${!!isLoading[id]}, hasCompletedLoading=${!!hasCompletedLoading[id]}, cached=${!!cachedData[id]}, cachedImages=${cachedData[id]?.images.length || 0}, forceReload=${itemsToForceReload.includes(id)}`);
-    });
+    // Reduce the verbose debugging output
+    if (process.env.NODE_ENV === 'development') {
+      const sampleItems = itemIds.slice(0, 2); // Only log 2 examples
+      debugLog('[CACHE DEBUG] Sample item load decisions:');
+      sampleItems.forEach(id => {
+        debugLog(`[CACHE DEBUG] Item ${id}: isLoading=${!!isLoading[id]}, hasCompletedLoading=${!!hasCompletedLoading[id]}, forceReload=${itemsToForceReload.includes(id)}`);
+      });
+    }
     
     // If forcing reload, include all items that need updates
     // Otherwise, only load items that haven't been loaded yet
@@ -193,11 +207,11 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       : idsToLoad.filter(id => !hasCompletedLoading[id]);
     
     if (!filteredIdsToLoad.length) {
-      console.log('[CACHE] All requested images already cached or loading - no new loads needed');
+      debugLog('[CACHE] All requested images already cached or loading - no new loads needed');
       return;
     }
     
-    console.log('[CACHE] Will load images for', filteredIdsToLoad.length, 'items', shouldForceReload ? '(some forced reload)' : '');
+    debugLog('[CACHE] Will load images for', filteredIdsToLoad.length, 'items', shouldForceReload ? '(some forced reload)' : '');
     
     // Set loading state for all items about to be loaded
     setIsLoading(prev => {
@@ -205,7 +219,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       filteredIdsToLoad.forEach(id => {
         newState[id] = true;
       });
-      console.log('[CACHE] Updated loading state for', Object.keys(newState).filter(id => newState[id]).length, 'items');
+      debugLog('[CACHE] Updated loading state for', Object.keys(newState).filter(id => newState[id]).length, 'items');
       return newState;
     });
 
@@ -215,18 +229,22 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     // Split into batches
     for (let i = 0; i < filteredIdsToLoad.length; i += batchSize) {
       const batchIds = filteredIdsToLoad.slice(i, i + batchSize);
-      console.log('[CACHE] Processing batch', Math.floor(i/batchSize) + 1, 'with', batchIds.length, 'items');
+      debugLog('[CACHE] Processing batch', Math.floor(i/batchSize) + 1, 'with', batchIds.length, 'items');
       
       try {
         // Load images for current batch in parallel
         await Promise.all(
           batchIds.map(async (itemId) => {
             try {
-              console.log('[CACHE] Fetching images for item', itemId);
+              // Reduce the logging frequency
               const result = await getImagesByItemIdAction(itemId);
               
               if (result.isSuccess && result.data) {
-                console.log('[CACHE] Successfully fetched', result.data.length, 'images for item', itemId);
+                // Only log if images were actually found
+                if (result.data.length > 0) {
+                  debugLog('[CACHE] Successfully fetched', result.data.length, 'images for item', itemId);
+                }
+                
                 setCachedData(prev => {
                   const newCache = {
                     ...prev,
@@ -235,7 +253,10 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
                       cachedAt: Date.now()
                     }
                   };
-                  console.log('[CACHE] Updated cache for item', itemId, 'with', (result.data || []).length, 'images');
+                  // Only log if there are actual images
+                  if (result.data && result.data.length > 0) {
+                    debugLog('[CACHE] Updated cache for item', itemId, 'with', result.data.length, 'images');
+                  }
                   return newCache;
                 });
               } else {
@@ -244,7 +265,8 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
             } catch (error) {
               console.error(`[CACHE] Error fetching images for item ${itemId}:`, error);
             } finally {
-              console.log('[CACHE] Setting loading state to false for item', itemId);
+              // Reduce logging here as well
+              debugLog('[CACHE] Completed loading for item', itemId);
               
               // Mark the item as having completed loading, regardless of result
               setHasCompletedLoading(prev => ({
@@ -262,11 +284,9 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('[CACHE] Error processing batch:', error);
       }
-      
-      // No delays between batches for maximum performance
     }
     
-    console.log('[CACHE] Completed loading all image batches');
+    debugLog('[CACHE] Completed loading all image batches');
   };
 
   // NEW FUNCTION: Preload both sold and unsold item images at once
@@ -364,17 +384,52 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       const cachedItemIds = Object.keys(cachedData);
       if (cachedItemIds.length === 0) return;
 
-      console.log('[CACHE] Checking for updates for all cached items:', cachedItemIds.length);
+      // Check if we have already checked these items recently
+      // Store last check times in a local storage object to persist across page refreshes
+      let lastCheckTimes: Record<string, number> = {};
+      try {
+        const storedTimes = localStorage.getItem('collectopedia-last-check-times');
+        if (storedTimes) {
+          lastCheckTimes = JSON.parse(storedTimes);
+        }
+      } catch (e) {
+        console.error('[CACHE] Error reading check times:', e);
+      }
+      
+      // Filter out items that have been checked recently (within 5 minutes)
+      const now = Date.now();
+      const itemsToCheck = cachedItemIds.filter(id => {
+        const lastCheck = lastCheckTimes[id];
+        if (!lastCheck) return true; // Check if never checked before
+        
+        const minutesSinceLastCheck = (now - lastCheck) / (1000 * 60);
+        return minutesSinceLastCheck >= 5; // Only check items not checked in last 5 minutes
+      });
+      
+      if (itemsToCheck.length === 0) {
+        debugLog('[CACHE] All items have been checked recently, skipping update check');
+        return;
+      }
+
+      console.log('[CACHE] Checking for updates for', itemsToCheck.length, 'items');
       
       try {
-        // Get cache timestamps for all items
+        // Get cache timestamps for items we need to check
         const timestamps: Record<string, number> = {};
-        cachedItemIds.forEach(id => {
+        itemsToCheck.forEach(id => {
           timestamps[id] = cachedData[id].cachedAt;
         });
         
         // Check for updates
-        const result = await checkItemsImageUpdatesAction(cachedItemIds, timestamps);
+        const result = await checkItemsImageUpdatesAction(itemsToCheck, timestamps);
+        
+        // Update the last check time for all checked items
+        itemsToCheck.forEach(id => {
+          lastCheckTimes[id] = now;
+        });
+        
+        // Save updated check times
+        localStorage.setItem('collectopedia-last-check-times', JSON.stringify(lastCheckTimes));
         
         if (result.isSuccess && result.data && result.data.length > 0) {
           console.log('[CACHE] Found', result.data.length, 'items with updated images, invalidating cache');
@@ -388,12 +443,11 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
           loadImages(result.data, true);
         }
       } catch (error) {
-        console.error('[CACHE] Error checking for all item updates:', error);
+        console.error('[CACHE] Error checking for item updates:', error);
       }
     };
     
-    // Always run an initial check when the component mounts, regardless of device type
-    // Short delay to allow other initialization to complete
+    // Always run an initial check when the component mounts
     const initialCheckTimer = setTimeout(() => {
       checkAllCachedItemsForUpdates();
     }, 1000);
@@ -407,18 +461,40 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
+    // Track when the last visibility check was performed
+    let lastVisibilityCheck = 0;
+    
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        // Only check if it's been at least 30 seconds since the last check
+        const secondsSinceLastCheck = (now - lastVisibilityCheck) / 1000;
+        
+        if (secondsSinceLastCheck < 30) {
+          debugLog(`[CACHE] Skipping visibility check (last checked ${secondsSinceLastCheck.toFixed(1)} seconds ago)`);
+          return;
+        }
+        
+        lastVisibilityCheck = now;
         console.log('[CACHE] Page became visible, checking for updates');
+        
         // Check all cached items for updates when the page becomes visible again
         const cachedItemIds = Object.keys(cachedData);
         if (cachedItemIds.length > 0) {
+          // Get the items that were most recently modified in the database
+          // We'll focus on just the 10 most recently viewed items to reduce load
+          const recentItemIds = cachedItemIds.sort((a, b) => {
+            const aTime = cachedData[a].cachedAt || 0;
+            const bTime = cachedData[b].cachedAt || 0;
+            return bTime - aTime; // Sort by most recent first
+          }).slice(0, 10);
+          
           const timestamps: Record<string, number> = {};
-          cachedItemIds.forEach(id => {
+          recentItemIds.forEach(id => {
             timestamps[id] = cachedData[id].cachedAt;
           });
           
-          checkItemsImageUpdatesAction(cachedItemIds, timestamps)
+          checkItemsImageUpdatesAction(recentItemIds, timestamps)
             .then(result => {
               if (result.isSuccess && result.data && result.data.length > 0) {
                 console.log('[CACHE] Found items with updates after page focus:', result.data);
