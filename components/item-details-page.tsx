@@ -1297,7 +1297,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             {/* Profit Metrics Card */}
             <Card className="border dark:border-border shadow-sm mb-4">
               <CardHeader className="pb-1 md:pb-2">
-                <CardTitle className="text-base md:text-lg">Profit Metrics</CardTitle>
+                {/* CardTitle removed */}
               </CardHeader>
               <CardContent className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -1355,7 +1355,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             
             <Card className="border dark:border-border shadow-sm dark:bg-card/60">
               <CardHeader>
-                <CardTitle>Item Details</CardTitle>
+                {/* CardTitle removed */}
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
