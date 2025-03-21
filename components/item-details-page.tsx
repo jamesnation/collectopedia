@@ -19,7 +19,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { getRelatedItemsAction } from "@/actions/items-actions"
 import { getImagesByItemIdAction, createImageAction, deleteImageAction, reorderImagesAction } from "@/actions/images-actions"
 import { SelectImage } from "@/db/schema/images-schema"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
@@ -78,7 +77,6 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const [isSold, setIsSold] = useState(false)
   const [soldPrice, setSoldPrice] = useState("")
   const [soldDate, setSoldDate] = useState("")
-  const [relatedItems, setRelatedItems] = useState<SelectItemType[]>([])
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [images, setImages] = useState<SelectImage[]>([])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -129,8 +127,6 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
 
   useEffect(() => {
     if (item) {
-      fetchRelatedItems(item.franchise, item.id, item.isSold)
-      
       // Update sold details state when item changes
       if (item.isSold && item.soldPrice !== undefined && item.soldPrice !== null) {
         setSoldPrice(item.soldPrice.toString())
@@ -167,13 +163,6 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
       setIsSold(true)
       setSoldPrice(result.data.soldPrice.toString())
       setSoldDate(new Date(result.data.soldDate).toISOString().split('T')[0])
-    }
-  }
-
-  const fetchRelatedItems = async (franchise: string, itemId: string, isSold: boolean) => {
-    const result = await getRelatedItemsAction(franchise, itemId, isSold)
-    if (result.isSuccess && result.data) {
-      setRelatedItems(result.data)
     }
   }
 
@@ -1850,6 +1839,50 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
                     </div>
                   </div>
                 )}
+                
+                {/* Item Notes - Moved from tabs section */}
+                <div className="pt-4 border-t border-border">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3">Item Notes</h3>
+                  <Popover open={editingField === 'notes'} onOpenChange={(open) => !open && handleEditCancel()}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start text-left font-normal p-4 bg-muted/30 hover:bg-muted/50 rounded-md group"
+                        onClick={() => handleEditStart('notes')}
+                      >
+                        <div className="flex items-start">
+                          <div className="max-h-40 overflow-y-auto pr-2 flex-grow">
+                            <p className="text-muted-foreground whitespace-pre-wrap">
+                              {item && (item.notes || 'No notes available. Click to add notes about this item.')}
+                            </p>
+                          </div>
+                          <Edit className="ml-2 h-4 w-4 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm text-foreground">Edit Notes</h4>
+                        <div className="space-y-2">
+                          <Label htmlFor="notes" className="text-sm font-medium text-foreground">Notes</Label>
+                          <textarea
+                            id="notes"
+                            name="notes"
+                            value={item ? (item.notes || '') : ''}
+                            onChange={handleInputChange}
+                            className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
+                            rows={4}
+                            placeholder="Add notes about this item..."
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
+                          <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </CardContent>
               <CardFooter className="border-t pt-6 flex justify-end">
                 <AlertDialog>
@@ -1878,120 +1911,6 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
             </Card>
           </div>
         </div>
-
-        <Tabs defaultValue="notes" className="mt-12">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="notes">Notes</TabsTrigger>
-            <TabsTrigger value="value-chart">Value Chart</TabsTrigger>
-          </TabsList>
-          <TabsContent value="notes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Item Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Popover open={editingField === 'notes'} onOpenChange={(open) => !open && handleEditCancel()}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start text-left font-normal p-4 bg-muted/30 hover:bg-muted/50 rounded-md group"
-                      onClick={() => handleEditStart('notes')}
-                    >
-                      <div className="flex items-start">
-                        <div className="max-h-40 overflow-y-auto pr-2 flex-grow">
-                          <p className="text-muted-foreground whitespace-pre-wrap">
-                            {item && (item.notes || 'No notes available. Click to add notes about this item.')}
-                          </p>
-                        </div>
-                        <Edit className="ml-2 h-4 w-4 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 dark:bg-black/90 dark:border-border">
-                    <div className="space-y-4">
-                      <h4 className="font-semibold text-sm text-foreground">Edit Notes</h4>
-                      <div className="space-y-2">
-                        <Label htmlFor="notes" className="text-sm font-medium text-foreground">Notes</Label>
-                        <textarea
-                          id="notes"
-                          name="notes"
-                          value={item ? (item.notes || '') : ''}
-                          onChange={handleInputChange}
-                          className="w-full p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/70 focus:border-transparent"
-                          rows={4}
-                          placeholder="Add notes about this item..."
-                        />
-                      </div>
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="outline" onClick={handleEditCancel} className="border-input text-foreground hover:bg-accent hover:text-accent-foreground">Cancel</Button>
-                        <Button onClick={handleEditSave} className="bg-primary/70 text-primary-foreground hover:bg-primary/60">Save</Button>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="value-chart">
-            <Card>
-              <CardHeader>
-                <CardTitle>Value Over Time</CardTitle>
-                <CardDescription>Track the estimated value of your item over the past 6 months</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={valueData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" stroke="hsl(var(--foreground))" />
-                    <YAxis stroke="hsl(var(--foreground))" />
-                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }} />
-                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" activeDot={{ r: 8 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        <section className="mt-12">
-          <h2 className="text-2xl font-serif text-foreground mb-6">Related Items</h2>
-          {relatedItems.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {relatedItems.map((relatedItem) => (
-                <Card key={relatedItem.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300 dark:bg-card/60 dark:border-border">
-                  <CardHeader className="p-0">
-                    <Image
-                      src={relatedItem.image || placeholderImage}
-                      alt={relatedItem.name}
-                      width={200}
-                      height={200}
-                      layout="responsive"
-                      className="object-cover"
-                      loading="lazy"
-                    />
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <CardTitle className="text-lg mb-2">{relatedItem.name}</CardTitle>
-                    <p className="font-semibold text-primary/70">
-                      {relatedItem.isSold 
-                        ? `Sold: ${formatCurrency(relatedItem.soldPrice)}` 
-                        : `Value: ${formatCurrency(relatedItem.value)}`}
-                    </p>
-                  </CardContent>
-                  <CardFooter>
-                    <Link href={`/item/${relatedItem.id}`} passHref scroll={true}>
-                      <Button variant="ghost" className="w-full text-primary/70 hover:bg-accent hover:text-accent-foreground">
-                        View Details
-                      </Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <p>No related items found.</p>
-          )}
-        </section>
       </main>
 
       <footer className="container mx-auto px-4 py-8 mt-12 border-t border-border">
