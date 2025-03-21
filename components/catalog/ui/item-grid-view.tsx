@@ -168,6 +168,7 @@ export function ItemGridView({
     const hasActualImage = hasImages(itemId) || (item.image !== null && item.image !== undefined);
     const imageUrl = getItemImage(itemId);
     const isPriority = index < 8; // Prioritize first 8 items
+    const isImageLoaded = loadedImages[itemId];
     
     // No image available
     if (!hasActualImage || !imageUrl) {
@@ -181,12 +182,19 @@ export function ItemGridView({
     // Use our OptimizedImage component
     return (
       <div className="relative h-60 w-full overflow-hidden group">
+        {!isImageLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted dark:bg-card/30 z-20">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground dark:text-primary" />
+          </div>
+        )}
         <OptimizedImage
           src={imageUrl}
           alt={item.name || 'Item image'}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-contain transition-all duration-500"
+          className={`object-contain transition-all duration-500 ${
+            isImageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}
           priority={isPriority}
           size="thumbnail"
           onLoad={() => handleImageLoad(itemId)}
