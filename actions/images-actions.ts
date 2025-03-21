@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getImagesByItemId, insertImage, deleteImage, updateImageOrder, updateMultipleImageOrders } from "@/db/queries/images-queries";
 import { InsertImage, SelectImage } from "@/db/schema/images-schema";
+import { updateItem } from "@/db/queries/items-queries";
 import crypto from 'crypto';
 
 type ActionResult<T> = {
@@ -41,6 +42,11 @@ export const createImageAction = async (image: Omit<InsertImage, 'id'>): Promise
     
     const [createdImage] = await insertImage(imageWithId);
     
+    // Update the imagesUpdatedAt timestamp on the item
+    await updateItem(image.itemId, { 
+      imagesUpdatedAt: new Date() 
+    });
+    
     // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();
     
@@ -59,6 +65,13 @@ export const createImageAction = async (image: Omit<InsertImage, 'id'>): Promise
 export const deleteImageAction = async (id: string, itemId?: string): Promise<ActionResult<void>> => {
   try {
     await deleteImage(id);
+    
+    // Update the imagesUpdatedAt timestamp on the item if itemId is provided
+    if (itemId) {
+      await updateItem(itemId, { 
+        imagesUpdatedAt: new Date() 
+      });
+    }
     
     // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();
@@ -123,6 +136,11 @@ export const reorderImagesAction = async (
 ): Promise<ActionResult<void>> => {
   try {
     await updateMultipleImageOrders(imageOrders);
+    
+    // Update the imagesUpdatedAt timestamp on the item
+    await updateItem(itemId, { 
+      imagesUpdatedAt: new Date() 
+    });
     
     // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();

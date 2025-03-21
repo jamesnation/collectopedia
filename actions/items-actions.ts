@@ -252,3 +252,55 @@ export const getItemsDueForUpdateAction = async (): Promise<ActionResult<any[]>>
     return { isSuccess: false, error: 'Failed to get items due for update' };
   }
 };
+
+/**
+ * Check which items have been updated since they were last cached
+ * This allows the client to know which items need to have their images refreshed
+ */
+export const checkItemsImageUpdatesAction = async (
+  itemIds: string[], 
+  cachedTimestamps: Record<string, number>
+): Promise<ActionResult<string[]>> => {
+  try {
+    if (!itemIds.length) {
+      return { isSuccess: true, data: [] };
+    }
+    
+    // Query all items to check their imagesUpdatedAt timestamps
+    // Instead of complex filtering in the query, we'll get the items and filter in JS
+    // This is simpler and avoids potential type issues with drizzle-orm
+    const items = await db.select({
+      id: itemsTable.id,
+      imagesUpdatedAt: itemsTable.imagesUpdatedAt
+    })
+    .from(itemsTable)
+    .where(
+      or(...itemIds.map(id => eq(itemsTable.id, id)))
+    );
+    
+    // Find items that have been updated since they were cached
+    const updatedItemIds = items
+      .filter(item => {
+        // Skip items with no imagesUpdatedAt timestamp
+        if (!item.imagesUpdatedAt) return false;
+        
+        // Get the timestamp when this item was cached
+        const cachedAt = cachedTimestamps[item.id];
+        if (!cachedAt) return false;
+        
+        // Convert database timestamp to milliseconds for comparison
+        const dbTimestamp = new Date(item.imagesUpdatedAt).getTime();
+        
+        // Item needs update if the database timestamp is newer than when it was cached
+        return dbTimestamp > cachedAt;
+      })
+      .map(item => item.id);
+    
+    console.log(`[CHECK-UPDATES] Found ${updatedItemIds.length} items with newer images than cache`);
+    
+    return { isSuccess: true, data: updatedItemIds };
+  } catch (error) {
+    console.error("Failed to check for image updates:", error);
+    return { isSuccess: false, error: "Failed to check for image updates", data: [] };
+  }
+};

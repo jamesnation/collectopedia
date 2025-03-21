@@ -56,6 +56,7 @@ export const itemsTable = pgTable("items", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  imagesUpdatedAt: timestamp("images_updated_at"),
   isSold: boolean("is_sold").default(false).notNull(),
   soldPrice: integer("sold_price"),
   soldDate: timestamp("sold_date")

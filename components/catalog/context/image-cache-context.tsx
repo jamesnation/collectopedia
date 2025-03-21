@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { getImagesByItemIdAction } from '@/actions/images-actions';
 import { SelectImage } from '@/db/schema/images-schema';
+import { checkItemsImageUpdatesAction } from '@/actions/items-actions';
 
 // Enhanced context type with more granular loading states
 interface ImageCacheContextType {
@@ -15,6 +16,12 @@ interface ImageCacheContextType {
   hasImages: (itemId: string) => boolean;
   // New field to track which items have completed loading
   hasCompletedLoading: Record<string, boolean>;
+}
+
+// Interface for the cached data with timestamp
+interface CachedData {
+  images: SelectImage[];
+  cachedAt: number; // timestamp when this item was cached
 }
 
 // Create context with default values
@@ -33,15 +40,36 @@ export const useImageCache = () => useContext(ImageCacheContext);
 
 // Provider component
 export function ImageCacheProvider({ children }: { children: ReactNode }) {
-  // Initialize state from localStorage if available
-  const [imageCache, setImageCache] = useState<Record<string, SelectImage[]>>(() => {
+  // Initialize state from localStorage if available with timestamps
+  const [cachedData, setCachedData] = useState<Record<string, CachedData>>(() => {
     if (typeof window === 'undefined') return {};
     
     try {
       const savedCache = localStorage.getItem('collectopedia-image-cache');
       if (savedCache) {
-        console.log('[CACHE] Loaded cache from localStorage');
-        return JSON.parse(savedCache);
+        const parsed = JSON.parse(savedCache);
+        
+        // Check if the data is in the new format with timestamps
+        if (parsed && typeof parsed === 'object') {
+          // Handle both old and new format
+          const processedData: Record<string, CachedData> = {};
+          
+          Object.entries(parsed).forEach(([key, value]) => {
+            if (Array.isArray(value)) {
+              // Old format - convert to new format with current timestamp
+              processedData[key] = {
+                images: value as SelectImage[],
+                cachedAt: Date.now()
+              };
+            } else if (typeof value === 'object' && (value as any).images) {
+              // Already in new format
+              processedData[key] = value as CachedData;
+            }
+          });
+          
+          console.log('[CACHE] Loaded cache from localStorage (with timestamps)');
+          return processedData;
+        }
       }
     } catch (e) {
       console.error('[CACHE] Failed to load image cache from localStorage:', e);
@@ -50,12 +78,21 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     return {};
   });
 
+  // Convert the cached data to the format expected by components
+  const imageCache = React.useMemo(() => {
+    const result: Record<string, SelectImage[]> = {};
+    Object.entries(cachedData).forEach(([key, data]) => {
+      result[key] = data.images;
+    });
+    return result;
+  }, [cachedData]);
+
   // Track items that are currently loading
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
   
   // Initialize completed loading state based on cached images
   const [hasCompletedLoading, setHasCompletedLoading] = useState<Record<string, boolean>>(() => {
-    return Object.keys(imageCache).reduce((acc, id) => ({
+    return Object.keys(cachedData).reduce((acc, id) => ({
       ...acc,
       [id]: true
     }), {});
@@ -66,15 +103,15 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   
   // Save cache to localStorage when it changes
   useEffect(() => {
-    if (typeof window !== 'undefined' && Object.keys(imageCache).length > 0) {
+    if (typeof window !== 'undefined' && Object.keys(cachedData).length > 0) {
       try {
-        localStorage.setItem('collectopedia-image-cache', JSON.stringify(imageCache));
-        console.log('[CACHE] Saved cache to localStorage with', Object.keys(imageCache).length, 'items');
+        localStorage.setItem('collectopedia-image-cache', JSON.stringify(cachedData));
+        console.log('[CACHE] Saved cache to localStorage with', Object.keys(cachedData).length, 'items');
       } catch (e) {
         console.error('[CACHE] Failed to save image cache to localStorage:', e);
       }
     }
-  }, [imageCache]);
+  }, [cachedData]);
   
   // Helper function to check if an item has actual images
   const hasImages = useCallback((itemId: string): boolean => {
@@ -83,6 +120,36 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
            imageCache[itemId] !== undefined && 
            imageCache[itemId].length > 0;
   }, [imageCache, hasCompletedLoading]);
+  
+  // Check if any items have been updated since they were cached
+  const checkForUpdates = useCallback(async (itemIds: string[]) => {
+    if (!itemIds.length) return [];
+    
+    // Only check items that we have in the cache
+    const cachedItemIds = itemIds.filter(id => cachedData[id]);
+    if (!cachedItemIds.length) return [];
+    
+    // Prepare cache timestamps for comparison
+    const cachedTimestamps: Record<string, number> = {};
+    cachedItemIds.forEach(id => {
+      cachedTimestamps[id] = cachedData[id].cachedAt;
+    });
+    
+    // Check against server timestamps
+    try {
+      console.log('[CACHE] Checking for updated images on', cachedItemIds.length, 'items');
+      const result = await checkItemsImageUpdatesAction(cachedItemIds, cachedTimestamps);
+      
+      if (result.isSuccess && result.data && result.data.length > 0) {
+        console.log('[CACHE] Found', result.data.length, 'items with updated images');
+        return result.data;
+      }
+    } catch (error) {
+      console.error('[CACHE] Error checking for image updates:', error);
+    }
+    
+    return [];
+  }, [cachedData]);
   
   // Function to load images for multiple items in batches
   const loadImages = async (itemIds: string[], force = false) => {
@@ -96,24 +163,33 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     // Filter out items that are already loading to avoid double loading
     const idsToLoad = itemIds.filter(id => !isLoading[id]);
     
-    // Even if an item has completed loading before, we should reload it 
-    // if there's a URL parameter indicating we should refresh or the force flag is true
-    let shouldForceReload = force;
-    if (!force && typeof window !== 'undefined') {
-      shouldForceReload = new URLSearchParams(window.location.search).get('refresh') === 'true';
+    // Check if any items need to be reloaded because they were updated elsewhere
+    let itemsToForceReload: string[] = [];
+    
+    if (!force) {
+      try {
+        itemsToForceReload = await checkForUpdates(idsToLoad);
+        if (itemsToForceReload.length > 0) {
+          console.log('[CACHE] Will force reload', itemsToForceReload.length, 'items with updated images');
+        }
+      } catch (error) {
+        console.error('[CACHE] Error checking for updates:', error);
+      }
     }
+    
+    // Combine forced items with explicitly forced flag
+    const shouldForceReload = force || itemsToForceReload.length > 0;
     
     // Add more detailed diagnostics
     console.log('[CACHE DEBUG] Detailed item load decisions:');
     itemIds.slice(0, 5).forEach(id => { // Just log first 5 to avoid flooding console
-      console.log(`[CACHE DEBUG] Item ${id}: isLoading=${!!isLoading[id]}, hasCompletedLoading=${!!hasCompletedLoading[id]}, cached=${!!imageCache[id]}, cachedImages=${imageCache[id]?.length || 0}`);
+      console.log(`[CACHE DEBUG] Item ${id}: isLoading=${!!isLoading[id]}, hasCompletedLoading=${!!hasCompletedLoading[id]}, cached=${!!cachedData[id]}, cachedImages=${cachedData[id]?.images.length || 0}, forceReload=${itemsToForceReload.includes(id)}`);
     });
-    console.log(`[CACHE DEBUG] shouldForceReload=${shouldForceReload}, localStorage cache size=${typeof window !== 'undefined' ? Object.keys(JSON.parse(localStorage.getItem('collectopedia-image-cache') || '{}')).length : 'N/A'}`);
     
-    // If not forcing reload, further filter out items that have already completed loading
-    // This is key to preventing reloads when toggling filters
+    // If forcing reload, include all items that need updates
+    // Otherwise, only load items that haven't been loaded yet
     const filteredIdsToLoad = shouldForceReload 
-      ? idsToLoad 
+      ? [...new Set([...idsToLoad.filter(id => !hasCompletedLoading[id]), ...itemsToForceReload])]
       : idsToLoad.filter(id => !hasCompletedLoading[id]);
     
     if (!filteredIdsToLoad.length) {
@@ -121,7 +197,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    console.log('[CACHE] Will load images for', filteredIdsToLoad.length, 'items', shouldForceReload ? '(force reload)' : '');
+    console.log('[CACHE] Will load images for', filteredIdsToLoad.length, 'items', shouldForceReload ? '(some forced reload)' : '');
     
     // Set loading state for all items about to be loaded
     setIsLoading(prev => {
@@ -151,10 +227,13 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
               
               if (result.isSuccess && result.data) {
                 console.log('[CACHE] Successfully fetched', result.data.length, 'images for item', itemId);
-                setImageCache(prev => {
+                setCachedData(prev => {
                   const newCache = {
                     ...prev,
-                    [itemId]: result.data || [],
+                    [itemId]: {
+                      images: result.data || [],
+                      cachedAt: Date.now()
+                    }
                   };
                   console.log('[CACHE] Updated cache for item', itemId, 'with', (result.data || []).length, 'images');
                   return newCache;
@@ -220,7 +299,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       console.log('[CACHE] Invalidating cache for item', itemId);
       
       // Clear from memory cache
-      setImageCache(prev => {
+      setCachedData(prev => {
         const newCache = { ...prev };
         delete newCache[itemId];
         return newCache;
@@ -258,16 +337,17 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
         }
       }
     } else {
-      console.log('[CACHE] Invalidating entire cache');
-      setImageCache({});
+      // Clear entire cache
+      console.log('[CACHE] Invalidating entire image cache');
+      setCachedData({});
       setIsLoading({});
       setHasCompletedLoading({});
       
-      // Clear entire localStorage cache
+      // Clear from localStorage
       if (typeof window !== 'undefined') {
         try {
           localStorage.removeItem('collectopedia-image-cache');
-          console.log('[CACHE] Cleared entire localStorage cache');
+          console.log('[CACHE] Cleared localStorage cache');
         } catch (e) {
           console.error('[CACHE] Error clearing localStorage cache:', e);
         }
@@ -275,16 +355,19 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Provide context values to children
   return (
-    <ImageCacheContext.Provider value={{ 
-      imageCache, 
-      isLoading, 
-      loadImages,
-      preloadItemImages,
-      invalidateCache,
-      hasImages,
-      hasCompletedLoading
-    }}>
+    <ImageCacheContext.Provider 
+      value={{ 
+        imageCache, 
+        isLoading, 
+        hasCompletedLoading,
+        loadImages,
+        preloadItemImages,
+        invalidateCache,
+        hasImages
+      }}
+    >
       {children}
     </ImageCacheContext.Provider>
   );
