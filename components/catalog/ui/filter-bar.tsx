@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, LayoutGrid, LayoutList } from 'lucide-react';
+import { Search, Filter, LayoutGrid, LayoutList, RefreshCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,6 +32,7 @@ interface FilterBarProps {
   customFranchises: CustomEntity[];
   showWithImages: boolean;
   setShowWithImages: (show: boolean) => void;
+  resetFilters?: () => void;
 }
 
 export function FilterBar({
@@ -56,7 +57,8 @@ export function FilterBar({
   defaultFranchiseOptions,
   customFranchises,
   showWithImages,
-  setShowWithImages
+  setShowWithImages,
+  resetFilters
 }: FilterBarProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
@@ -64,6 +66,24 @@ export function FilterBar({
     setYearFilter('all');
     setSoldYearFilter('all');
   }, [showSold, setYearFilter, setSoldYearFilter]);
+  
+  // Function to handle resetting all filters
+  const handleResetFilters = () => {
+    if (resetFilters) {
+      // Use the provided resetFilters function from persistent storage
+      resetFilters();
+    } else {
+      // Fallback to manually resetting filters
+      setTypeFilter('all');
+      setFranchiseFilter('all');
+      setYearFilter('all');
+      setSoldYearFilter('all');
+      setShowWithImages(false);
+      setSearchQuery('');
+      setShowSold(false);
+    }
+    setIsFilterOpen(false);
+  };
   
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
@@ -180,17 +200,11 @@ export function FilterBar({
               
               <Button 
                 variant="outline" 
-                onClick={() => {
-                  setTypeFilter('all');
-                  setFranchiseFilter('all');
-                  setYearFilter('all');
-                  setSoldYearFilter('all');
-                  setShowWithImages(false);
-                  setIsFilterOpen(false);
-                }}
+                onClick={handleResetFilters}
                 className="dark:bg-gray-750 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700 dark:hover:border-purple-300/30"
               >
-                Reset Filters
+                <RefreshCcw className="h-4 w-4 mr-2" />
+                Reset All Filters
               </Button>
             </div>
           </PopoverContent>

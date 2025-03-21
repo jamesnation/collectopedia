@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useContext } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import { CatalogItem } from '../utils/schema-adapter';
 import { useImageCache } from '../context/image-cache-context';
+import { usePersistentFilters } from './use-persistent-filters';
 
 export type SortDirection = 'ascending' | 'descending';
 
@@ -18,30 +19,46 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
   // Get image cache context
   const { imageCache, hasCompletedLoading, hasImages } = useImageCache();
   
-  // View state
-  const [view, setView] = useState<'list' | 'grid'>('list');
+  // Use our persistent filters hook
+  const { filters, updateFilter, resetFilters, isLoaded } = usePersistentFilters();
   
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  // Set up local state with initial values from default or localStorage
+  // Only set the initial values once, subsequent updates happen through event handlers
+  const [view, setView] = useState<'list' | 'grid'>(filters.view);
+  const [searchQuery, setSearchQuery] = useState(filters.searchQuery);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(filters.searchQuery);
+  const [typeFilter, setTypeFilter] = useState<string>(filters.typeFilter);
+  const [franchiseFilter, setFranchiseFilter] = useState<string>(filters.franchiseFilter);
+  const [yearFilter, setYearFilter] = useState<string>(filters.yearFilter);
+  const [showSold, setShowSold] = useState(filters.showSold);
+  const [soldYearFilter, setSoldYearFilter] = useState<string>(filters.soldYearFilter);
+  const [showWithImages, setShowWithImages] = useState(filters.showWithImages);
+  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>(filters.sortDescriptor);
   
-  // Filter state
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [franchiseFilter, setFranchiseFilter] = useState<string>('all');
-  const [yearFilter, setYearFilter] = useState<string>('all');
-  const [showSold, setShowSold] = useState(false);
-  const [soldYearFilter, setSoldYearFilter] = useState<string>('all');
-  const [showWithImages, setShowWithImages] = useState(false);
-  
-  // Sort state
-  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
-    column: 'name',
-    direction: 'ascending'
-  });
+  // Sync local state with persistent filters only when isLoaded changes from false to true
+  useEffect(() => {
+    if (isLoaded) {
+      // This should only run once when the filters are initially loaded
+      setView(filters.view);
+      setSearchQuery(filters.searchQuery);
+      setDebouncedSearchQuery(filters.searchQuery);
+      setTypeFilter(filters.typeFilter);
+      setFranchiseFilter(filters.franchiseFilter);
+      setYearFilter(filters.yearFilter);
+      setShowSold(filters.showSold);
+      setSoldYearFilter(filters.soldYearFilter);
+      setShowWithImages(filters.showWithImages);
+      setSortDescriptor(filters.sortDescriptor);
+    }
+  }, [isLoaded]); // Only depend on isLoaded, not filters
 
   // Create a debounced search handler
   const debouncedSetSearch = useDebouncedCallback(
-    (value) => setDebouncedSearchQuery(value),
+    (value) => {
+      setDebouncedSearchQuery(value);
+      // Update persistent filter
+      updateFilter('searchQuery', value);
+    },
     300
   );
 
@@ -51,15 +68,75 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     debouncedSetSearch(value);
   }, [debouncedSetSearch]);
 
+  // Create wrapped handlers that update both local and persistent state
+  const handleViewChange = useCallback((newView: 'list' | 'grid') => {
+    setView(newView);
+    updateFilter('view', newView);
+  }, [updateFilter]);
+
+  const handleTypeFilterChange = useCallback((value: string) => {
+    setTypeFilter(value);
+    updateFilter('typeFilter', value);
+  }, [updateFilter]);
+
+  const handleFranchiseFilterChange = useCallback((value: string) => {
+    setFranchiseFilter(value);
+    updateFilter('franchiseFilter', value);
+  }, [updateFilter]);
+
+  const handleYearFilterChange = useCallback((value: string) => {
+    setYearFilter(value);
+    updateFilter('yearFilter', value);
+  }, [updateFilter]);
+
+  const handleShowSoldChange = useCallback((value: boolean) => {
+    setShowSold(value);
+    updateFilter('showSold', value);
+  }, [updateFilter]);
+
+  const handleSoldYearFilterChange = useCallback((value: string) => {
+    setSoldYearFilter(value);
+    updateFilter('soldYearFilter', value);
+  }, [updateFilter]);
+
+  const handleShowWithImagesChange = useCallback((value: boolean) => {
+    setShowWithImages(value);
+    updateFilter('showWithImages', value);
+  }, [updateFilter]);
+
   // Handler for sort changes
   const handleSort = useCallback((column: string) => {
-    setSortDescriptor(prev => ({
+    const newSortDescriptor = {
       column,
-      direction: prev.column === column && prev.direction === 'ascending' 
+      direction: sortDescriptor.column === column && sortDescriptor.direction === 'ascending' 
         ? 'descending' 
         : 'ascending'
-    }));
-  }, []);
+    } as SortDescriptor;
+    
+    setSortDescriptor(newSortDescriptor);
+    updateFilter('sortDescriptor', newSortDescriptor);
+  }, [sortDescriptor, updateFilter]);
+
+  // Custom reset function that updates both local state and persistent storage
+  const handleResetFilters = useCallback(() => {
+    // Reset local state
+    setView('grid');
+    setSearchQuery('');
+    setDebouncedSearchQuery('');
+    setTypeFilter('all');
+    setFranchiseFilter('all');
+    setYearFilter('all');
+    setShowSold(false);
+    setSoldYearFilter('all');
+    setShowWithImages(false);
+    setSortDescriptor({
+      column: 'name',
+      direction: 'ascending'
+    });
+    
+    // Reset persistent storage
+    resetFilters();
+  }, [resetFilters]);
 
   // Create a filtered and sorted list of items
   const filteredAndSortedItems = useMemo(() => {
@@ -248,47 +325,41 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     
     // Only return IDs for items that haven't completed loading yet
     return items
-      .map(item => item.id)
-      .filter(id => !hasCompletedLoading[id]);
+      .filter(item => !hasCompletedLoading[item.id])
+      .map(item => item.id);
   }, [items, showWithImages, hasCompletedLoading]);
 
+  // Calculate total count for display
+  const totalCount = useMemo(() => {
+    return filteredAndSortedItems.length;
+  }, [filteredAndSortedItems]);
+
   return {
-    // View state
-    view,
-    setView,
-    
-    // Search state
+    // Return both the getters and the setters for all filter state
     searchQuery,
     setSearchQuery: handleSearchChange,
-    
-    // Filter state
     typeFilter,
-    setTypeFilter,
+    setTypeFilter: handleTypeFilterChange,
     franchiseFilter,
-    setFranchiseFilter,
+    setFranchiseFilter: handleFranchiseFilterChange,
     yearFilter,
-    setYearFilter,
+    setYearFilter: handleYearFilterChange,
     showSold,
-    setShowSold,
+    setShowSold: handleShowSoldChange,
     soldYearFilter,
-    setSoldYearFilter,
-    showWithImages,
-    setShowWithImages,
-    
-    // Sort state
-    sortDescriptor,
-    handleSort,
-    
-    // Result data
+    setSoldYearFilter: handleSoldYearFilterChange,
     filteredAndSortedItems,
     summaryValues,
-    
-    // Metadata
     availableYears,
     availableSoldYears,
-    totalCount: filteredAndSortedItems.length,
-    
-    // Helper data for image filtering
+    totalCount,
+    sortDescriptor,
+    handleSort,
+    showWithImages,
+    setShowWithImages: handleShowWithImagesChange,
     itemsNeedingImageCheck,
+    view,
+    setView: handleViewChange,
+    resetFilters: handleResetFilters
   };
 } 

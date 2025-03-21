@@ -162,7 +162,8 @@ function CatalogInner({
     handleSort,
     showWithImages,
     setShowWithImages,
-    itemsNeedingImageCheck
+    itemsNeedingImageCheck,
+    resetFilters
   } = useCatalogFilters({ items });
 
   // Map catalog items to image map for the new ImageLoader
@@ -367,6 +368,7 @@ function CatalogInner({
             customFranchises={customFranchises}
             showWithImages={showWithImages}
             setShowWithImages={setShowWithImages}
+            resetFilters={resetFilters}
           />
 
           {/* Item List/Grid View */}
