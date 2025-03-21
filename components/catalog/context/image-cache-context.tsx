@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { getImagesByItemIdAction } from '@/actions/images-actions';
+import { getImagesByItemIdAction, getBatchImagesByItemIdsAction } from '@/actions/images-actions';
 import { SelectImage } from '@/db/schema/images-schema';
 import { checkItemsImageUpdatesAction } from '@/actions/items-actions';
 
@@ -163,48 +163,22 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   
   // Function to load images for multiple items in batches
   const loadImages = async (itemIds: string[], force = false) => {
+    // Avoid unnecessary work if no items provided
     if (!itemIds.length) return;
     
-    // Use debug logger instead of console.log
-    debugLog('[CACHE] loadImages called with', itemIds.length, 'items', force ? '(forced reload)' : '');
-    
-    // Store the last requested items for debugging
-    setLastRequestedItems(itemIds);
-
-    // Filter out items that are already loading to avoid double loading
+    // Filter out items that are already loading
     const idsToLoad = itemIds.filter(id => !isLoading[id]);
     
-    // Check if any items need to be reloaded because they were updated elsewhere
-    let itemsToForceReload: string[] = [];
+    // Skip already cached and completed items unless force is true
+    const filteredIdsToLoad = force 
+      ? idsToLoad 
+      : idsToLoad.filter(id => 
+          !imageCache[id] || 
+          !hasCompletedLoading[id]
+        );
     
-    if (!force) {
-      try {
-        itemsToForceReload = await checkForUpdates(idsToLoad);
-        if (itemsToForceReload.length > 0) {
-          console.log('[CACHE] Will force reload', itemsToForceReload.length, 'items with updated images');
-        }
-      } catch (error) {
-        console.error('[CACHE] Error checking for updates:', error);
-      }
-    }
-    
-    // Combine forced items with explicitly forced flag
-    const shouldForceReload = force || itemsToForceReload.length > 0;
-    
-    // Reduce the verbose debugging output
-    if (process.env.NODE_ENV === 'development') {
-      const sampleItems = itemIds.slice(0, 2); // Only log 2 examples
-      debugLog('[CACHE DEBUG] Sample item load decisions:');
-      sampleItems.forEach(id => {
-        debugLog(`[CACHE DEBUG] Item ${id}: isLoading=${!!isLoading[id]}, hasCompletedLoading=${!!hasCompletedLoading[id]}, forceReload=${itemsToForceReload.includes(id)}`);
-      });
-    }
-    
-    // If forcing reload, include all items that need updates
-    // Otherwise, only load items that haven't been loaded yet
-    const filteredIdsToLoad = shouldForceReload 
-      ? [...new Set([...idsToLoad.filter(id => !hasCompletedLoading[id]), ...itemsToForceReload])]
-      : idsToLoad.filter(id => !hasCompletedLoading[id]);
+    // Check if any of the requested items should be force-reloaded
+    const shouldForceReload = force && idsToLoad.length > 0;
     
     if (!filteredIdsToLoad.length) {
       debugLog('[CACHE] All requested images already cached or loading - no new loads needed');
@@ -223,12 +197,76 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       return newState;
     });
 
+    // Use the batch endpoint if there are multiple images to load
+    if (filteredIdsToLoad.length > 1) {
+      try {
+        // Fetch all images in a single request using the new batch endpoint
+        console.log(`[CACHE] Using batch endpoint to load ${filteredIdsToLoad.length} items in a single request`);
+        const result = await getBatchImagesByItemIdsAction(filteredIdsToLoad);
+        
+        if (result.isSuccess && result.data) {
+          // Process the batch results
+          const batchData = result.data;
+          const now = Date.now();
+          
+          // Update the cache with all images at once
+          setCachedData(prev => {
+            const newCache = { ...prev };
+            
+            // Add each item's images to the cache
+            Object.entries(batchData).forEach(([itemId, images]) => {
+              newCache[itemId] = {
+                images: images || [],
+                cachedAt: now
+              };
+            });
+            
+            return newCache;
+          });
+          
+          // Mark all items as completed loading
+          setHasCompletedLoading(prev => {
+            const newState = { ...prev };
+            filteredIdsToLoad.forEach(id => {
+              newState[id] = true;
+            });
+            return newState;
+          });
+          
+          // Clear loading state for all items
+          setIsLoading(prev => {
+            const newState = { ...prev };
+            filteredIdsToLoad.forEach(id => {
+              newState[id] = false;
+            });
+            return newState;
+          });
+          
+          console.log(`[CACHE] Successfully loaded ${Object.keys(result.data).length} items using batch endpoint`);
+        } else {
+          console.error('[CACHE] Batch load failed:', result.error);
+          // Fall back to individual loading on batch failure
+          await loadImagesIndividually(filteredIdsToLoad);
+        }
+      } catch (error) {
+        console.error('[CACHE] Error in batch loading:', error);
+        // Fall back to individual loading on error
+        await loadImagesIndividually(filteredIdsToLoad);
+      }
+    } else {
+      // If only one item, use the individual endpoint
+      await loadImagesIndividually(filteredIdsToLoad);
+    }
+  };
+  
+  // Helper function to load images individually (as a fallback)
+  const loadImagesIndividually = async (itemIds: string[]) => {
     // Process in batches with increased batch size for faster loading
     const batchSize = 50; // Increased from 25
     
     // Split into batches
-    for (let i = 0; i < filteredIdsToLoad.length; i += batchSize) {
-      const batchIds = filteredIdsToLoad.slice(i, i + batchSize);
+    for (let i = 0; i < itemIds.length; i += batchSize) {
+      const batchIds = itemIds.slice(i, i + batchSize);
       debugLog('[CACHE] Processing batch', Math.floor(i/batchSize) + 1, 'with', batchIds.length, 'items');
       
       try {
@@ -282,11 +320,9 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
           })
         );
       } catch (error) {
-        console.error('[CACHE] Error processing batch:', error);
+        console.error('[CACHE] Error loading batch:', error);
       }
     }
-    
-    debugLog('[CACHE] Completed loading all image batches');
   };
 
   // NEW FUNCTION: Preload both sold and unsold item images at once

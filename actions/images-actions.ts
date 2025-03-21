@@ -40,6 +40,45 @@ export const getImagesByItemIdAction = async (itemId: string): Promise<ActionRes
   }
 };
 
+/**
+ * New batched action to get images for multiple items at once
+ * This significantly reduces the number of network requests needed when loading the catalog
+ */
+export const getBatchImagesByItemIdsAction = async (itemIds: string[]): Promise<ActionResult<Record<string, SelectImage[]>>> => {
+  try {
+    if (!itemIds.length) {
+      return { isSuccess: true, data: {} };
+    }
+    
+    // Log the batch request
+    console.log(`[BATCH-IMAGES] Fetching images for ${itemIds.length} items in a single request`);
+    
+    // Create a map to store images by item ID
+    const imagesMap: Record<string, SelectImage[]> = {};
+    
+    // Use Promise.all to fetch all images in parallel
+    await Promise.all(
+      itemIds.map(async (itemId) => {
+        try {
+          const images = await getImagesByItemId(itemId);
+          imagesMap[itemId] = images;
+        } catch (error) {
+          console.error(`Failed to get images for item ${itemId} in batch:`, error);
+          imagesMap[itemId] = []; // Set empty array for failed items
+        }
+      })
+    );
+    
+    // Log completion
+    console.log(`[BATCH-IMAGES] Successfully fetched images for ${Object.keys(imagesMap).length} items`);
+    
+    return { isSuccess: true, data: imagesMap };
+  } catch (error) {
+    console.error("Failed to get batch images:", error);
+    return { isSuccess: false, error: "Failed to get batch images", data: {} };
+  }
+};
+
 export const createImageAction = async (image: Omit<InsertImage, 'id'>): Promise<ActionResult<SelectImage>> => {
   try {
     // Get the current images to determine the next order
