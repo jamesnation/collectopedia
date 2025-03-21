@@ -281,6 +281,39 @@ function CatalogInner({
     }
   }, [isLoading, items]); // Depend on items to refresh when items array changes
 
+  // Run a one-time check to ensure all items have image timestamps set
+  useEffect(() => {
+    if (!isLoading && items.length > 0) {
+      const checkImageTimestamps = async () => {
+        try {
+          // Call the API to update timestamps for items that don't have them
+          const response = await fetch('/api/update-image-timestamps');
+          const data = await response.json();
+          
+          console.log('[CATALOG] Checking for items with missing image timestamps');
+          
+          if (data.success) {
+            if (data.updatedCount > 0) {
+              console.log(`[CATALOG] Updated ${data.updatedCount} items with missing image timestamps`);
+              
+              // Force a refresh of all images after updating timestamps
+              const allItemIds = items.map((item: SelectItemType) => item.id);
+              invalidateCache(); // Clear entire cache
+              loadImages(allItemIds, true); // Force reload all images
+            } else {
+              console.log('[CATALOG] All items already have timestamps set');
+            }
+          }
+        } catch (error) {
+          console.error('[CATALOG] Error checking image timestamps:', error);
+        }
+      };
+      
+      // Always run the timestamp check when the catalog first loads
+      checkImageTimestamps();
+    }
+  }, [isLoading, items, invalidateCache, loadImages]);
+
   const handleShowSoldChange = (show: boolean) => {
     console.log('[CATALOG] Toggling showSold to', show);
     

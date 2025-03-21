@@ -355,6 +355,93 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Add a new useEffect to check for updates on focus and periodically
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Function to check for updates for all cached items
+    const checkAllCachedItemsForUpdates = async () => {
+      const cachedItemIds = Object.keys(cachedData);
+      if (cachedItemIds.length === 0) return;
+
+      console.log('[CACHE] Checking for updates for all cached items:', cachedItemIds.length);
+      
+      try {
+        // Get cache timestamps for all items
+        const timestamps: Record<string, number> = {};
+        cachedItemIds.forEach(id => {
+          timestamps[id] = cachedData[id].cachedAt;
+        });
+        
+        // Check for updates
+        const result = await checkItemsImageUpdatesAction(cachedItemIds, timestamps);
+        
+        if (result.isSuccess && result.data && result.data.length > 0) {
+          console.log('[CACHE] Found', result.data.length, 'items with updated images, invalidating cache');
+          
+          // Invalidate cache for each updated item
+          result.data.forEach(itemId => {
+            invalidateCache(itemId);
+          });
+          
+          // After invalidating, trigger a reload of these items
+          loadImages(result.data, true);
+        }
+      } catch (error) {
+        console.error('[CACHE] Error checking for all item updates:', error);
+      }
+    };
+    
+    // Always run an initial check when the component mounts, regardless of device type
+    // Short delay to allow other initialization to complete
+    const initialCheckTimer = setTimeout(() => {
+      checkAllCachedItemsForUpdates();
+    }, 1000);
+    
+    // Clean up
+    return () => clearTimeout(initialCheckTimer);
+    
+  }, [cachedData, invalidateCache, loadImages]);
+
+  // Add a listener for when the page becomes visible again
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[CACHE] Page became visible, checking for updates');
+        // Check all cached items for updates when the page becomes visible again
+        const cachedItemIds = Object.keys(cachedData);
+        if (cachedItemIds.length > 0) {
+          const timestamps: Record<string, number> = {};
+          cachedItemIds.forEach(id => {
+            timestamps[id] = cachedData[id].cachedAt;
+          });
+          
+          checkItemsImageUpdatesAction(cachedItemIds, timestamps)
+            .then(result => {
+              if (result.isSuccess && result.data && result.data.length > 0) {
+                console.log('[CACHE] Found items with updates after page focus:', result.data);
+                // Force reload of these items
+                loadImages(result.data, true);
+              }
+            })
+            .catch(error => {
+              console.error('[CACHE] Error checking for updates on visibility change:', error);
+            });
+        }
+      }
+    };
+    
+    // Add visibility change listener
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [cachedData, loadImages]);
+
   // Provide context values to children
   return (
     <ImageCacheContext.Provider 

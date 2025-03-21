@@ -263,8 +263,11 @@ export const checkItemsImageUpdatesAction = async (
 ): Promise<ActionResult<string[]>> => {
   try {
     if (!itemIds.length) {
+      console.log('[CHECK-UPDATES] No item IDs provided for checking');
       return { isSuccess: true, data: [] };
     }
+    
+    console.log(`[CHECK-UPDATES] Checking updates for ${itemIds.length} items`);
     
     // Query all items to check their imagesUpdatedAt timestamps
     // Instead of complex filtering in the query, we'll get the items and filter in JS
@@ -278,21 +281,42 @@ export const checkItemsImageUpdatesAction = async (
       or(...itemIds.map(id => eq(itemsTable.id, id)))
     );
     
+    console.log(`[CHECK-UPDATES] Found ${items.length} items in database (out of ${itemIds.length} requested)`);
+    
+    // Check for any items with null timestamps
+    const nullTimestamps = items.filter(item => !item.imagesUpdatedAt);
+    if (nullTimestamps.length > 0) {
+      console.log(`[CHECK-UPDATES] Warning: ${nullTimestamps.length} items have null timestamps:`);
+      nullTimestamps.forEach(item => console.log(`- Item ${item.id}`));
+    }
+    
     // Find items that have been updated since they were cached
     const updatedItemIds = items
       .filter(item => {
         // Skip items with no imagesUpdatedAt timestamp
-        if (!item.imagesUpdatedAt) return false;
+        if (!item.imagesUpdatedAt) {
+          console.log(`[CHECK-UPDATES] Item ${item.id} has no timestamp, skipping`);
+          return false;
+        }
         
         // Get the timestamp when this item was cached
         const cachedAt = cachedTimestamps[item.id];
-        if (!cachedAt) return false;
+        if (!cachedAt) {
+          console.log(`[CHECK-UPDATES] Item ${item.id} has no cache timestamp, skipping`);
+          return false;
+        }
         
         // Convert database timestamp to milliseconds for comparison
         const dbTimestamp = new Date(item.imagesUpdatedAt).getTime();
         
         // Item needs update if the database timestamp is newer than when it was cached
-        return dbTimestamp > cachedAt;
+        const needsUpdate = dbTimestamp > cachedAt;
+        
+        if (needsUpdate) {
+          console.log(`[CHECK-UPDATES] Item ${item.id} needs update: DB timestamp ${new Date(dbTimestamp).toISOString()} > Cache timestamp ${new Date(cachedAt).toISOString()}`);
+        }
+        
+        return needsUpdate;
       })
       .map(item => item.id);
     
@@ -302,5 +326,44 @@ export const checkItemsImageUpdatesAction = async (
   } catch (error) {
     console.error("Failed to check for image updates:", error);
     return { isSuccess: false, error: "Failed to check for image updates", data: [] };
+  }
+};
+
+/**
+ * Update the imagesUpdatedAt field for all items in the database
+ * This ensures that all existing items have this field set
+ */
+export const updateAllItemsImagesTimestampAction = async (): Promise<ActionResult<number>> => {
+  try {
+    // Using a simpler approach: get all items and filter them in JS
+    // This avoids the type issues with the Drizzle query
+    const allItems = await db.select({
+      id: itemsTable.id,
+      imagesUpdatedAt: itemsTable.imagesUpdatedAt
+    })
+    .from(itemsTable);
+    
+    // Find items with null imagesUpdatedAt
+    const itemsToUpdate = allItems.filter(item => item.imagesUpdatedAt === null || item.imagesUpdatedAt === undefined);
+    
+    console.log(`Found ${itemsToUpdate.length} items with null imagesUpdatedAt`);
+    
+    // Update each item one by one
+    let updatedCount = 0;
+    for (const item of itemsToUpdate) {
+      try {
+        await updateItem(item.id, { imagesUpdatedAt: new Date() });
+        updatedCount++;
+      } catch (err) {
+        console.error(`Error updating item ${item.id}:`, err);
+      }
+    }
+    
+    console.log(`Successfully updated ${updatedCount} items with imagesUpdatedAt timestamp`);
+    
+    return { isSuccess: true, data: updatedCount };
+  } catch (error) {
+    console.error("Failed to update items timestamps:", error);
+    return { isSuccess: false, error: "Failed to update items timestamps", data: 0 };
   }
 };

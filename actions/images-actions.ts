@@ -43,9 +43,12 @@ export const createImageAction = async (image: Omit<InsertImage, 'id'>): Promise
     const [createdImage] = await insertImage(imageWithId);
     
     // Update the imagesUpdatedAt timestamp on the item
+    console.log(`[IMAGES] Updating imagesUpdatedAt timestamp for item ${image.itemId}`);
+    const now = new Date();
     await updateItem(image.itemId, { 
-      imagesUpdatedAt: new Date() 
+      imagesUpdatedAt: now
     });
+    console.log(`[IMAGES] Timestamp updated to ${now.toISOString()}`);
     
     // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();
@@ -68,9 +71,12 @@ export const deleteImageAction = async (id: string, itemId?: string): Promise<Ac
     
     // Update the imagesUpdatedAt timestamp on the item if itemId is provided
     if (itemId) {
+      console.log(`[IMAGES] Updating imagesUpdatedAt timestamp for item ${itemId} after deleting image`);
+      const now = new Date();
       await updateItem(itemId, { 
-        imagesUpdatedAt: new Date() 
+        imagesUpdatedAt: now
       });
+      console.log(`[IMAGES] Timestamp updated to ${now.toISOString()}`);
     }
     
     // Add a cache-busting timestamp to ensure fresh data
@@ -138,9 +144,12 @@ export const reorderImagesAction = async (
     await updateMultipleImageOrders(imageOrders);
     
     // Update the imagesUpdatedAt timestamp on the item
+    console.log(`[IMAGES] Updating imagesUpdatedAt timestamp for item ${itemId} after reordering images`);
+    const now = new Date();
     await updateItem(itemId, { 
-      imagesUpdatedAt: new Date() 
+      imagesUpdatedAt: now
     });
+    console.log(`[IMAGES] Timestamp updated to ${now.toISOString()}`);
     
     // Add a cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();
