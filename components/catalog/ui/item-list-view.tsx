@@ -112,12 +112,12 @@ export function ItemListView({
         cost: item.cost,
         value: item.value,
         notes: item.notes || "",
-        isSold: false,
+        isSold: item.isSold, // Preserve the sold status from the original item
         image: item.image,
         condition: item.condition || "Used",
-        // Include required fields that were missing
-        soldPrice: null,
-        soldDate: null,
+        // Include required fields that might be null if not sold
+        soldPrice: item.isSold ? item.soldPrice : null,
+        soldDate: item.isSold ? item.soldDate : null,
         // Optional fields
         ebayListed: item.ebayListed,
         ebaySold: item.ebaySold,
