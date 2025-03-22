@@ -64,16 +64,16 @@ export default function HomePage() {
                 transition={{ duration: 0.5 }}
               >
                 <h1 className="text-4xl tracking-tight font-extrabold text-white sm:text-5xl md:text-6xl">
-                  <span className="block">Elevate Your</span>
+                  <span className="block">Track Your</span>
                   <span className="block text-purple-400">Collection</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-300 sm:mt-5 sm:text-xl lg:text-lg xl:text-xl">
-                  Collectopedia: The intelligent companion for passionate collectors. Track, analyze, and grow your
-                  collection with real-time insights.
+                  Collectopedia is the intelligent financial dashboard for collectors. Track and analyze your
+                  collection with real-time pricing insights.
                 </p>
                 <div className="mt-8">
                   <p className="text-base font-medium text-white">
-                    Start your free trial today. No credit card required.
+                    Start your free trial today.
                   </p>
                   <div className="mt-3">
                     <Link href="/signup">
@@ -159,7 +159,7 @@ export default function HomePage() {
                   {
                     name: "Advanced Analytics",
                     description:
-                      "Gain deep insights into your collection&apos;s performance with comprehensive statistics and reports.",
+                      "Gain deep insights into your collection's performance with comprehensive statistics and reports.",
                     icon: BarChart,
                   },
                   {
@@ -193,11 +193,11 @@ export default function HomePage() {
         <section className="py-20 bg-gray-900">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
-              <span className="block">Ready to start your collection journey?</span>
+              <span className="block">Ready to value your collection?</span>
               <span className="block text-purple-400">Try Collectopedia for free today.</span>
             </h2>
             <p className="mt-4 text-lg leading-6 text-gray-300">
-              No credit card required. Start tracking and growing your collection now.
+           Value your collection now.
             </p>
             <div className="mt-8">
               <Link href="/signup">
