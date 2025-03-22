@@ -64,7 +64,7 @@ export default function HomePage() {
                 transition={{ duration: 0.5 }}
               >
                 <h1 className="text-4xl tracking-tight font-extrabold text-white sm:text-5xl md:text-6xl">
-                  <span className="block">Track Your</span>
+                  <span className="block">Value Your</span>
                   <span className="block text-purple-400">Collection</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-300 sm:mt-5 sm:text-xl lg:text-lg xl:text-xl">
