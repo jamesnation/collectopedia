@@ -139,12 +139,12 @@ export default function HomePage() {
         <section className="py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="lg:text-center">
-              <h2 className="text-base text-purple-400 font-semibold tracking-wide uppercase">Features</h2>
+              <h2 className="text-base text-purple-400 font-semibold tracking-wide uppercase">Collectopedia</h2>
               <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl">
-                Empower Your Collection
+               The Collectables Financial Dashboard
               </p>
               <p className="mt-4 max-w-2xl text-xl text-gray-300 lg:mx-auto">
-                Discover the tools that will revolutionize how you manage and grow your collection.
+                Our tools will revolutionize how you manage and value your collection.
               </p>
             </div>
 
