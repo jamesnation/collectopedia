@@ -216,7 +216,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="mt-8 border-t border-gray-800 pt-8 text-center">
-              <p className="text-base text-gray-400">&copy; 2024 Collectopedia, Inc. All rights reserved.</p>
+              <p className="text-base text-gray-400">&copy; 2025 Collectopedia, Inc. All rights reserved.</p>
             </div>
           </div>
         </footer>
