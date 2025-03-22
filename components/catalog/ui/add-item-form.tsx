@@ -122,11 +122,30 @@ export function AddItemForm({
   }
 
   const handleImageUpload = (url: string) => {
-    setNewItemImages(prev => [...prev, url])
+    console.log('[DEBUG] Received image URL:', url)
+    // Add to newItemImages array
+    setNewItemImages((prev) => [...prev, url])
   }
 
   const handleRemoveImage = (index: number) => {
-    setNewItemImages(prev => prev.filter((_, i) => i !== index))
+    console.log('[DEBUG] Removing image at index:', index)
+    
+    const updatedImages = [...newItemImages]
+    updatedImages.splice(index, 1)
+    setNewItemImages(updatedImages)
+    
+    // Update the primary image if needed
+    if (index === 0 && updatedImages.length > 0) {
+      setNewItem(prevItem => ({
+        ...prevItem,
+        image: updatedImages[0]
+      }))
+    } else if (updatedImages.length === 0) {
+      setNewItem(prevItem => ({
+        ...prevItem,
+        image: null
+      }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,6 +154,9 @@ export function AddItemForm({
     // Parse numeric values
     const cost = parseFloat(newItem.cost) || 0
     const value = parseFloat(newItem.value) || 0
+    
+    // Check if we have images and log them for debugging
+    console.log('[DEBUG] Submitting form with images:', newItemImages)
     
     // Create the item object
     const itemToSubmit = {
@@ -149,7 +171,9 @@ export function AddItemForm({
       cost,
       value,
       notes: newItem.notes,
-      image: newItemImages[0] || null,
+      // Use the first image as the primary image
+      image: newItemImages.length > 0 ? newItemImages[0] : null,
+      // Include all images
       images: newItemImages,
       isSold: false,
       soldPrice: null,
@@ -157,6 +181,9 @@ export function AddItemForm({
       ebaySold: null,
       ebayListed: null
     }
+    
+    // Log the final submission for debugging
+    console.log('[DEBUG] Submitting item:', itemToSubmit)
     
     const success = await onSubmit(itemToSubmit)
     

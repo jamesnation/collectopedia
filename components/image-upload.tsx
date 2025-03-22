@@ -31,10 +31,13 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
   const uploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true)
+      console.log('[DEBUG] Image upload started')
 
       if (!event.target.files || event.target.files.length === 0) {
         throw new Error('You must select an image to upload.')
       }
+
+      console.log('[DEBUG] Files selected:', event.target.files.length)
 
       for (let i = 0; i < event.target.files.length; i++) {
         const file = event.target.files[i]
@@ -47,12 +50,15 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
         const fileExt = file.name.split('.').pop()
         const fileName = `${userId}_${Date.now()}_${i}.${fileExt}`
 
-        console.log('Uploading file:', fileName, 'Size:', fileSize.toFixed(2), 'MB')
+        console.log('[DEBUG] Uploading file:', fileName, 'Size:', fileSize.toFixed(2), 'MB', 'User ID:', userId)
 
         if (!token) {
+          console.error('[DEBUG] Authentication token not available')
           throw new Error('Authentication token not available')
         }
 
+        console.log('[DEBUG] Starting Supabase upload to bucket:', bucketName)
+        
         const { error: uploadError, data } = await supabase.storage
           .from(bucketName)
           .upload(fileName, file, {
@@ -62,19 +68,21 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
           })
 
         if (uploadError) {
-          console.error('Upload error:', uploadError)
+          console.error('[DEBUG] Upload error:', uploadError)
           throw uploadError
         }
 
-        console.log('Upload successful:', data)
+        console.log('[DEBUG] Upload successful:', data)
 
         const { data: { publicUrl } } = supabase.storage
           .from(bucketName)
           .getPublicUrl(fileName)
 
-        console.log('Public URL:', publicUrl)
+        console.log('[DEBUG] Public URL generated:', publicUrl)
 
+        // Directly call onUpload with the URL
         onUpload(publicUrl)
+        console.log('[DEBUG] Called onUpload with URL:', publicUrl)
       }
 
       toast({
@@ -82,10 +90,10 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
         description: "Your images have been uploaded and attached to the item.",
       })
     } catch (error) {
-      console.error('Error uploading image:', error)
+      console.error('[DEBUG] Error uploading image:', error)
       if (error instanceof Error) {
-        console.error('Error message:', error.message)
-        console.error('Error stack:', error.stack)
+        console.error('[DEBUG] Error message:', error.message)
+        console.error('[DEBUG] Error stack:', error.stack)
       }
       toast({
         title: "Error uploading image",
@@ -94,6 +102,7 @@ export default function ImageUpload({ onUpload, bucketName }: ImageUploadProps) 
       })
     } finally {
       setUploading(false)
+      console.log('[DEBUG] Upload process completed')
       // Clear the file input
       const fileInput = document.getElementById('image') as HTMLInputElement
       if (fileInput) fileInput.value = ""
