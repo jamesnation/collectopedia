@@ -190,18 +190,18 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-20 bg-purple-900">
+        <section className="py-20 bg-gray-900">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
               <span className="block">Ready to start your collection journey?</span>
-              <span className="block text-purple-300">Try Collectopedia for free today.</span>
+              <span className="block text-purple-400">Try Collectopedia for free today.</span>
             </h2>
-            <p className="mt-4 text-lg leading-6 text-purple-200">
+            <p className="mt-4 text-lg leading-6 text-gray-300">
               No credit card required. Start tracking and growing your collection now.
             </p>
             <div className="mt-8">
               <Link href="/signup">
-                <Button className="bg-white text-purple-600 hover:bg-purple-50">Get started</Button>
+                <Button className="bg-purple-600 text-white hover:bg-purple-700">Get started</Button>
               </Link>
             </div>
           </div>
