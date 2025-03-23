@@ -132,9 +132,6 @@ function CatalogInner({
   // State for AI price loading
   const [loadingAiPrice, setLoadingAiPrice] = useState<string | null>(null);
 
-  // State for view and filter
-  const [view, setView] = useState<'list' | 'grid'>('grid');
-
   // Get imageCache context
   const { 
     imageCache, 
@@ -171,7 +168,9 @@ function CatalogInner({
     showWithImages,
     setShowWithImages,
     itemsNeedingImageCheck,
-    resetFilters
+    resetFilters,
+    view,
+    setView
   } = useCatalogFilters({ items });
 
   // Update the createImagesMap function to reduce logging

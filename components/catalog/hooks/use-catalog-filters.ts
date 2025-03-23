@@ -335,7 +335,6 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
   }, [filteredAndSortedItems]);
 
   return {
-    // Return both the getters and the setters for all filter state
     searchQuery,
     setSearchQuery: handleSearchChange,
     typeFilter,
@@ -348,6 +347,8 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     setShowSold: handleShowSoldChange,
     soldYearFilter,
     setSoldYearFilter: handleSoldYearFilterChange,
+    showWithImages,
+    setShowWithImages: handleShowWithImagesChange,
     filteredAndSortedItems,
     summaryValues,
     availableYears,
@@ -355,11 +356,9 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
     totalCount,
     sortDescriptor,
     handleSort,
-    showWithImages,
-    setShowWithImages: handleShowWithImagesChange,
     itemsNeedingImageCheck,
+    resetFilters: handleResetFilters,
     view,
-    setView: handleViewChange,
-    resetFilters: handleResetFilters
+    setView: handleViewChange
   };
 } 
