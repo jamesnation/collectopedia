@@ -1,6 +1,6 @@
 # Collectopedia Image Optimization System
 
-This document describes the advanced image loading and optimization system implemented in Collectopedia to provide efficient image loading, caching, and display with a focus on performance, especially on mobile devices.
+This document describes the advanced image loading and optimization system implemented in Collectopedia to provide efficient image loading, caching, and display with a focus on performance, especially on mobile. 
 
 ## Architecture Overview
 
