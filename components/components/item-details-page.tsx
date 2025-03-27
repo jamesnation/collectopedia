@@ -1,1 +1,0 @@
-components/item-details/index.tsx
