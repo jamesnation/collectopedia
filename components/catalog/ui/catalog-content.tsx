@@ -130,49 +130,51 @@ export function CatalogContent({
     // Only log in development
     if (process.env.NODE_ENV === 'development') {
       // Use debug logger instead of console.log
-      debugLog('[CATALOG DEBUG] Creating images map from cache with', Object.keys(imageCache).length, 'cached items');
+      debugLog('[CATALOG DEBUG] Creating images map from cache with', Object.keys(imageCache || {}).length, 'cached items');
     }
     
     // Process images from items
-    items.forEach((item: SelectItemType) => {
-      // Check if the item has images
-      if (imageCache[item.id] && imageCache[item.id].length > 0) {
-        // imageCache already contains SelectImage objects, so just use them directly
-        imagesMap[item.id] = imageCache[item.id];
-        
-        // Only log a few sample items in development mode
-        if (process.env.NODE_ENV === 'development') {
-          // Log only the first item as a sample
-          if (Object.keys(imagesMap).length === 1) {
-            debugLog(`[CATALOG DEBUG] Sample item ${item.id} (${item.name}) using ${imageCache[item.id].length} images from cache`);
+    if (items && Array.isArray(items)) {
+      items.forEach((item: SelectItemType) => {
+        // Check if the item has images
+        if (item && item.id && imageCache && imageCache[item.id] && Array.isArray(imageCache[item.id]) && imageCache[item.id].length > 0) {
+          // imageCache already contains SelectImage objects, so just use them directly
+          imagesMap[item.id] = imageCache[item.id];
+          
+          // Only log a few sample items in development mode
+          if (process.env.NODE_ENV === 'development') {
+            // Log only the first item as a sample
+            if (Object.keys(imagesMap).length === 1) {
+              debugLog(`[CATALOG DEBUG] Sample item ${item.id} (${item.name}) using ${imageCache[item.id].length} images from cache`);
+            }
           }
         }
-      }
-    });
+      });
+    }
     
     return imagesMap;
   }, [items, imageCache]);
 
   // Update the useEffect to reduce logging
   useEffect(() => {
-    if (!isLoading && items.length > 0) {
+    if (!isLoading && items && Array.isArray(items) && items.length > 0) {
       // Extract all unique item IDs
-      const allItemIds = items.map((item: SelectItemType) => item.id);
+      const allItemIds = items.map((item: SelectItemType) => item.id).filter(Boolean);
       // Create image map
       const imagesMap = createImagesMap();
       
       // Use the service to preload images
-      if (Object.keys(imagesMap).length > 0) {
+      if (imagesMap && Object.keys(imagesMap).length > 0) {
         debugLog(`[CATALOG] Preloading images for ${Object.keys(imagesMap).length} items with the image service`);
         imageService.preloadItemImages(allItemIds, imagesMap);
       }
     }
-  }, [items.length, isLoading, imageService, createImagesMap]);
+  }, [items, isLoading, imageService, createImagesMap]);
 
   // Update the refresh cache effect
   useEffect(() => {
     // This effect should run when the component mounts or if items change
-    if (!isLoading && items.length > 0) {
+    if (!isLoading && items && Array.isArray(items) && items.length > 0) {
       debugLog('[CATALOG] Component mounted or items changed, refreshing image cache');
       
       // Check if we're coming back from an item detail page with invalidated cache
@@ -206,7 +208,7 @@ export function CatalogContent({
           const savedCache = localStorage.getItem('collectopedia-image-cache');
           if (savedCache) {
             const parsedCache = JSON.parse(savedCache);
-            debugLog('[CATALOG DEBUG] localStorage cache contains', Object.keys(parsedCache).length, 'items');
+            debugLog('[CATALOG DEBUG] localStorage cache contains', Object.keys(parsedCache || {}).length, 'items');
           }
         } catch (e) {
           console.error('[CATALOG DEBUG] Error reading localStorage cache:', e);
@@ -214,7 +216,7 @@ export function CatalogContent({
       }
       
       // Extract IDs of items that might need fresh images
-      const itemIds = items.map((item: SelectItemType) => item.id);
+      const itemIds = items.map((item: SelectItemType) => item && item.id).filter(Boolean);
       
       if (invalidatedItemId) {
         // If we have a recently invalidated item, force reload just that one
@@ -292,8 +294,15 @@ export function CatalogContent({
     
     // Preload images for both sold and unsold items before changing the filter
     // This prevents the image reloading issue when toggling between views
-    const soldItems = items.filter((item: SelectItemType) => item.isSold).map((item: SelectItemType) => item.id);
-    const unsoldItems = items.filter((item: SelectItemType) => !item.isSold).map((item: SelectItemType) => item.id);
+    const soldItems = items && Array.isArray(items) ? 
+      items.filter((item: SelectItemType) => item && item.isSold)
+           .map((item: SelectItemType) => item.id)
+           .filter(Boolean) : [];
+           
+    const unsoldItems = items && Array.isArray(items) ? 
+      items.filter((item: SelectItemType) => item && !item.isSold)
+           .map((item: SelectItemType) => item.id)
+           .filter(Boolean) : [];
     
     console.log('[CATALOG] Preloading images for', soldItems.length, 'sold items and', unsoldItems.length, 'unsold items');
     
@@ -302,7 +311,9 @@ export function CatalogContent({
     
     // Also use the new image service
     const imagesMap = createImagesMap();
-    imageService.preloadItemImages([...soldItems, ...unsoldItems], imagesMap);
+    if (imagesMap) {
+      imageService.preloadItemImages([...soldItems, ...unsoldItems], imagesMap);
+    }
     
     // Then update the filter state
     setShowSold(show);
@@ -311,9 +322,9 @@ export function CatalogContent({
   return (
     <>
       {/* Use the new ImageLoader instead of the old components */}
-      {!isLoading && (
+      {!isLoading && items && Array.isArray(items) && items.length > 0 && (
         <ImageLoader 
-          itemIds={items.map((item: SelectItemType) => item.id)} 
+          itemIds={items.map((item: SelectItemType) => item && item.id).filter(Boolean)} 
           images={createImagesMap()} 
           isLoading={isLoading}
         />
