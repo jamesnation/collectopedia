@@ -374,7 +374,7 @@ function CatalogInner({
         <main className="container mx-auto px-4 py-12">
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
-            <h1 className="text-4xl font-serif text-foreground dark:text-foreground">Your Collection <span className="text-foreground dark:text-foreground">Catalog</span></h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">My Collection</h1>
             <div className="flex items-center space-x-2">
               <AddItemModal
                 onAddItem={addItem}
@@ -388,17 +388,6 @@ function CatalogInner({
               />
             </div>
           </div>
-
-          {/* Summary Panel */}
-          <SummaryPanel
-            totalValue={summaryValues.totalValue}
-            totalCost={summaryValues.totalCost}
-            totalItems={filteredAndSortedItems.length}
-            ebayListedValue={summaryValues.ebayListedValue}
-            ebaySoldValue={summaryValues.ebaySoldValue}
-            showSold={showSold}
-            unsoldTotalCost={summaryValues.unsoldTotalCost}
-          />
 
           {/* Filter Bar */}
           <FilterBar
@@ -425,6 +414,17 @@ function CatalogInner({
             showWithImages={showWithImages}
             setShowWithImages={setShowWithImages}
             resetFilters={resetFilters}
+          />
+
+          {/* Summary Panel */}
+          <SummaryPanel
+            totalValue={summaryValues.totalValue}
+            totalCost={summaryValues.totalCost}
+            totalItems={filteredAndSortedItems.length}
+            ebayListedValue={summaryValues.ebayListedValue}
+            ebaySoldValue={summaryValues.ebaySoldValue}
+            showSold={showSold}
+            unsoldTotalCost={summaryValues.unsoldTotalCost}
           />
 
           {/* Item List/Grid View */}
