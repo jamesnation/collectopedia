@@ -46,11 +46,11 @@ interface CatalogContentProps {
   deleteItem: (id: string) => Promise<boolean>;
   setItems: React.Dispatch<React.SetStateAction<any[]>>;
   customTypes: { id: string; name: string }[];
-  loadCustomTypes: () => Promise<void>;
+  loadCustomTypes: () => Promise<any>;
   customFranchises: { id: string; name: string }[];
-  loadCustomFranchises: () => Promise<void>;
+  loadCustomFranchises: () => Promise<any>;
   customBrands: { id: string; name: string }[];
-  loadCustomBrands: () => Promise<void>;
+  loadCustomBrands: () => Promise<any>;
 }
 
 export function CatalogContent({
