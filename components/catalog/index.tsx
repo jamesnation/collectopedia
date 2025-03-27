@@ -11,7 +11,7 @@ import { SelectItem as SelectItemType } from "@/db/schema/items-schema"
 import { ImageCacheProvider } from './context/image-cache-context';
 import { useCatalogItems } from './hooks/use-catalog-items';
 import { useCustomEntities } from './hooks/use-custom-entities';
-import { CatalogContent } from './ui/catalog-content';
+import { CatalogContent } from './ui';
 
 interface CatalogProps {
   initialItems: SelectItemType[];

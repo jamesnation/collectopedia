@@ -239,7 +239,7 @@ export function CatalogContent({
 
   // Modify the timestamp check useEffect
   useEffect(() => {
-    if (!isLoading && items.length > 0) {
+    if (!isLoading && items && Array.isArray(items) && items.length > 0) {
       // We only need to run this timestamp initialization once per day at most
       // Check if we've run this check recently (within 24 hours)
       const lastCheckTimestamp = localStorage.getItem('last-timestamp-check');
@@ -263,14 +263,16 @@ export function CatalogContent({
           
           debugLog('[CATALOG] Checking for items with missing image timestamps');
           
-          if (data.success) {
+          if (data && data.success) {
             if (data.updatedCount > 0) {
               console.log(`[CATALOG] Updated ${data.updatedCount} items with missing image timestamps`);
               
               // Force a refresh of all images after updating timestamps
-              const allItemIds = items.map((item: SelectItemType) => item.id);
+              const allItemIds = items.map((item: SelectItemType) => item && item.id).filter(Boolean);
               invalidateCache(); // Clear entire cache
-              loadImages(allItemIds, true); // Force reload all images
+              if (typeof loadImages === 'function' && allItemIds && allItemIds.length > 0) {
+                loadImages(allItemIds, true); // Force reload all images
+              }
             } else {
               debugLog('[CATALOG] All items already have timestamps set');
             }
@@ -287,7 +289,7 @@ export function CatalogContent({
       // Run the timestamp check
       checkImageTimestamps();
     }
-  }, [isLoading, items.length, invalidateCache, loadImages]); // Only depend on items.length to avoid excess runs
+  }, [isLoading, items, invalidateCache, loadImages]); // Update dependency array to include full items array
 
   const handleShowSoldChange = (show: boolean) => {
     console.log('[CATALOG] Toggling showSold to', show);
@@ -424,4 +426,7 @@ export function CatalogContent({
       </div>
     </>
   );
-} 
+}
+
+// Add a default export for easier importing
+export default CatalogContent; 
