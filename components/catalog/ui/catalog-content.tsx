@@ -337,7 +337,7 @@ export function CatalogContent({
         <main className="container mx-auto px-4 py-12">
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
-            <h1 className="text-4xl font-bold text-foreground dark:text-foreground">My Collection</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">My Collection</h1>
             <div className="flex items-center space-x-2">
               <AddItemModal
                 onAddItem={addItem}
@@ -352,7 +352,7 @@ export function CatalogContent({
             </div>
           </div>
 
-          {/* Filter Bar */}
+          {/* Filter Bar - Moved above Summary Panel */}
           <FilterBar
             view={view}
             setView={setView}
@@ -379,7 +379,7 @@ export function CatalogContent({
             resetFilters={resetFilters}
           />
 
-          {/* Summary Panel */}
+          {/* Summary Panel - Moved below Filter Bar */}
           <SummaryPanel
             totalValue={summaryValues.totalValue}
             totalCost={summaryValues.totalCost}
