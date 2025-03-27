@@ -1,4 +1,4 @@
-# Item Details Page Refactoring.
+# Item Details Page Refactoring
 
 This folder contains the refactored implementation of the Item Details page. The original monolithic component has been broken down into smaller, more manageable pieces.
 

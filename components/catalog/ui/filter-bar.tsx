@@ -86,7 +86,7 @@ export function FilterBar({
   };
   
   return (
-    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
       <div className="relative w-full sm:w-auto flex-1 max-w-md">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground dark:text-gray-400" />
         <Input
