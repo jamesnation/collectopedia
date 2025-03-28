@@ -3,9 +3,10 @@
  * 
  * This component uses the unified image service to handle image loading
  * for catalog items with optimizations for performance and mobile devices.
+ * Updated: Fixed useEffect dependency with useCallback for checkForUpdatedItems.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useImageService } from '@/services/image-service';
 import { SelectImage } from '@/db/schema/images-schema';
 
@@ -24,9 +25,13 @@ export function ImageLoader({ itemIds, images, isLoading = false }: ImageLoaderP
   const processedItemsRef = useRef<Set<string>>(new Set());
   const visibleItemsRef = useRef<string[]>([]);
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
+  const effectRunCountRef = useRef<number>(0);
   
-  // Check for recently updated items
-  const checkForUpdatedItems = () => {
+  // Check for recently updated items - memoized with useCallback
+  const checkForUpdatedItems = useCallback(() => {
+    // Log to track the function execution
+    console.log('[IMAGE-LOADER-DEBUG] checkForUpdatedItems executed');
+    
     if (typeof window === 'undefined') return null;
     
     const invalidatedItem = sessionStorage.getItem('invalidated_item');
@@ -44,14 +49,19 @@ export function ImageLoader({ itemIds, images, isLoading = false }: ImageLoaderP
     }
     
     return null;
-  };
+  }, [itemIds]); // Add itemIds as dependency since it's used inside
   
   // Load images when component mounts or itemIds change
   useEffect(() => {
+    // Increment and log the effect run count for debugging
+    effectRunCountRef.current += 1;
+    console.log(`[IMAGE-LOADER-DEBUG] useEffect for image loading run count: ${effectRunCountRef.current}`);
+    
     if (isLoading || !itemIds.length || !images) return;
     
     // Get recently updated item first
     const updatedItemId = checkForUpdatedItems();
+    console.log(`[IMAGE-LOADER-DEBUG] Checking for updated items: ${updatedItemId ? 'Found: ' + updatedItemId : 'None found'}`);
     
     // Get new items that haven't been processed yet
     const newItems = itemIds.filter(id => !processedItemsRef.current.has(id));

@@ -28,6 +28,7 @@ import { itemTypeEnum, franchiseEnum } from '@/db/schema/items-schema';
 import { ImageLoader } from './image-loader';
 import { useImageService } from '@/services/image-service';
 import { SelectImage } from '@/db/schema/images-schema';
+import { getImagesByItemIdAction } from '@/actions/images-actions';
 
 interface CatalogProps {
   initialItems: SelectItemType[];
@@ -377,6 +378,149 @@ function CatalogInner({
     // Then update the filter state
     setShowSold(show);
   };
+
+  // Add a new useEffect for checking localStorage for invalidated items
+  useEffect(() => {
+    // This effect focuses specifically on localStorage refresh flags
+    if (!isLoading && items.length > 0) {
+      console.log('[CATALOG-CACHE-FIX] Checking localStorage for invalidated items');
+      
+      if (typeof window !== 'undefined') {
+        // Check localStorage for invalidated items
+        const localStorageInvalidatedItem = localStorage.getItem('collectopedia-force-refresh-item');
+        const localStorageTimestamp = localStorage.getItem('collectopedia-force-refresh-timestamp');
+        
+        console.log(`[CATALOG-CACHE-FIX] localStorage check:
+          - invalidated_item: ${localStorageInvalidatedItem || 'not set'}
+          - timestamp: ${localStorageTimestamp || 'not set'}`);
+        
+        // Process localStorage invalidated item if recent
+        if (localStorageInvalidatedItem && localStorageTimestamp) {
+          const timestampNum = parseInt(localStorageTimestamp);
+          const now = Date.now();
+          const isRecent = (now - timestampNum) < 60000; // 60 seconds
+          
+          console.log(`[CATALOG-CACHE-FIX] localStorage timestamp check:
+            - Timestamp: ${timestampNum}
+            - Current time: ${now}
+            - Difference: ${(now - timestampNum)/1000}s
+            - Is recent: ${isRecent}`);
+          
+          if (isRecent) {
+            console.log(`[CATALOG-CACHE-FIX] Found recent localStorage invalidation for item: ${localStorageInvalidatedItem}`);
+            
+            // Clear the flags
+            localStorage.removeItem('collectopedia-force-refresh-item');
+            localStorage.removeItem('collectopedia-force-refresh-timestamp');
+            
+            // Check if item exists in current items list
+            const itemExists = items.some((item: SelectItemType) => item.id === localStorageInvalidatedItem);
+            
+            if (itemExists) {
+              console.log(`[CATALOG-CACHE-FIX] Force refreshing item: ${localStorageInvalidatedItem}`);
+              
+              // Force direct refetch from backend
+              getImagesByItemIdAction(localStorageInvalidatedItem)
+                .then((result: { isSuccess: boolean; data?: SelectImage[] }) => {
+                  if (result.isSuccess && result.data) {
+                    console.log(`[CATALOG-CACHE-FIX] Fetched ${result.data.length} fresh images for item ${localStorageInvalidatedItem}`);
+                    
+                    // Directly update the local cache and force a rerender
+                    try {
+                      const cacheData = localStorage.getItem('collectopedia-image-cache');
+                      if (cacheData) {
+                        const cache = JSON.parse(cacheData);
+                        if (cache[localStorageInvalidatedItem]) {
+                          // Update the cache with fresh images and current timestamp
+                          cache[localStorageInvalidatedItem] = {
+                            images: result.data,
+                            cachedAt: Date.now()
+                          };
+                          
+                          // Save updated cache
+                          localStorage.setItem('collectopedia-image-cache', JSON.stringify(cache));
+                          console.log(`[CATALOG-CACHE-FIX] Updated localStorage cache for item ${localStorageInvalidatedItem}`);
+                          
+                          // Force reload in image cache context
+                          loadImages([localStorageInvalidatedItem], true);
+                          
+                          // Force redraw by updating the map directly
+                          createImagesMap();
+                        }
+                      }
+                    } catch (error: any) {
+                      console.error('[CATALOG-CACHE-FIX] Error updating cache:', error);
+                    }
+                  }
+                })
+                .catch((error: Error) => {
+                  console.error(`[CATALOG-CACHE-FIX] Error fetching images:`, error);
+                });
+            } else {
+              console.log(`[CATALOG-CACHE-FIX] Item ${localStorageInvalidatedItem} not found in current items list`);
+            }
+          } else {
+            // Too old, clear the flags
+            console.log(`[CATALOG-CACHE-FIX] Invalidation timestamp too old (${(now - timestampNum)/1000}s), clearing flags`);
+            localStorage.removeItem('collectopedia-force-refresh-item');
+            localStorage.removeItem('collectopedia-force-refresh-timestamp');
+          }
+        }
+        
+        // Also check for items with cachedAt=0 in the image cache (direct cache invalidation method)
+        try {
+          const cacheData = localStorage.getItem('collectopedia-image-cache');
+          if (cacheData) {
+            const cache = JSON.parse(cacheData);
+            let foundInvalidated = false;
+            
+            // Check each item in cache
+            Object.entries(cache).forEach(([itemId, data]: [string, any]) => {
+              if (data.cachedAt === 0) {
+                console.log(`[CATALOG-CACHE-FIX] Found item ${itemId} with cachedAt=0, forcing refresh`);
+                foundInvalidated = true;
+                
+                // Check if item exists in current items list
+                const itemExists = items.some((item: SelectItemType) => item.id === itemId);
+                
+                if (itemExists) {
+                  // Force reload this item
+                  getImagesByItemIdAction(itemId)
+                    .then((result: { isSuccess: boolean; data?: SelectImage[] }) => {
+                      if (result.isSuccess && result.data) {
+                        console.log(`[CATALOG-CACHE-FIX] Fetched ${result.data.length} fresh images for invalidated cache item ${itemId}`);
+                        
+                        // Update the cache
+                        cache[itemId] = {
+                          images: result.data,
+                          cachedAt: Date.now()
+                        };
+                        
+                        // Save updated cache
+                        localStorage.setItem('collectopedia-image-cache', JSON.stringify(cache));
+                        
+                        // Force reload in cache context
+                        loadImages([itemId], true);
+                      }
+                    })
+                    .catch((error: Error) => {
+                      console.error(`[CATALOG-CACHE-FIX] Error fetching images for invalidated item ${itemId}:`, error);
+                    });
+                }
+              }
+            });
+            
+            if (foundInvalidated) {
+              // Save the updated cache after processing all invalidated items
+              localStorage.setItem('collectopedia-image-cache', JSON.stringify(cache));
+            }
+          }
+        } catch (error) {
+          console.error('[CATALOG-CACHE-FIX] Error checking cache for invalidated items:', error);
+        }
+      }
+    }
+  }, [isLoading, items, loadImages, createImagesMap]);
 
   return (
     <>

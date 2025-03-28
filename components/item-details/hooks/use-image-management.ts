@@ -8,6 +8,8 @@
  * - Image deletion
  * - Image reordering
  * - Image cache invalidation
+ * 
+ * Updated: Added debugging logs to track invalidation and session storage operations
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -35,7 +37,7 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
   
   // Enhanced invalidation helper function that also forces reload
   const forceInvalidateAndReload = useCallback((id: string) => {
-    console.log(`[ITEM-DETAILS] Force invalidating and reloading images for item ${id}`)
+    console.log(`[ITEM-DETAILS-DEBUG] Force invalidating and reloading images for item ${id}`)
     
     // First invalidate the cache
     invalidateCache(id)
@@ -43,21 +45,47 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
     // Set flag to track that changes have been made
     setHasImageChanges(true)
     
+    // Log session storage operations for debugging
+    if (typeof window !== 'undefined') {
+      console.log('[ITEM-DETAILS-DEBUG] Setting session storage for invalidation')
+      try {
+        sessionStorage.setItem('invalidated_item', id)
+        sessionStorage.setItem('invalidated_timestamp', Date.now().toString())
+        sessionStorage.setItem('force_reload_images', 'true')
+        
+        // Verify the session storage was correctly set
+        const storedId = sessionStorage.getItem('invalidated_item')
+        const storedTimestamp = sessionStorage.getItem('invalidated_timestamp')
+        const storedForceReload = sessionStorage.getItem('force_reload_images')
+        
+        console.log(`[ITEM-DETAILS-DEBUG] Verified session storage: 
+          - invalidated_item: ${storedId === id ? 'correct' : `wrong - expected ${id}, got ${storedId}`}
+          - invalidated_timestamp: ${storedTimestamp ? 'set' : 'not set'}
+          - force_reload_images: ${storedForceReload === 'true' ? 'correct' : `wrong - expected true, got ${storedForceReload}`}
+        `)
+      } catch (error) {
+        console.error('[ITEM-DETAILS-DEBUG] Error setting session storage:', error)
+      }
+    }
+    
     // Attempt to immediately reload the images into the cache
     // This makes them available faster when returning to catalog
     setTimeout(() => {
+      console.log(`[ITEM-DETAILS-DEBUG] Attempting to load images for item ${id} after invalidation`)
       loadImages([id], true)
     }, 100)
   }, [invalidateCache, loadImages])
   
   // Define fetchImages with useCallback before using it in useEffect
   const fetchImages = useCallback(async (id: string) => {
+    console.log(`[ITEM-DETAILS-DEBUG] Fetching images for item ${id}`)
     const result = await getImagesByItemIdAction(id)
     if (result.isSuccess && result.data) {
       setImages(result.data)
       
       // Set session storage to help catalog recognize the changes immediately
       if (typeof window !== 'undefined') {
+        console.log(`[ITEM-DETAILS-DEBUG] Setting session storage after fetching images`)
         sessionStorage.setItem('invalidated_item', id)
         sessionStorage.setItem('invalidated_timestamp', Date.now().toString())
         sessionStorage.setItem('force_reload_images', 'true')
@@ -82,22 +110,56 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
   
   // Function to navigate back to catalog, ensuring images will be refreshed
   const navigateBackToCatalog = useCallback(() => {
+    console.log(`[ITEM-DETAILS-DEBUG] Navigating back to catalog. hasImageChanges: ${hasImageChanges}`)
+    
     if (itemId && hasImageChanges) {
-      // Set flags in sessionStorage to force reload in catalog
+      // Set flags in localStorage for more reliable persistence
       if (typeof window !== 'undefined') {
+        console.log(`[ITEM-DETAILS-CACHE-FIX] Setting both sessionStorage and localStorage before navigation`)
+        
+        // Set sessionStorage first (for backward compatibility)
         sessionStorage.setItem('invalidated_item', itemId)
         sessionStorage.setItem('invalidated_timestamp', Date.now().toString())
         sessionStorage.setItem('force_reload_images', 'true')
         
+        // Set localStorage flags as well (more reliable)
+        try {
+          // Get current cache
+          const cacheData = localStorage.getItem('collectopedia-image-cache')
+          if (cacheData) {
+            const cache = JSON.parse(cacheData)
+            
+            // If this item exists in cache, mark it for forced refresh
+            if (cache[itemId]) {
+              console.log(`[ITEM-DETAILS-CACHE-FIX] Found item ${itemId} in cache, marking for forced refresh on navigation`)
+              cache[itemId].cachedAt = 0 // This will force a refresh
+              localStorage.setItem('collectopedia-image-cache', JSON.stringify(cache))
+            }
+          }
+          
+          // Set additional direct flags that will be checked in the catalog component
+          localStorage.setItem('collectopedia-force-refresh-item', itemId)
+          localStorage.setItem('collectopedia-force-refresh-timestamp', Date.now().toString())
+          
+          // Verify the localStorage was correctly set
+          const storedDirectItem = localStorage.getItem('collectopedia-force-refresh-item')
+          console.log(`[ITEM-DETAILS-CACHE-FIX] localStorage verification: ${storedDirectItem === itemId ? 'correct' : 'wrong'}`)
+        } catch (error) {
+          console.error('[ITEM-DETAILS-CACHE-FIX] Error updating localStorage before navigation:', error)
+        }
+        
         // Force a quick reload before navigating
+        console.log(`[ITEM-DETAILS-DEBUG] Forcing reload before navigation`)
         loadImages([itemId], true)
       }
     }
     
-    // Navigate after a short delay to allow cache operations to complete
+    // Increased navigation delay to allow more time for cache operations
+    console.log(`[ITEM-DETAILS-DEBUG] Scheduling navigation with timeout`)
     setTimeout(() => {
+      console.log(`[ITEM-DETAILS-DEBUG] Executing navigation to /my-collection`)
       router.push('/my-collection')
-    }, 150)
+    }, 350) // Increased from 250ms to 350ms for more reliability
   }, [itemId, hasImageChanges, router, loadImages])
   
   // Add cleanup on unmount
@@ -105,13 +167,22 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
     return () => {
       // This runs when component unmounts
       if (itemId && hasImageChanges) {
-        console.log(`[ITEM-DETAILS] Component unmounting with image changes for ${itemId}`)
+        console.log(`[ITEM-DETAILS-DEBUG] Component unmounting with image changes for ${itemId}`)
         
         // Set flags in sessionStorage to force reload in catalog
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('invalidated_item', itemId)
-          sessionStorage.setItem('invalidated_timestamp', Date.now().toString())
-          sessionStorage.setItem('force_reload_images', 'true')
+          console.log(`[ITEM-DETAILS-DEBUG] Setting session storage during unmount`)
+          try {
+            sessionStorage.setItem('invalidated_item', itemId)
+            sessionStorage.setItem('invalidated_timestamp', Date.now().toString())
+            sessionStorage.setItem('force_reload_images', 'true')
+            
+            // Verify the session storage was correctly set
+            const storedId = sessionStorage.getItem('invalidated_item')
+            console.log(`[ITEM-DETAILS-DEBUG] Unmount session storage verification: ${storedId === itemId ? 'correct' : 'wrong'}`)
+          } catch (error) {
+            console.error('[ITEM-DETAILS-DEBUG] Error setting session storage during unmount:', error)
+          }
         }
       }
     }
@@ -150,6 +221,34 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
         
         // Enhanced invalidation with forced reload
         forceInvalidateAndReload(itemId)
+        
+        // IMPORTANT: Force direct localStorage cache update
+        // This approach is more reliable than sessionStorage for persistence
+        if (typeof window !== 'undefined') {
+          console.log(`[ITEM-DETAILS-CACHE-FIX] Directly updating localStorage cache for item ${itemId}`)
+          
+          try {
+            // Get current cache
+            const cacheData = localStorage.getItem('collectopedia-image-cache')
+            if (cacheData) {
+              const cache = JSON.parse(cacheData)
+              
+              // If this item exists in cache, mark it for forced refresh
+              // by setting cachedAt to 0, which will force a refresh on next load
+              if (cache[itemId]) {
+                console.log(`[ITEM-DETAILS-CACHE-FIX] Found item ${itemId} in cache, marking for forced refresh`)
+                cache[itemId].cachedAt = 0 // This will force a refresh
+                localStorage.setItem('collectopedia-image-cache', JSON.stringify(cache))
+              }
+            }
+            
+            // Set additional flags that will persist better than sessionStorage
+            localStorage.setItem('collectopedia-force-refresh-item', itemId)
+            localStorage.setItem('collectopedia-force-refresh-timestamp', Date.now().toString())
+          } catch (error) {
+            console.error('[ITEM-DETAILS-CACHE-FIX] Error updating localStorage:', error)
+          }
+        }
         
         toast({
           title: "Image uploaded",
@@ -219,48 +318,38 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
   const handleImageReorder = async (event: any) => {
     const { active, over } = event
     
-    if (active && over && active.id !== over.id) {
+    if (active && over && active.id !== over.id && itemId) {
       setImages((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id)
         const newIndex = items.findIndex((item) => item.id === over.id)
         
-        const newItems = arrayMove(items, oldIndex, newIndex)
-        
-        // Update the server with the new order
-        const updatedOrders = newItems.map((item, index) => ({
-          id: item.id,
-          order: index
-        }))
-        
-        if (itemId) {
-          // Update the server with the new order
-          reorderImagesAction(itemId, updatedOrders)
-            .then(() => {
-              // Refetch the images to ensure we have the latest order from the server
-              // This ensures the primary image is correctly identified for AI price estimation
-              fetchImages(itemId)
-              
-              // Enhanced invalidation with forced reload
-              forceInvalidateAndReload(itemId)
-              
-              toast({
-                title: "Success",
-                description: "Image order updated successfully",
-                variant: "default",
-              })
-            })
-            .catch((error: Error) => {
-              console.error('Failed to update image order:', error)
-              toast({
-                title: "Error",
-                description: "Failed to update image order",
-                variant: "destructive",
-              })
-            })
-        }
-        
-        return newItems
+        return arrayMove(items, oldIndex, newIndex)
       })
+      
+      // Update the server with the new order
+      const updatedOrders = images.map((item, index) => ({
+        id: item.id,
+        order: index
+      }))
+      
+      try {
+        await reorderImagesAction(itemId, updatedOrders)
+        // Force invalidate to ensure catalog updates
+        forceInvalidateAndReload(itemId)
+        
+        toast({
+          title: "Success",
+          description: "Image order updated successfully",
+          variant: "default",
+        })
+      } catch (error) {
+        console.error('Error reordering images:', error)
+        toast({
+          title: "Error",
+          description: "Failed to update image order. Please try again.",
+          variant: "destructive",
+        })
+      }
     }
   }
   
