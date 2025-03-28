@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect } from 'react'
+import React from 'react'
 import Image from 'next/image'
 
 // Small, optimized placeholder SVG as static asset
@@ -16,17 +16,6 @@ export function PlaceholderImage({
   width?: number, 
   height?: number
 }) {
-  // Log when the component renders
-  console.log('[PLACEHOLDER] Rendering placeholder image', { width, height, className });
-  
-  // Log when the component mounts/unmounts
-  useEffect(() => {
-    console.log('[PLACEHOLDER] Placeholder image mounted', { width, height });
-    return () => {
-      console.log('[PLACEHOLDER] Placeholder image unmounted', { width, height });
-    };
-  }, [width, height]);
-  
   // If width and height are provided, use them directly
   // Otherwise, fill the container
   const style = width !== undefined && height !== undefined
@@ -46,7 +35,6 @@ export function PlaceholderImage({
         priority={true} // Ensures fast loading
         loading="eager" // Forces immediate loading
         unoptimized={true} // Skip image optimization for SVGs since they're already optimized
-        onLoad={() => console.log('[PLACEHOLDER] SVG image loaded')}
       />
     </div>
   )
