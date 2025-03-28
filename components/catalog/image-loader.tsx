@@ -115,7 +115,7 @@ export function ImageLoader({ itemIds, images, isLoading = false }: ImageLoaderP
         sessionStorage.removeItem('force_reload_images');
       }
     }
-  }, [itemIds, images, isLoading, imageService]);
+  }, [itemIds, images, isLoading, imageService, checkForUpdatedItems]);
   
   // Set up intersection observer to prioritize visible images
   useEffect(() => {

@@ -48,50 +48,48 @@ export function ItemGridView({
 
   // Load images when items change - optimized for grid view
   useEffect(() => {
-    if (items.length > 0 && !isLoading) {
-      console.log('[GRID-VIEW] Items or filters changed, checking for new images to load');
+    if (items.length > 0 && !isLoading)
+    {
+      // Store the current items to avoid unnecessary re-renders
+      const itemIds = items.map(i => i.id);
+      // Figure out which items are new and need loading
+      const newItemIds = itemIds.filter(id => !loadedItemsRef.current.has(id));
       
-      // Find items that haven't been loaded yet
-      const itemsToLoad = items
-        .map(item => item.id)
-        .filter(id => !loadedItemsRef.current.has(id));
-      
-      if (itemsToLoad.length === 0) {
-        console.log('[GRID-VIEW] All visible items already requested, skipping load');
-        return;
-      }
-      
-      console.log('[GRID-VIEW] Loading', itemsToLoad.length, 'new items');
-      
-      const visibleItemIds = itemsToLoad.slice(0, 20); // Load first 20 items immediately
-      
-      // Load visible items first
-      loadImages(visibleItemIds);
-      
-      // Mark these items as loaded
-      visibleItemIds.forEach(id => loadedItemsRef.current.add(id));
-      
-      // Load remaining items after a delay
-      if (itemsToLoad.length > visibleItemIds.length) {
-        const remainingItemIds = itemsToLoad.slice(20);
-        if ('requestIdleCallback' in window) {
-          (window as any).requestIdleCallback(() => {
-            loadImages(remainingItemIds);
-            // Mark these items as loaded too
-            remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
-          });
-        } else {
-          setTimeout(() => {
-            loadImages(remainingItemIds);
-            // Mark these items as loaded too
-            remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
-          }, 300);
+      // Only load images if we have new items
+      if (newItemIds.length > 0) {
+        console.log(`[GRID-VIEW] Loading images for ${newItemIds.length} new items`);
+        
+        // Prioritize first 8 items
+        const priorityItems = newItemIds.slice(0, 8);
+        const remainingItemIds = newItemIds.slice(8);
+        
+        // Load priority items first
+        loadImages(priorityItems);
+        // Mark these items as loaded
+        priorityItems.forEach(id => loadedItemsRef.current.add(id));
+        
+        // Load remaining items after a short delay
+        if (remainingItemIds.length > 0) {
+          // If we have a small number, load them all at once
+          if (remainingItemIds.length < 20) {
+            // Small batch, load all at once after a short delay
+            setTimeout(() => {
+              loadImages(remainingItemIds); 
+              // Mark these items as loaded too
+              remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
+            });
+          } else {
+            setTimeout(() => {
+              loadImages(remainingItemIds);
+              // Mark these items as loaded too
+              remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
+            }, 300);
+          }
         }
       }
     }
   }, [
-    // Use a stable reference with item IDs joined as a string
-    items.map(i => i.id).join(','),
+    items, 
     isLoading, 
     loadImages
   ]);

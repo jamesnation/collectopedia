@@ -303,7 +303,7 @@ function CatalogInner({
       }
     }
   // Use the items.length instead of the entire items array to reduce unnecessary renders
-  }, [isLoading, items.length, loadImages, invalidateCache]);
+  }, [isLoading, items.length, loadImages, invalidateCache, items]);
 
   // Modify the timestamp check useEffect
   useEffect(() => {

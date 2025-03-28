@@ -187,50 +187,44 @@ export function ItemListView({
   // Load images when items change - optimized for list view and showSold toggle
   useEffect(() => {
     if (items.length > 0 && !isLoading) {
-      console.log('[LIST-VIEW] Items or filters changed, checking for new images to load');
+      // Store item IDs in a more stable way
+      const itemIds = items.map(i => i.id);
+      const newItemIds = itemIds.filter(id => !loadedItemsRef.current.has(id));
       
-      // Find items that haven't been loaded yet
-      const itemsToLoad = items
-        .map(item => item.id)
-        .filter(id => !loadedItemsRef.current.has(id));
-      
-      if (itemsToLoad.length === 0) {
-        console.log('[LIST-VIEW] All visible items already requested, skipping load');
-        return;
-      }
-      
-      console.log('[LIST-VIEW] Loading', itemsToLoad.length, 'new items');
-      
-      // Load first 10 items immediately for faster initial render
-      const visibleItemIds = itemsToLoad.slice(0, 10);
-      loadImages(visibleItemIds);
-      
-      // Mark these items as loaded
-      visibleItemIds.forEach(id => loadedItemsRef.current.add(id));
-      
-      // Load remaining items after a delay
-      if (itemsToLoad.length > 10) {
-        const remainingItemIds = itemsToLoad.slice(10);
-        if ('requestIdleCallback' in window) {
-          (window as any).requestIdleCallback(() => {
-            loadImages(remainingItemIds);
-            // Mark these items as loaded too
-            remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
-          });
-        } else {
-          setTimeout(() => {
-            loadImages(remainingItemIds);
-            // Mark these items as loaded too
-            remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
-          }, 100);
+      // Only load images if we have new items
+      if (newItemIds.length > 0) {
+        console.log(`[LIST-VIEW] Loading images for ${newItemIds.length} new items`);
+        
+        // Prioritize first 10 items
+        const priorityItems = newItemIds.slice(0, 10);
+        const remainingItemIds = newItemIds.slice(10);
+        
+        // Load priority items first
+        loadImages(priorityItems);
+        // Mark these items as loaded
+        priorityItems.forEach(id => loadedItemsRef.current.add(id));
+        
+        // Load remaining items after a delay
+        if (remainingItemIds.length > 0) {
+          // If we have a small number, load them all at once
+          if (remainingItemIds.length < 20) {
+            setTimeout(() => {
+              loadImages(remainingItemIds); 
+              // Mark these items as loaded too
+              remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
+            });
+          } else {
+            setTimeout(() => {
+              loadImages(remainingItemIds);
+              // Mark these items as loaded too
+              remainingItemIds.forEach(id => loadedItemsRef.current.add(id));
+            }, 100);
+          }
         }
       }
     }
-  // We use items.map(i => i.id).join() to create a stable dependency that only changes when the actual items change
-  // This prevents reloads when only showSold changes but the visible items remain the same
   }, [
-    // Use a stable reference with item IDs joined as a string
-    items.map(i => i.id).join(','),
+    items,
     isLoading, 
     loadImages
   ]);

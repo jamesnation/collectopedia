@@ -2,6 +2,9 @@ import { NextResponse, NextRequest } from 'next/server';
 import axios from 'axios';
 import qs from 'querystring';
 
+// Tell Next.js this is a dynamic route that shouldn't be statically optimized
+export const dynamic = 'force-dynamic';
+
 const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
