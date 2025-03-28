@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -115,6 +115,21 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     "Used"
   ];
 
+  // Define fetchImages using useCallback
+  const fetchImages = useCallback(async (itemId: string) => {
+    const result = await getImagesByItemIdAction(itemId);
+    if (result.isSuccess && result.data) {
+      setImages(result.data);
+      
+      // Always invalidate the cache when fetching fresh images
+      // This ensures the catalog will reload the latest images
+      console.log(`[ITEM-DETAILS] Invalidating cache for item ${itemId} after fetching new images`);
+      invalidateCache(itemId);
+    } else {
+      console.error("Failed to fetch images:", result.error);
+    }
+  }, [invalidateCache]);
+  
   useEffect(() => {
     if (id) {
       fetchItem(id)
@@ -123,7 +138,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
       loadCustomBrands()
       loadCustomFranchises()
     }
-  }, [id])
+  }, [id, fetchImages])
 
   useEffect(() => {
     if (item) {
@@ -165,20 +180,6 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
       setSoldDate(new Date(result.data.soldDate).toISOString().split('T')[0])
     }
   }
-
-  const fetchImages = async (itemId: string) => {
-    const result = await getImagesByItemIdAction(itemId);
-    if (result.isSuccess && result.data) {
-      setImages(result.data);
-      
-      // Always invalidate the cache when fetching fresh images
-      // This ensures the catalog will reload the latest images
-      console.log(`[ITEM-DETAILS] Invalidating cache for item ${itemId} after fetching new images`);
-      invalidateCache(itemId);
-    } else {
-      console.error("Failed to fetch images:", result.error);
-    }
-  };
   
   // Add a function to handle navigation away from the page
   // This ensures the cache is invalidated when the user leaves the page
@@ -198,7 +199,7 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
         }
       }
     };
-  }, [item?.id]);
+  }, [item?.id, invalidateCache]);
 
   const loadCustomBrands = async () => {
     const result = await getCustomBrandsAction();

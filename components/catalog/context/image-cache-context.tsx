@@ -162,7 +162,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
   }, [cachedData]);
   
   // Function to load images for multiple items in batches
-  const loadImages = async (itemIds: string[], force = false) => {
+  const loadImages = useCallback(async (itemIds: string[], force = false) => {
     // Avoid unnecessary work if no items provided
     if (!itemIds.length) return;
     
@@ -257,7 +257,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       // If only one item, use the individual endpoint
       await loadImagesIndividually(filteredIdsToLoad);
     }
-  };
+  }, [imageCache, isLoading, hasCompletedLoading]);
   
   // Helper function to load images individually (as a fallback)
   const loadImagesIndividually = async (itemIds: string[]) => {
@@ -327,7 +327,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
 
   // NEW FUNCTION: Preload both sold and unsold item images at once
   // This ensures images are loaded once regardless of filter changes
-  const preloadItemImages = async (soldItemIds: string[], unsoldItemIds: string[]) => {
+  const preloadItemImages = useCallback(async (soldItemIds: string[], unsoldItemIds: string[]) => {
     console.log('[CACHE] preloadItemImages called with', soldItemIds.length, 'sold items and', unsoldItemIds.length, 'unsold items');
     
     // Combine both arrays and deduplicate using Set
@@ -348,9 +348,9 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     
     // Call the existing loadImages function with filtered IDs
     loadImages(filteredItemIds);
-  };
+  }, [isLoading, hasCompletedLoading, loadImages]);
 
-  const invalidateCache = (itemId?: string) => {
+  const invalidateCache = useCallback((itemId?: string) => {
     if (itemId) {
       console.log('[CACHE] Invalidating cache for item', itemId);
       
@@ -409,7 +409,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-  };
+  }, []);
 
   // Add a new useEffect to check for updates on focus and periodically
   useEffect(() => {

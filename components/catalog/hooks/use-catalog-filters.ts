@@ -50,7 +50,18 @@ export function useCatalogFilters({ items }: UseCatalogFiltersProps) {
       setShowWithImages(filters.showWithImages);
       setSortDescriptor(filters.sortDescriptor);
     }
-  }, [isLoaded]); // Only depend on isLoaded, not filters
+  }, [
+    isLoaded, 
+    filters.view,
+    filters.searchQuery,
+    filters.typeFilter,
+    filters.franchiseFilter,
+    filters.yearFilter,
+    filters.showSold,
+    filters.soldYearFilter,
+    filters.showWithImages,
+    filters.sortDescriptor
+  ]); // Include all dependencies
 
   // Create a debounced search handler
   const debouncedSetSearch = useDebouncedCallback(

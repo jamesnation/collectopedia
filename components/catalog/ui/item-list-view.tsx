@@ -229,7 +229,7 @@ export function ItemListView({
   // We use items.map(i => i.id).join() to create a stable dependency that only changes when the actual items change
   // This prevents reloads when only showSold changes but the visible items remain the same
   }, [
-    items.map(i => i.id).join(),
+    items,
     isLoading, 
     loadImages
   ]);

@@ -10,7 +10,7 @@
  * - Image cache invalidation
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useImageCache } from '../../catalog/context/image-cache-context'
 import { 
@@ -28,15 +28,8 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
   const { toast } = useToast()
   const { invalidateCache } = useImageCache()
   
-  // Fetch images when item ID changes
-  useEffect(() => {
-    if (itemId) {
-      fetchImages(itemId)
-    }
-  }, [itemId])
-  
-  // Fetch images associated with this item
-  const fetchImages = async (id: string) => {
+  // Define fetchImages with useCallback before using it in useEffect
+  const fetchImages = useCallback(async (id: string) => {
     const result = await getImagesByItemIdAction(id)
     if (result.isSuccess && result.data) {
       setImages(result.data)
@@ -48,7 +41,14 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
     } else {
       console.error("Failed to fetch images:", result.error)
     }
-  }
+  }, [invalidateCache])
+  
+  // Fetch images when item ID changes
+  useEffect(() => {
+    if (itemId) {
+      fetchImages(itemId)
+    }
+  }, [itemId, fetchImages])
   
   // Handle upload of a new image
   const handleImageUpload = async (url: string) => {

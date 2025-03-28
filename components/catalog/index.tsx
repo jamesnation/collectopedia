@@ -217,7 +217,7 @@ function CatalogInner({
         imageService.preloadItemImages(allItemIds, imagesMap);
       }
     }
-  }, [items.length, isLoading, imageService, createImagesMap]);
+  }, [items, isLoading, imageService, createImagesMap]);
 
   // Update the refresh cache effect
   useEffect(() => {
@@ -283,7 +283,7 @@ function CatalogInner({
         loadImages(itemIds);
       }
     }
-  }, [isLoading, items]); // Depend on items to refresh when items array changes
+  }, [isLoading, items, loadImages]); // Include loadImages dependency
 
   // Modify the timestamp check useEffect
   useEffect(() => {
@@ -335,7 +335,7 @@ function CatalogInner({
       // Run the timestamp check
       checkImageTimestamps();
     }
-  }, [isLoading, items.length]); // Only depend on items.length to avoid excess runs
+  }, [isLoading, items, loadImages, invalidateCache]); // Include all dependencies
 
   const handleShowSoldChange = (show: boolean) => {
     console.log('[CATALOG] Toggling showSold to', show);
