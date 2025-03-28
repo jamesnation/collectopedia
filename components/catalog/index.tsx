@@ -375,7 +375,7 @@ function CatalogInner({
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
             <div className="space-y-2 sm:space-y-3">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Your Collection Catalog</h1>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">My Collection</h1>
             </div>
             <div className="flex items-center space-x-2">
               <AddItemModal
