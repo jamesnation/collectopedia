@@ -21,12 +21,34 @@ import {
 } from '@/actions/images-actions'
 import { SelectImage } from '@/db/schema/images-schema'
 import { arrayMove } from '@dnd-kit/sortable'
+import { useRouter } from 'next/navigation'
 
 export function useImageManagement(itemId: string | undefined, userId: string | undefined) {
   const [images, setImages] = useState<SelectImage[]>([])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const { toast } = useToast()
-  const { invalidateCache } = useImageCache()
+  const { invalidateCache, loadImages } = useImageCache()
+  const router = useRouter()
+  
+  // Track if we've made changes that need to be reflected in the catalog
+  const [hasImageChanges, setHasImageChanges] = useState(false)
+  
+  // Enhanced invalidation helper function that also forces reload
+  const forceInvalidateAndReload = useCallback((id: string) => {
+    console.log(`[ITEM-DETAILS] Force invalidating and reloading images for item ${id}`)
+    
+    // First invalidate the cache
+    invalidateCache(id)
+    
+    // Set flag to track that changes have been made
+    setHasImageChanges(true)
+    
+    // Attempt to immediately reload the images into the cache
+    // This makes them available faster when returning to catalog
+    setTimeout(() => {
+      loadImages([id], true)
+    }, 100)
+  }, [invalidateCache, loadImages])
   
   // Define fetchImages with useCallback before using it in useEffect
   const fetchImages = useCallback(async (id: string) => {
@@ -34,10 +56,18 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
     if (result.isSuccess && result.data) {
       setImages(result.data)
       
-      // Always invalidate the cache when fetching fresh images
-      // This ensures the catalog will reload the latest images
-      console.log(`[ITEM-DETAILS] Invalidating cache for item ${id} after fetching new images`)
-      invalidateCache(id)
+      // Set session storage to help catalog recognize the changes immediately
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('invalidated_item', id)
+        sessionStorage.setItem('invalidated_timestamp', Date.now().toString())
+        sessionStorage.setItem('force_reload_images', 'true')
+      }
+      
+      // Only invalidate cache on first load if we have new data
+      if (result.data.length > 0) {
+        console.log(`[ITEM-DETAILS] Loaded ${result.data.length} images for item ${id}`)
+        invalidateCache(id)
+      }
     } else {
       console.error("Failed to fetch images:", result.error)
     }
@@ -49,6 +79,43 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
       fetchImages(itemId)
     }
   }, [itemId, fetchImages])
+  
+  // Function to navigate back to catalog, ensuring images will be refreshed
+  const navigateBackToCatalog = useCallback(() => {
+    if (itemId && hasImageChanges) {
+      // Set flags in sessionStorage to force reload in catalog
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('invalidated_item', itemId)
+        sessionStorage.setItem('invalidated_timestamp', Date.now().toString())
+        sessionStorage.setItem('force_reload_images', 'true')
+        
+        // Force a quick reload before navigating
+        loadImages([itemId], true)
+      }
+    }
+    
+    // Navigate after a short delay to allow cache operations to complete
+    setTimeout(() => {
+      router.push('/my-collection')
+    }, 150)
+  }, [itemId, hasImageChanges, router, loadImages])
+  
+  // Add cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // This runs when component unmounts
+      if (itemId && hasImageChanges) {
+        console.log(`[ITEM-DETAILS] Component unmounting with image changes for ${itemId}`)
+        
+        // Set flags in sessionStorage to force reload in catalog
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('invalidated_item', itemId)
+          sessionStorage.setItem('invalidated_timestamp', Date.now().toString())
+          sessionStorage.setItem('force_reload_images', 'true')
+        }
+      }
+    }
+  }, [itemId, hasImageChanges])
   
   // Handle upload of a new image
   const handleImageUpload = async (url: string) => {
@@ -81,8 +148,8 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
         // Set the current image index to show the new image
         setCurrentImageIndex(images.length)
         
-        // Invalidate the image cache for this item
-        invalidateCache(itemId)
+        // Enhanced invalidation with forced reload
+        forceInvalidateAndReload(itemId)
         
         toast({
           title: "Image uploaded",
@@ -111,8 +178,8 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
         setImages(prevImages => prevImages.filter(img => img.id !== imageId))
         setCurrentImageIndex(prevIndex => Math.min(prevIndex, images.length - 2))
         
-        // Invalidate the image cache for this item
-        invalidateCache(itemId)
+        // Enhanced invalidation with forced reload
+        forceInvalidateAndReload(itemId)
         
         toast({
           title: "Image deleted",
@@ -173,9 +240,8 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
               // This ensures the primary image is correctly identified for AI price estimation
               fetchImages(itemId)
               
-              // Invalidate the image cache for this item
-              console.log(`[ITEM-DETAILS] Invalidating cache for item ${itemId} after reordering images`)
-              invalidateCache(itemId)
+              // Enhanced invalidation with forced reload
+              forceInvalidateAndReload(itemId)
               
               toast({
                 title: "Success",
@@ -207,6 +273,8 @@ export function useImageManagement(itemId: string | undefined, userId: string | 
     handleNextImage,
     setActiveImage,
     handleImageReorder,
-    refetchImages: () => itemId && fetchImages(itemId)
+    refetchImages: () => itemId && fetchImages(itemId),
+    navigateBackToCatalog,
+    hasImageChanges
   }
 } 

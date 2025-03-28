@@ -90,7 +90,8 @@ export function ItemGridView({
       }
     }
   }, [
-    items,
+    // Use a stable reference with item IDs joined as a string
+    items.map(i => i.id).join(','),
     isLoading, 
     loadImages
   ]);

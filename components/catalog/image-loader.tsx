@@ -25,20 +25,95 @@ export function ImageLoader({ itemIds, images, isLoading = false }: ImageLoaderP
   const visibleItemsRef = useRef<string[]>([]);
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   
+  // Check for recently updated items
+  const checkForUpdatedItems = () => {
+    if (typeof window === 'undefined') return null;
+    
+    const invalidatedItem = sessionStorage.getItem('invalidated_item');
+    const timestamp = sessionStorage.getItem('invalidated_timestamp');
+    
+    if (invalidatedItem && timestamp) {
+      const timestampNum = parseInt(timestamp);
+      const now = Date.now();
+      const isRecent = (now - timestampNum) < 30000; // 30 seconds
+      
+      if (isRecent && itemIds.includes(invalidatedItem)) {
+        console.log(`[IMAGE-LOADER] Detected recently updated item: ${invalidatedItem}`);
+        return invalidatedItem;
+      }
+    }
+    
+    return null;
+  };
+  
   // Load images when component mounts or itemIds change
   useEffect(() => {
     if (isLoading || !itemIds.length || !images) return;
     
+    // Get recently updated item first
+    const updatedItemId = checkForUpdatedItems();
+    
+    // Get new items that haven't been processed yet
     const newItems = itemIds.filter(id => !processedItemsRef.current.has(id));
     
     if (newItems.length > 0) {
       console.log(`[IMAGE-LOADER] Loading images for ${newItems.length} new items`);
       
-      // Preload images with appropriate priority
-      imageService.preloadItemImages(newItems, images);
+      // If we have a recently updated item, prioritize it
+      if (updatedItemId && images[updatedItemId]) {
+        console.log(`[IMAGE-LOADER] Prioritizing recently updated item: ${updatedItemId}`);
+        
+        // Preload this specific item's images with highest priority
+        const updatedItemImages = images[updatedItemId];
+        if (updatedItemImages && updatedItemImages.length > 0) {
+          updatedItemImages.forEach(img => {
+            imageService.preloadImage(img.url, 100); // Use highest priority (100)
+          });
+          
+          // Mark as processed
+          processedItemsRef.current.add(updatedItemId);
+          
+          // Clear from sessionStorage
+          sessionStorage.removeItem('invalidated_item');
+          sessionStorage.removeItem('invalidated_timestamp');
+          sessionStorage.removeItem('force_reload_images');
+        }
+        
+        // Filter out the prioritized item from newItems
+        const otherNewItems = newItems.filter(id => id !== updatedItemId);
+        
+        // Load the rest with normal priority after a small delay
+        if (otherNewItems.length > 0) {
+          setTimeout(() => {
+            imageService.preloadItemImages(otherNewItems, images);
+            
+            // Mark items as processed
+            otherNewItems.forEach(id => processedItemsRef.current.add(id));
+          }, 100);
+        }
+      } else {
+        // No updated item, just load all new items normally
+        imageService.preloadItemImages(newItems, images);
+        
+        // Mark items as processed
+        newItems.forEach(id => processedItemsRef.current.add(id));
+      }
+    } else if (updatedItemId && images[updatedItemId]) {
+      // When we have no new items but an updated item that's already processed,
+      // still prioritize its images since they might have changed
+      console.log(`[IMAGE-LOADER] Re-prioritizing updated item with no new items: ${updatedItemId}`);
+      const updatedItemImages = images[updatedItemId];
       
-      // Mark items as processed
-      newItems.forEach(id => processedItemsRef.current.add(id));
+      if (updatedItemImages && updatedItemImages.length > 0) {
+        updatedItemImages.forEach(img => {
+          imageService.preloadImage(img.url, 100); // Use highest priority (100)
+        });
+        
+        // Clear from sessionStorage
+        sessionStorage.removeItem('invalidated_item');
+        sessionStorage.removeItem('invalidated_timestamp');
+        sessionStorage.removeItem('force_reload_images');
+      }
     }
   }, [itemIds, images, isLoading, imageService]);
   

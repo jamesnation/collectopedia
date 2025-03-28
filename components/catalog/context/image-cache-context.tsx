@@ -161,6 +161,72 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
     return [];
   }, [cachedData]);
   
+  // Helper function to load images individually (as a fallback)
+  const loadImagesIndividually = useCallback(async (itemIds: string[]) => {
+    // Process in batches with increased batch size for faster loading
+    const batchSize = 50; // Increased from 25
+    
+    // Split into batches
+    for (let i = 0; i < itemIds.length; i += batchSize) {
+      const batchIds = itemIds.slice(i, i + batchSize);
+      debugLog('[CACHE] Processing batch', Math.floor(i/batchSize) + 1, 'with', batchIds.length, 'items');
+      
+      try {
+        // Load images for current batch in parallel
+        await Promise.all(
+          batchIds.map(async (itemId) => {
+            try {
+              // Reduce the logging frequency
+              const result = await getImagesByItemIdAction(itemId);
+              
+              if (result.isSuccess && result.data) {
+                // Only log if images were actually found
+                if (result.data.length > 0) {
+                  debugLog('[CACHE] Successfully fetched', result.data.length, 'images for item', itemId);
+                }
+                
+                setCachedData(prev => {
+                  const newCache = {
+                    ...prev,
+                    [itemId]: {
+                      images: result.data || [],
+                      cachedAt: Date.now()
+                    }
+                  };
+                  // Only log if there are actual images
+                  if (result.data && result.data.length > 0) {
+                    debugLog('[CACHE] Updated cache for item', itemId, 'with', result.data.length, 'images');
+                  }
+                  return newCache;
+                });
+              } else {
+                console.warn('[CACHE] Failed to fetch images for item', itemId, result.error);
+              }
+            } catch (error) {
+              console.error(`[CACHE] Error fetching images for item ${itemId}:`, error);
+            } finally {
+              // Reduce logging here as well
+              debugLog('[CACHE] Completed loading for item', itemId);
+              
+              // Mark the item as having completed loading, regardless of result
+              setHasCompletedLoading(prev => ({
+                ...prev,
+                [itemId]: true
+              }));
+              
+              setIsLoading(prev => ({
+                ...prev,
+                [itemId]: false,
+              }));
+            }
+          })
+        );
+      } catch (error) {
+        console.error('[CACHE] Error loading batch:', error);
+      }
+    }
+  }, []);
+  
   // Function to load images for multiple items in batches
   const loadImages = useCallback(async (itemIds: string[], force = false) => {
     // Avoid unnecessary work if no items provided
@@ -257,73 +323,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       // If only one item, use the individual endpoint
       await loadImagesIndividually(filteredIdsToLoad);
     }
-  }, [imageCache, isLoading, hasCompletedLoading]);
-  
-  // Helper function to load images individually (as a fallback)
-  const loadImagesIndividually = async (itemIds: string[]) => {
-    // Process in batches with increased batch size for faster loading
-    const batchSize = 50; // Increased from 25
-    
-    // Split into batches
-    for (let i = 0; i < itemIds.length; i += batchSize) {
-      const batchIds = itemIds.slice(i, i + batchSize);
-      debugLog('[CACHE] Processing batch', Math.floor(i/batchSize) + 1, 'with', batchIds.length, 'items');
-      
-      try {
-        // Load images for current batch in parallel
-        await Promise.all(
-          batchIds.map(async (itemId) => {
-            try {
-              // Reduce the logging frequency
-              const result = await getImagesByItemIdAction(itemId);
-              
-              if (result.isSuccess && result.data) {
-                // Only log if images were actually found
-                if (result.data.length > 0) {
-                  debugLog('[CACHE] Successfully fetched', result.data.length, 'images for item', itemId);
-                }
-                
-                setCachedData(prev => {
-                  const newCache = {
-                    ...prev,
-                    [itemId]: {
-                      images: result.data || [],
-                      cachedAt: Date.now()
-                    }
-                  };
-                  // Only log if there are actual images
-                  if (result.data && result.data.length > 0) {
-                    debugLog('[CACHE] Updated cache for item', itemId, 'with', result.data.length, 'images');
-                  }
-                  return newCache;
-                });
-              } else {
-                console.warn('[CACHE] Failed to fetch images for item', itemId, result.error);
-              }
-            } catch (error) {
-              console.error(`[CACHE] Error fetching images for item ${itemId}:`, error);
-            } finally {
-              // Reduce logging here as well
-              debugLog('[CACHE] Completed loading for item', itemId);
-              
-              // Mark the item as having completed loading, regardless of result
-              setHasCompletedLoading(prev => ({
-                ...prev,
-                [itemId]: true
-              }));
-              
-              setIsLoading(prev => ({
-                ...prev,
-                [itemId]: false,
-              }));
-            }
-          })
-        );
-      } catch (error) {
-        console.error('[CACHE] Error loading batch:', error);
-      }
-    }
-  };
+  }, [imageCache, isLoading, hasCompletedLoading, loadImagesIndividually]);
 
   // NEW FUNCTION: Preload both sold and unsold item images at once
   // This ensures images are loaded once regardless of filter changes
@@ -346,8 +346,20 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    // Call the existing loadImages function with filtered IDs
-    loadImages(filteredItemIds);
+    // Prioritize loading - load first batch immediately for visibility
+    const priorityItems = filteredItemIds.slice(0, 20);
+    console.log('[CACHE] Loading', priorityItems.length, 'high priority items immediately');
+    loadImages(priorityItems, true); // Force high priority items to ensure they load immediately
+    
+    // Load remaining items after a delay
+    if (filteredItemIds.length > 20) {
+      const remainingItems = filteredItemIds.slice(20);
+      console.log('[CACHE] Will load', remainingItems.length, 'remaining items after a delay');
+      
+      setTimeout(() => {
+        loadImages(remainingItems);
+      }, 100);
+    }
   }, [isLoading, hasCompletedLoading, loadImages]);
 
   const invalidateCache = useCallback((itemId?: string) => {
@@ -391,7 +403,21 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
         } catch (e) {
           console.error('[CACHE] Error updating localStorage cache:', e);
         }
+        
+        // NEW: Set invalidation flag to prioritize loading this item on return to catalog
+        try {
+          sessionStorage.setItem('invalidated_item', itemId);
+          sessionStorage.setItem('invalidated_timestamp', Date.now().toString());
+          console.log('[CACHE] Set invalidation flags for item', itemId);
+        } catch (e) {
+          console.error('[CACHE] Error setting invalidation flags:', e);
+        }
       }
+      
+      // NEW: Immediately try to reload the item if we're in a component that might need it
+      setTimeout(() => {
+        loadImages([itemId], true);
+      }, 0);
     } else {
       // Clear entire cache
       console.log('[CACHE] Invalidating entire image cache');
@@ -409,7 +435,7 @@ export function ImageCacheProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-  }, []);
+  }, [loadImages]);
 
   // Add a new useEffect to check for updates on focus and periodically
   useEffect(() => {

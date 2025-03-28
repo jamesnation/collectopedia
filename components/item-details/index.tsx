@@ -9,9 +9,9 @@
 
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { useRegionContext } from "@/contexts/region-context"
+import { Button } from "@/components/ui/button"
 
 // Import hooks
 import { useItemData } from './hooks/use-item-data'
@@ -48,7 +48,9 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
     handlePreviousImage,
     handleNextImage,
     setActiveImage,
-    handleImageReorder 
+    handleImageReorder,
+    navigateBackToCatalog,
+    hasImageChanges
   } = useImageManagement(id, item?.userId)
   
   const {
@@ -116,10 +118,19 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black/30">
       <main className="container mx-auto px-2 sm:px-4 py-8 sm:py-12 max-w-7xl overflow-x-hidden">
-        <Link href="/my-collection" className="inline-flex items-center text-purple-400 hover:text-primary/50 mb-4 sm:mb-8">
+        <Button 
+          onClick={navigateBackToCatalog} 
+          variant="ghost" 
+          className="inline-flex items-center text-purple-400 hover:text-primary/50 mb-4 sm:mb-8 p-0"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Collection
-        </Link>
+          {hasImageChanges && (
+            <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded-full">
+              Updated
+            </span>
+          )}
+        </Button>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-10">
           {/* Image gallery section */}

@@ -227,25 +227,30 @@ function CatalogInner({
       
       // Check if we're coming back from an item detail page with invalidated cache
       let invalidatedItemId: string | null = null;
+      let forceReloadImages = false;
+      
       if (typeof window !== 'undefined') {
         invalidatedItemId = sessionStorage.getItem('invalidated_item');
         const timestamp = sessionStorage.getItem('invalidated_timestamp');
+        forceReloadImages = sessionStorage.getItem('force_reload_images') === 'true';
         
         if (invalidatedItemId && timestamp) {
-          // Only consider it valid if it happened in the last 10 seconds
+          // Only consider it valid if it happened in the last 30 seconds (increased from 10s)
           const timestampNum = parseInt(timestamp);
           const now = Date.now();
-          const isRecent = (now - timestampNum) < 10000; // 10 seconds
+          const isRecent = (now - timestampNum) < 30000; // 30 seconds
           
           if (isRecent) {
-            console.log(`[CATALOG] Detected recently invalidated item: ${invalidatedItemId}`);
+            console.log(`[CATALOG] Detected recently invalidated item: ${invalidatedItemId}, forceReload: ${forceReloadImages}`);
             
             // Clear the session storage
             sessionStorage.removeItem('invalidated_item');
             sessionStorage.removeItem('invalidated_timestamp');
+            sessionStorage.removeItem('force_reload_images');
           } else {
             // Too old, ignore it
             invalidatedItemId = null;
+            forceReloadImages = false;
           }
         }
       }
@@ -270,20 +275,35 @@ function CatalogInner({
         // If we have a recently invalidated item, force reload just that one
         if (itemIds.includes(invalidatedItemId)) {
           console.log(`[CATALOG] Force reloading images for invalidated item: ${invalidatedItemId}`);
-          loadImages([invalidatedItemId], true); // Force reload just this item
+          
+          // If force reload flag is set, invalidate cache first to ensure fresh data
+          if (forceReloadImages) {
+            invalidateCache(invalidatedItemId);
+            // Add a small delay to ensure cache is cleared before loading
+            setTimeout(() => {
+              loadImages([invalidatedItemId], true); // Force reload just this item
+            }, 50);
+          } else {
+            loadImages([invalidatedItemId], true); // Force reload just this item
+          }
         }
         
-        // Also load the rest normally 
+        // Also load the rest normally (with a slight delay to prioritize the invalidated item)
         const otherIds = itemIds.filter((id: string) => id !== invalidatedItemId);
         if (otherIds.length > 0) {
-          loadImages(otherIds); // Load other items normally
+          setTimeout(() => {
+            console.log(`[CATALOG] Loading ${otherIds.length} other items after handling invalidated item`);
+            loadImages(otherIds); // Load other items normally
+          }, 100);
         }
       } else {
         // No recently invalidated items, just load everything normally
+        console.log(`[CATALOG] No invalidated items detected, loading all ${itemIds.length} items normally`);
         loadImages(itemIds);
       }
     }
-  }, [isLoading, items, loadImages]); // Include loadImages dependency
+  // Use the items.length instead of the entire items array to reduce unnecessary renders
+  }, [isLoading, items.length, loadImages, invalidateCache]);
 
   // Modify the timestamp check useEffect
   useEffect(() => {
