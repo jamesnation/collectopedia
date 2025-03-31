@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 import qs from 'querystring';
+import { isValidUrl, createSecureUrl, getSecurityHeaders } from '@/utils/validate-url';
 
 // Tell Next.js this is a dynamic route that shouldn't be statically optimized
 export const dynamic = 'force-dynamic';
 
 const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
+
+// Create secure axios instance with predefined base URL
+const ebayAuthClient = axios.create({
+  baseURL: 'https://api.ebay.com',
+  headers: {
+    ...getSecurityHeaders(),
+    'Content-Type': 'application/x-www-form-urlencoded',
+  }
+});
 
 // Get eBay token - reused from main eBay API route
 async function getEbayToken() {
@@ -15,12 +25,14 @@ async function getEbayToken() {
 
   try {
     console.log('Requesting eBay token for image search...');
-    const response = await axios.post('https://api.ebay.com/identity/v1/oauth2/token', data, {
+    const tokenUrl = '/identity/v1/oauth2/token';
+    
+    const response = await ebayAuthClient.post(tokenUrl, data, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${auth}`
       }
     });
+    
     console.log('eBay token response for image search:', response.status);
     return response.data.access_token;
   } catch (error) {

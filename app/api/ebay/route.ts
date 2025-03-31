@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import axios from 'axios';
 import qs from 'querystring';
+import { isValidUrl, createSecureUrl, getSecurityHeaders } from '@/utils/validate-url';
 
 // Tell Next.js this is a dynamic route that shouldn't be statically optimized
 export const dynamic = 'force-dynamic';
@@ -8,6 +9,31 @@ export const dynamic = 'force-dynamic';
 const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+
+// Create secure axios instances with predefined base URLs
+const ebayAuthClient = axios.create({
+  baseURL: 'https://api.ebay.com',
+  headers: {
+    ...getSecurityHeaders(),
+    'Content-Type': 'application/x-www-form-urlencoded',
+  }
+});
+
+const ebayBrowseClient = axios.create({
+  baseURL: 'https://api.ebay.com/buy/browse/v1',
+  headers: {
+    ...getSecurityHeaders()
+  }
+});
+
+const rapidApiClient = axios.create({
+  baseURL: 'https://ebay-average-selling-price.p.rapidapi.com',
+  headers: {
+    ...getSecurityHeaders(),
+    'content-type': 'application/json',
+    'X-RapidAPI-Host': 'ebay-average-selling-price.p.rapidapi.com'
+  }
+});
 
 // Define region configuration types
 interface RegionConfig {
@@ -47,12 +73,14 @@ async function getEbayToken() {
 
   try {
     console.log('Getting eBay token...');
-    const response = await axios.post('https://api.ebay.com/identity/v1/oauth2/token', data, {
+    const tokenUrl = '/identity/v1/oauth2/token';
+    
+    const response = await ebayAuthClient.post(tokenUrl, data, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${auth}`
       }
     });
+    
     console.log('eBay token obtained');
     return response.data.access_token;
   } catch (error) {
@@ -70,33 +98,31 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
 
     if (listingType === 'sold') {
       // Use RapidAPI for sold items
-      const options = {
-        method: 'POST',
-        url: 'https://ebay-average-selling-price.p.rapidapi.com/findCompletedItems',
-        headers: {
-          'content-type': 'application/json',
-          'X-RapidAPI-Key': RAPIDAPI_KEY,
-          'X-RapidAPI-Host': 'ebay-average-selling-price.p.rapidapi.com'
-        },
-        data: {
-          keywords: searchTerm,
-          max_search_results: '100',
-          category_id: '9355', // Toys & Hobbies category
-          site_id: regionConfig.siteId, // Dynamic based on region
-          remove_outliers: true
-        }
-      };
+      if (!RAPIDAPI_KEY) {
+        console.error('RAPIDAPI_KEY is not set');
+        return { lowest: null, median: null, highest: null, listingType, error: 'API configuration error' };
+      }
       
       // Add condition to keywords for sold items
+      let keywords = searchTerm;
       if (condition) {
-        options.data.keywords = `${options.data.keywords} ${condition}`;
+        keywords = `${keywords} ${condition}`;
         console.log(`Adding condition "${condition}" to search term for sold items`);
       }
       
-      console.log('RapidAPI request URL:', options.url);
-      console.log('RapidAPI request data:', options.data);
+      console.log('RapidAPI request endpoint: /findCompletedItems');
       
-      const response = await axios.request(options);
+      const response = await rapidApiClient.post('/findCompletedItems', {
+        keywords,
+        max_search_results: '100',
+        category_id: '9355', // Toys & Hobbies category
+        site_id: regionConfig.siteId, // Dynamic based on region
+        remove_outliers: true
+      }, {
+        headers: {
+          'X-RapidAPI-Key': RAPIDAPI_KEY
+        }
+      });
       
       // Process the data from RapidAPI
       const completedItems = response.data;
@@ -154,16 +180,9 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
         filterString += `,conditions:${condition.toUpperCase()}`;
       }
       
-      console.log('eBay API request URL:', 'https://api.ebay.com/buy/browse/v1/item_summary/search');
-      console.log('eBay API request params:', {
-        q: searchTerm,
-        sort: 'price',
-        limit: 100,
-        filter: filterString
-      });
-      console.log('eBay API token (first 10 chars):', token.substring(0, 10));
+      console.log('eBay API request endpoint: /item_summary/search');
       
-      const response = await axios.get('https://api.ebay.com/buy/browse/v1/item_summary/search', {
+      const response = await ebayBrowseClient.get('/item_summary/search', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-EBAY-C-MARKETPLACE-ID': regionConfig.marketplaceId
@@ -175,6 +194,7 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
           filter: filterString
         }
       });
+      
       console.log('eBay API response:', response.status, response.statusText);
 
       const items = response.data.itemSummaries;
