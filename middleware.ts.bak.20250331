@@ -23,11 +23,6 @@ export default clerkMiddleware(async (auth, req) => {
   const pathname = req.nextUrl.pathname;
   let response = NextResponse.next();
 
-  // Extra security check for middleware subrequests to protect against bypass vulnerability
-  if (req.headers.get('x-middleware-subrequest') && isProtectedRoute(req) && !userId) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
   // Cache static assets more aggressively
   if (isStaticAsset(req)) {
     response.headers.set(
@@ -58,17 +53,6 @@ export default clerkMiddleware(async (auth, req) => {
   return response;
 });
 
-// Updated matcher configuration with more secure patterns
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-    '/(api|trpc)(.*)'
-  ]
+  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"]
 };

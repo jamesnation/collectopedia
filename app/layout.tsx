@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description: "Manage your collection with ease",
 };
 
+// Force dynamic rendering for the root layout
+export const dynamic = 'force-dynamic';
+
 // This function is optimized to check for profiles only once per session
 async function ensureUserProfile(userId: string) {
   const profileChecked = cookies().get('profile-checked');

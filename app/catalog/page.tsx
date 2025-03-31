@@ -6,6 +6,9 @@ import { getCustomFranchisesAction } from '@/actions/custom-franchises-actions';
 import { getCustomBrandsAction } from '@/actions/custom-brands-actions';
 import { auth } from "@clerk/nextjs/server";
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export default async function CatalogPage() {
   // Get the current user ID from the auth sessions
   const { userId } = auth();

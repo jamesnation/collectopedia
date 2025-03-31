@@ -5,6 +5,9 @@ import { getCustomFranchisesAction } from "@/actions/custom-franchises-actions";
 import { getItemsByUserIdAction } from "@/actions/items-actions";
 import CatalogPage from "@/components/catalog-page";
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export default async function CollectionPage() {
   const { userId } = auth();
   

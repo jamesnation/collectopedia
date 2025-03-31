@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { cn } from "@/lib/utils";
 import { auth } from "@clerk/nextjs/server";
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export default async function PricingPage() {
   const { userId } = auth();
 

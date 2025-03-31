@@ -5,6 +5,9 @@ import { getItemsByUserIdAction, updateItemAction } from '@/actions/items-action
 import { recordEbayHistoryForUserAction } from '@/actions/ebay-history-actions';
 import { SelectItem } from '@/db/schema/items-schema';
 
+// Force dynamic API route
+export const dynamic = 'force-dynamic';
+
 /**
  * Process a larger batch of items with progress tracking
  * This endpoint will update a configurable number of items at once

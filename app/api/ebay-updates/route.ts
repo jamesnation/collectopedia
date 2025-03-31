@@ -5,6 +5,9 @@ import { getItemsByUserIdAction, updateItemAction } from '@/actions/items-action
 import { recordEbayHistoryForUserAction } from '@/actions/ebay-history-actions';
 import { SelectItem } from '@/db/schema/items-schema';
 
+// Force dynamic API route
+export const dynamic = 'force-dynamic';
+
 // Define interfaces for our batch processing
 interface ItemUpdate {
   id: string;
