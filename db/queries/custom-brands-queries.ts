@@ -18,6 +18,23 @@ export async function getCustomBrands() {
   return brands;
 }
 
+export async function getCustomBrandsByUserId(userId: string) {
+  const brands = await db
+    .select()
+    .from(customBrandsTable)
+    .where(eq(customBrandsTable.userId, userId))
+    .orderBy(customBrandsTable.name);
+  return brands;
+}
+
+export async function getCustomBrandById(id: string) {
+  const brands = await db
+    .select()
+    .from(customBrandsTable)
+    .where(eq(customBrandsTable.id, id));
+  return brands[0] || null;
+}
+
 export async function updateCustomBrand(id: string, data: Partial<InsertCustomBrand>) {
   const [brand] = await db
     .update(customBrandsTable)

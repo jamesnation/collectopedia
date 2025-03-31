@@ -8,7 +8,6 @@ import { eq, ne, and, or, asc } from 'drizzle-orm';
 import { db } from '@/db/db'; // Updated import
 import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema";
 import crypto from 'crypto'; // Added import for crypto
-import { auth } from "@clerk/nextjs/server"; // Add Clerk auth import
 
 // Define ActionResult type
 type ActionResult<T> = {
@@ -21,15 +20,8 @@ type ActionResult<T> = {
 const itemsCache = new Map<string, { items: SelectItem[], timestamp: number }>();
 const CACHE_EXPIRY_MS = 30 * 1000; // 30 seconds cache
 
-// Renamed from getItemsByUserIdAction to reflect it gets current user's items
-export const getCurrentUserItemsAction = async (): Promise<ActionResult<SelectItem[]>> => {
+export const getItemsByUserIdAction = async (userId: string): Promise<ActionResult<SelectItem[]>> => {
   try {
-    // Get authenticated userId from Clerk session
-    const { userId } = auth();
-    if (!userId) {
-      return { isSuccess: false, error: "Authentication Required: User not logged in." };
-    }
-    
     // Check cache first
     const cacheKey = `items-${userId}`;
     const now = Date.now();
@@ -56,46 +48,9 @@ export const getCurrentUserItemsAction = async (): Promise<ActionResult<SelectIt
   }
 };
 
-// Keep the old function name temporarily for backward compatibility
-// but just call the new secure function
-export const getItemsByUserIdAction = async (userId: string): Promise<ActionResult<SelectItem[]>> => {
-  console.warn("DEPRECATED: Please use getCurrentUserItemsAction instead of getItemsByUserIdAction");
-  // Get authenticated userId from Clerk session
-  const { userId: authenticatedUserId } = auth();
-  if (!userId) {
-    return { isSuccess: false, error: "Authentication Required: User not logged in." };
-  }
-  
-  // Verify the requested userId matches the authenticated userId
-  if (userId !== authenticatedUserId) {
-    return { isSuccess: false, error: "Authorization Failed: You can only access your own items." };
-  }
-  
-  // Call the new secure function
-  return getCurrentUserItemsAction();
-};
-
 export const getItemByIdAction = async (id: string): Promise<ActionResult<SelectItem>> => {
   try {
-    // Get authenticated userId from Clerk session
-    const { userId } = auth();
-    if (!userId) {
-      return { isSuccess: false, error: "Authentication Required: User not logged in." };
-    }
-    
-    // Fetch the item from the database
     const item = await getItemById(id);
-    
-    // If no item is found, return an error
-    if (!item || item.length === 0) {
-      return { isSuccess: false, error: "Item not found" };
-    }
-    
-    // Verify the item belongs to the authenticated user
-    if (item[0].userId !== userId) {
-      return { isSuccess: false, error: "Authorization Failed: You don't have permission to access this item." };
-    }
-    
     return { isSuccess: true, data: item[0] };
   } catch (error) {
     console.error("Failed to get item:", error);
@@ -103,7 +58,9 @@ export const getItemByIdAction = async (id: string): Promise<ActionResult<Select
   }
 };
 
-export const createItemAction = async (item: Omit<{
+export const createItemAction = async (item: {
+  id: string;
+  userId: string;
   name: string;
   type: string;
   franchise: string;
@@ -120,19 +77,12 @@ export const createItemAction = async (item: Omit<{
   ebaySold?: number;
   image?: string;
   images?: string[];
-}, 'id' | 'userId'>) => {
+}) => {
   try {
-    // Get authenticated userId from Clerk session
-    const { userId } = auth();
-    if (!userId) {
-      return { isSuccess: false, error: "Authentication Required: User not logged in." };
-    }
-    
-    // Generate a new UUID for the item
-    const newItemId = crypto.randomUUID();
-    
     console.log('🚀 SERVER ACTION - Received item data for creation:', {
+      id: item.id,
       name: item.name,
+      userId: item.userId,
       type: item.type,
       franchise: item.franchise,
       // Log more critical fields
@@ -145,8 +95,6 @@ export const createItemAction = async (item: Omit<{
     // Remove the enum validation since we now support custom types and franchises
     const insertData = {
       ...item,
-      id: newItemId,
-      userId, // Use the authenticated userId
       cost: Math.round(item.cost), // Round to nearest integer
       value: Math.round(item.value), // Round to nearest integer
       soldPrice: item.soldPrice ? Math.round(item.soldPrice) : undefined,
@@ -157,6 +105,8 @@ export const createItemAction = async (item: Omit<{
 
     // Diagnostic check for critically required fields
     const missingFields = [];
+    if (!insertData.id) missingFields.push('id');
+    if (!insertData.userId) missingFields.push('userId');
     if (!insertData.name) missingFields.push('name');
     if (!insertData.type) missingFields.push('type');
     if (!insertData.franchise) missingFields.push('franchise');
@@ -191,7 +141,7 @@ export const createItemAction = async (item: Omit<{
         const imageInserts = item.images.map(url => ({
           id: crypto.randomUUID(),
           itemId: result[0].id,
-          userId, // Use the authenticated userId
+          userId: item.userId,
           url,
         }));
         await db.insert(imagesTable).values(imageInserts);
@@ -229,25 +179,6 @@ export const createItemAction = async (item: Omit<{
 
 export const updateItemAction = async (id: string, data: Partial<SelectItem>): Promise<ActionResult<SelectItem[]>> => {
   try {
-    // Get authenticated userId from Clerk session
-    const { userId } = auth();
-    if (!userId) {
-      return { isSuccess: false, error: "Authentication Required: User not logged in." };
-    }
-    
-    // Fetch the item to verify ownership
-    const item = await getItemById(id);
-    
-    // If no item is found, return an error
-    if (!item || item.length === 0) {
-      return { isSuccess: false, error: "Item not found" };
-    }
-    
-    // Verify the item belongs to the authenticated user
-    if (item[0].userId !== userId) {
-      return { isSuccess: false, error: "Authorization Failed: You don't have permission to update this item." };
-    }
-    
     console.log('Updating item:', id, 'with data:', JSON.stringify(data, null, 2));
     
     // Process numeric values to ensure they're properly formatted for the database
@@ -259,11 +190,6 @@ export const updateItemAction = async (id: string, data: Partial<SelectItem>): P
       ebayListed: data.ebayListed !== undefined ? Math.round(Number(data.ebayListed)) : undefined,
       ebaySold: data.ebaySold !== undefined ? Math.round(Number(data.ebaySold)) : undefined,
     };
-    
-    // Remove any attempt to change userId
-    if ('userId' in processedData) {
-      delete processedData.userId;
-    }
     
     console.log('Processed data for update:', JSON.stringify(processedData, null, 2));
     
@@ -279,25 +205,6 @@ export const updateItemAction = async (id: string, data: Partial<SelectItem>): P
 
 export const deleteItemAction = async (id: string): Promise<ActionResult<void>> => {
   try {
-    // Get authenticated userId from Clerk session
-    const { userId } = auth();
-    if (!userId) {
-      return { isSuccess: false, error: "Authentication Required: User not logged in." };
-    }
-    
-    // Fetch the item to verify ownership
-    const item = await getItemById(id);
-    
-    // If no item is found, return an error
-    if (!item || item.length === 0) {
-      return { isSuccess: false, error: "Item not found" };
-    }
-    
-    // Verify the item belongs to the authenticated user
-    if (item[0].userId !== userId) {
-      return { isSuccess: false, error: "Authorization Failed: You don't have permission to delete this item." };
-    }
-    
     await deleteItem(id);
     revalidatePath("/");
     return { isSuccess: true };
@@ -309,20 +216,12 @@ export const deleteItemAction = async (id: string): Promise<ActionResult<void>> 
 
 export const getRelatedItemsAction = async (franchise: string, currentItemId: string, isSold: boolean): Promise<ActionResult<SelectItem[]>> => {
   try {
-    // Get authenticated userId from Clerk session
-    const { userId } = auth();
-    if (!userId) {
-      return { isSuccess: false, error: "Authentication Required: User not logged in." };
-    }
-    
-    // Fetch only related items that belong to the current user
     const relatedItems = await db.select().from(itemsTable)
       .where(
         and(
           eq(itemsTable.franchise, franchise as any), // Type assertion to avoid enum type mismatch
           ne(itemsTable.id, currentItemId),
-          eq(itemsTable.isSold, isSold),
-          eq(itemsTable.userId, userId) // Add filter for current user's items only
+          eq(itemsTable.isSold, isSold)
         )
       )
       .limit(3);
@@ -340,27 +239,17 @@ export const getRelatedItemsAction = async (franchise: string, currentItemId: st
  */
 export const getItemsDueForUpdateAction = async (): Promise<ActionResult<any[]>> => {
   try {
-    // Get authenticated userId from Clerk session
-    const { userId } = auth();
-    if (!userId) {
-      return { isSuccess: false, error: "Authentication Required: User not logged in." };
-    }
-    
-    // Implement database query filtering by the authenticated user
+    // Implement database query 
+    // This is just a placeholder, you'll need to adapt this to your actual schema
     const items = await db.select()
       .from(itemsTable)
-      .where(
-        and(
-          eq(itemsTable.isSold, false),
-          eq(itemsTable.userId, userId) // Add filter for current user's items only
-        )
-      )
-      .orderBy(asc(itemsTable.updatedAt));
+      .where(eq(itemsTable.isSold, false))
+      .orderBy(asc(itemsTable.updatedAt)); // Assuming your schema has updatedAt field
 
     return { isSuccess: true, data: items };
   } catch (error) {
-    console.error("Failed to get items due for update:", error);
-    return { isSuccess: false, error: "Failed to get items due for update" };
+    console.error('Error getting items due for update:', error);
+    return { isSuccess: false, error: 'Failed to get items due for update' };
   }
 };
 
