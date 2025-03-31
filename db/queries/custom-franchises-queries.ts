@@ -9,6 +9,14 @@ export async function getCustomFranchisesByUserId(userId: string) {
     .where(eq(customFranchisesTable.userId, userId));
 }
 
+export async function getCustomFranchiseById(id: string) {
+  const franchises = await db
+    .select()
+    .from(customFranchisesTable)
+    .where(eq(customFranchisesTable.id, id));
+  return franchises[0] || null;
+}
+
 export async function createCustomFranchise(data: {
   id: string;
   userId: string;

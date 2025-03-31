@@ -2,7 +2,6 @@ import { NextResponse, NextRequest } from 'next/server';
 import axios from 'axios';
 import qs from 'querystring';
 import { isValidUrl, createSecureUrl, getSecurityHeaders } from '@/utils/validate-url';
-import { EbayApiQuerySchema } from '@/lib/schemas/ebay-schemas'; // Import Zod schema
 
 // Tell Next.js this is a dynamic route that shouldn't be statically optimized
 export const dynamic = 'force-dynamic';
@@ -242,79 +241,55 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
 
 export async function GET(request: NextRequest) {
   try {
-    // Extract query parameters
-    const searchParams = {
-      toyName: request.nextUrl.searchParams.get('toyName'),
-      listingType: request.nextUrl.searchParams.get('listingType'),
-      condition: request.nextUrl.searchParams.get('condition'),
-      region: request.nextUrl.searchParams.get('region') || DEFAULT_REGION,
-      includeItems: request.nextUrl.searchParams.get('includeItems') === 'true'
+    const toyName = request.nextUrl.searchParams.get('toyName');
+    const listingType = request.nextUrl.searchParams.get('listingType') as 'listed' | 'sold';
+    const conditionParam = request.nextUrl.searchParams.get('condition');
+    const condition = conditionParam === 'New' || conditionParam === 'Used' ? conditionParam : undefined;
+    const includeItems = request.nextUrl.searchParams.get('includeItems') === 'true';
+    const region = request.nextUrl.searchParams.get('region') || DEFAULT_REGION;
+    
+    if (!toyName) {
+      return NextResponse.json({ error: 'Missing toyName parameter' }, { status: 400 });
+    }
+    
+    if (!listingType || (listingType !== 'listed' && listingType !== 'sold')) {
+      return NextResponse.json({ error: 'Invalid or missing listingType parameter' }, { status: 400 });
+    }
+    
+    console.log(`eBay API request for "${toyName}" (${listingType}, ${condition || 'Any'}, Region: ${region})`);
+    
+    // Get prices from eBay
+    const prices = await getEbayPrices(toyName, listingType, condition, region);
+    
+    // Prepare the response
+    const response: any = {
+      lowest: prices.lowest,
+      median: prices.median,
+      highest: prices.highest,
+      listingType: prices.listingType
     };
     
-    // Validate query parameters using Zod
-    const validationResult = EbayApiQuerySchema.safeParse(searchParams);
-    
-    if (!validationResult.success) {
-      console.error('❌ eBay API validation failed:', validationResult.error);
-      
-      // Return error response with validation details
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Invalid query parameters',
-          validationErrors: validationResult.error.format()
-        }, 
-        { status: 400 }
-      );
-    }
-    
-    // Extract validated data
-    const { toyName, listingType, condition, region, includeItems } = validationResult.data;
-    
-    // Input validation
-    if (!toyName || !listingType) {
-      return NextResponse.json(
-        { success: false, error: "Missing required parameters: 'toyName' and 'listingType'" },
-        { status: 400 }
-      );
-    }
-
-    console.log('eBay API Request:', { 
-      toyName, 
-      listingType, 
-      condition: condition || 'Any',
-      region, 
-      includeItems
-    });
-
-    // Check for potential URL injection
-    if (!isValidUrl(toyName)) {
-      return NextResponse.json({ success: false, error: "Invalid toy name" }, { status: 400 });
-    }
-
-    // Fetch prices from eBay
-    const prices = await getEbayPrices(toyName, listingType, condition, region);
-
+    // Include items in response if requested
     if (includeItems && prices.items) {
-      // Return with items data
-      return NextResponse.json(prices);
-    } else {
-      // Return only price data (no items)
-      const { items, ...priceData } = prices;
-      return NextResponse.json(priceData);
+      response.items = prices.items;
     }
+    
+    // Include error message if present
+    if (prices.error) {
+      response.error = prices.error;
+    }
+    
+    // Include informational message if present
+    if (prices.message) {
+      response.message = prices.message;
+    }
+    
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('eBay API error:', error);
-    
-    // Determine status code
-    let statusCode = 500;
-    if (axios.isAxiosError(error) && error.response) {
-      statusCode = error.response.status;
-    }
-    
+    console.error('Error in eBay API route:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch eBay data' },
-      { status: statusCode }
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }

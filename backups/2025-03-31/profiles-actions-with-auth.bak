@@ -5,34 +5,16 @@ import { InsertProfile, SelectProfile } from "@/db/schema/profiles-schema";
 import { ActionResult } from "@/types/actions/actions-types";
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
-import { CreateProfileSchema, UpdateProfileSchema } from "@/lib/schemas/profile-schemas";
 
-type ValidatedActionResult<T> = ActionResult<T> & {
-  validationErrors?: Record<string, string[]>;
-};
-
-export async function createProfileAction(data: unknown): Promise<ValidatedActionResult<SelectProfile>> {
+export async function createProfileAction(data: Omit<InsertProfile, 'userId'>): Promise<ActionResult<SelectProfile>> {
   try {
     const { userId } = auth();
     if (!userId) {
       throw new Error("Authentication Required: User not logged in.");
     }
     
-    const validationResult = CreateProfileSchema.safeParse(data);
-    
-    if (!validationResult.success) {
-      console.error('❌ Validation failed:', validationResult.error);
-      return { 
-        isSuccess: false, 
-        message: "Invalid input data", 
-        validationErrors: validationResult.error.formErrors.fieldErrors
-      };
-    }
-    
-    const validatedData = validationResult.data;
-    
     const profileData = {
-      ...validatedData,
+      ...data,
       userId,
     };
     
@@ -44,7 +26,7 @@ export async function createProfileAction(data: unknown): Promise<ValidatedActio
   }
 }
 
-export async function getCurrentUserProfileAction(): Promise<ValidatedActionResult<SelectProfile | null>> {
+export async function getCurrentUserProfileAction(): Promise<ActionResult<SelectProfile | null>> {
   try {
     const { userId } = auth();
     if (!userId) {
@@ -58,7 +40,7 @@ export async function getCurrentUserProfileAction(): Promise<ValidatedActionResu
   }
 }
 
-export async function getProfileByUserIdAction(userId: string): Promise<ValidatedActionResult<SelectProfile | null>> {
+export async function getProfileByUserIdAction(userId: string): Promise<ActionResult<SelectProfile | null>> {
   console.warn("DEPRECATED: Please use getCurrentUserProfileAction instead of getProfileByUserIdAction");
   
   const { userId: authenticatedUserId } = auth();
@@ -73,7 +55,7 @@ export async function getProfileByUserIdAction(userId: string): Promise<Validate
   return getCurrentUserProfileAction();
 }
 
-export async function getAllProfilesAction(): Promise<ValidatedActionResult<SelectProfile[]>> {
+export async function getAllProfilesAction(): Promise<ActionResult<SelectProfile[]>> {
   try {
     const { userId } = auth();
     if (!userId) {
@@ -87,27 +69,14 @@ export async function getAllProfilesAction(): Promise<ValidatedActionResult<Sele
   }
 }
 
-export async function updateProfileAction(data: unknown): Promise<ValidatedActionResult<SelectProfile>> {
+export async function updateProfileAction(data: Partial<Omit<InsertProfile, 'userId'>>): Promise<ActionResult<SelectProfile>> {
   try {
     const { userId } = auth();
     if (!userId) {
       throw new Error("Authentication Required: User not logged in.");
     }
     
-    const validationResult = UpdateProfileSchema.safeParse(data);
-    
-    if (!validationResult.success) {
-      console.error('❌ Validation failed:', validationResult.error);
-      return { 
-        isSuccess: false, 
-        message: "Invalid input data", 
-        validationErrors: validationResult.error.formErrors.fieldErrors
-      };
-    }
-    
-    const validatedData = validationResult.data;
-    
-    const updatedProfile = await updateProfile(userId, validatedData);
+    const updatedProfile = await updateProfile(userId, data);
     revalidatePath("/");
     return { isSuccess: true, message: "Profile updated successfully", data: updatedProfile };
   } catch (error) {
@@ -115,7 +84,7 @@ export async function updateProfileAction(data: unknown): Promise<ValidatedActio
   }
 }
 
-export async function deleteProfileAction(): Promise<ValidatedActionResult<void>> {
+export async function deleteProfileAction(): Promise<ActionResult<void>> {
   try {
     const { userId } = auth();
     if (!userId) {

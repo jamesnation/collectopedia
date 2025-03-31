@@ -9,14 +9,12 @@ import { db } from '@/db/db'; // Updated import
 import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema";
 import crypto from 'crypto'; // Added import for crypto
 import { auth } from "@clerk/nextjs/server"; // Add Clerk auth import
-import { CreateItemSchema, UpdateItemSchema } from "@/lib/schemas/item-schemas"; // Import Zod schemas
 
 // Define ActionResult type
 type ActionResult<T> = {
   isSuccess: boolean;
   data?: T;
   error?: string;
-  validationErrors?: Record<string, string[]>; // Add validation errors field
 };
 
 // Cache store to avoid redundant fetches during a request
@@ -105,7 +103,24 @@ export const getItemByIdAction = async (id: string): Promise<ActionResult<Select
   }
 };
 
-export const createItemAction = async (item: unknown): Promise<ActionResult<SelectItem>> => {
+export const createItemAction = async (item: Omit<{
+  name: string;
+  type: string;
+  franchise: string;
+  brand?: string | null;
+  year?: number | null;
+  acquired: Date;
+  cost: number;
+  value: number;
+  notes: string;
+  isSold: boolean;
+  soldDate?: Date;
+  soldPrice?: number;
+  ebayListed?: number;
+  ebaySold?: number;
+  image?: string;
+  images?: string[];
+}, 'id' | 'userId'>) => {
   try {
     // Get authenticated userId from Clerk session
     const { userId } = auth();
@@ -113,48 +128,47 @@ export const createItemAction = async (item: unknown): Promise<ActionResult<Sele
       return { isSuccess: false, error: "Authentication Required: User not logged in." };
     }
     
-    // Validate input data with Zod
-    const validationResult = CreateItemSchema.safeParse(item);
-    
-    // If validation fails, return detailed error information
-    if (!validationResult.success) {
-      console.error('❌ Validation failed:', validationResult.error);
-      return { 
-        isSuccess: false, 
-        error: "Invalid input data", 
-        validationErrors: validationResult.error.formErrors.fieldErrors
-      };
-    }
-    
-    // Extract validated data
-    const validatedData = validationResult.data;
-    
     // Generate a new UUID for the item
     const newItemId = crypto.randomUUID();
     
     console.log('🚀 SERVER ACTION - Received item data for creation:', {
-      name: validatedData.name,
-      type: validatedData.type,
-      franchise: validatedData.franchise,
+      name: item.name,
+      type: item.type,
+      franchise: item.franchise,
       // Log more critical fields
-      acquired: validatedData.acquired instanceof Date ? validatedData.acquired.toISOString() : 'Not a date object',
-      cost: validatedData.cost,
-      value: validatedData.value,
-      hasNotes: !!validatedData.notes
+      acquired: item.acquired instanceof Date ? item.acquired.toISOString() : 'Not a date object',
+      cost: item.cost,
+      value: item.value,
+      hasNotes: !!item.notes
     });
 
-    // Prepare data for insertion
+    // Remove the enum validation since we now support custom types and franchises
     const insertData = {
-      ...validatedData,
+      ...item,
       id: newItemId,
       userId, // Use the authenticated userId
-      cost: Math.round(validatedData.cost), // Round to nearest integer
-      value: Math.round(validatedData.value), // Round to nearest integer
-      soldPrice: validatedData.soldPrice ? Math.round(validatedData.soldPrice) : undefined,
-      ebayListed: validatedData.ebayListed ? Math.round(validatedData.ebayListed) : undefined,
-      ebaySold: validatedData.ebaySold ? Math.round(validatedData.ebaySold) : undefined,
-      image: validatedData.image || validatedData.images?.[0], // Use the first image as the main image
+      cost: Math.round(item.cost), // Round to nearest integer
+      value: Math.round(item.value), // Round to nearest integer
+      soldPrice: item.soldPrice ? Math.round(item.soldPrice) : undefined,
+      ebayListed: item.ebayListed ? Math.round(item.ebayListed) : undefined,
+      ebaySold: item.ebaySold ? Math.round(item.ebaySold) : undefined,
+      image: item.image || item.images?.[0], // Use the first image as the main image
     };
+
+    // Diagnostic check for critically required fields
+    const missingFields = [];
+    if (!insertData.name) missingFields.push('name');
+    if (!insertData.type) missingFields.push('type');
+    if (!insertData.franchise) missingFields.push('franchise');
+    if (!(insertData.acquired instanceof Date)) missingFields.push('acquired (not a Date object)');
+    
+    if (missingFields.length > 0) {
+      console.error('❌ SERVER ACTION - Critical fields missing:', missingFields);
+      return { 
+        isSuccess: false, 
+        error: `Missing required fields: ${missingFields.join(', ')}` 
+      };
+    }
 
     console.log('🚀 SERVER ACTION - Prepared data for insertion:', {
       id: insertData.id,
@@ -172,9 +186,9 @@ export const createItemAction = async (item: unknown): Promise<ActionResult<Sele
       console.log('🚀 SERVER ACTION - Database insert operation completed with result:', result);
 
       // Insert additional images
-      if (validatedData.images && validatedData.images.length > 0) {
+      if (item.images && item.images.length > 0) {
         console.log('🚀 SERVER ACTION - Inserting additional images...');
-        const imageInserts = validatedData.images.map(url => ({
+        const imageInserts = item.images.map(url => ({
           id: crypto.randomUUID(),
           itemId: result[0].id,
           userId, // Use the authenticated userId
@@ -213,7 +227,7 @@ export const createItemAction = async (item: unknown): Promise<ActionResult<Sele
   }
 };
 
-export const updateItemAction = async (id: string, data: unknown): Promise<ActionResult<SelectItem[]>> => {
+export const updateItemAction = async (id: string, data: Partial<SelectItem>): Promise<ActionResult<SelectItem[]>> => {
   try {
     // Get authenticated userId from Clerk session
     const { userId } = auth();
@@ -234,32 +248,16 @@ export const updateItemAction = async (id: string, data: unknown): Promise<Actio
       return { isSuccess: false, error: "Authorization Failed: You don't have permission to update this item." };
     }
     
-    // Validate input data with Zod
-    const validationResult = UpdateItemSchema.safeParse(data);
-    
-    // If validation fails, return detailed error information
-    if (!validationResult.success) {
-      console.error('❌ Validation failed:', validationResult.error);
-      return { 
-        isSuccess: false, 
-        error: "Invalid input data", 
-        validationErrors: validationResult.error.formErrors.fieldErrors
-      };
-    }
-    
-    // Extract validated data
-    const validatedData = validationResult.data;
-    
-    console.log('Updating item:', id, 'with data:', JSON.stringify(validatedData, null, 2));
+    console.log('Updating item:', id, 'with data:', JSON.stringify(data, null, 2));
     
     // Process numeric values to ensure they're properly formatted for the database
     const processedData = {
-      ...validatedData,
-      cost: validatedData.cost !== undefined ? Math.round(validatedData.cost) : undefined,
-      value: validatedData.value !== undefined ? Math.round(validatedData.value) : undefined,
-      soldPrice: validatedData.soldPrice !== undefined ? Math.round(Number(validatedData.soldPrice)) : undefined,
-      ebayListed: validatedData.ebayListed !== undefined ? Math.round(Number(validatedData.ebayListed)) : undefined,
-      ebaySold: validatedData.ebaySold !== undefined ? Math.round(Number(validatedData.ebaySold)) : undefined,
+      ...data,
+      cost: data.cost !== undefined ? Math.round(data.cost) : undefined,
+      value: data.value !== undefined ? Math.round(data.value) : undefined,
+      soldPrice: data.soldPrice !== undefined ? Math.round(Number(data.soldPrice)) : undefined,
+      ebayListed: data.ebayListed !== undefined ? Math.round(Number(data.ebayListed)) : undefined,
+      ebaySold: data.ebaySold !== undefined ? Math.round(Number(data.ebaySold)) : undefined,
     };
     
     // Remove any attempt to change userId
