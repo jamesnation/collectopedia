@@ -14,7 +14,7 @@ This document tracks the implementation progress of security fixes identified in
 | 1 | Authentication & Authorization in Server Actions | Highest | Completed | 2025-03-31 |
 | 2 | Input Validation | High | Completed | 2025-03-31 |
 | 3 | Supabase RLS Verification | High | Not Started | |
-| 4 | API Rate Limiting | Medium | Not Started | |
+| 4 | API Rate Limiting | Medium | Completed | 2025-03-31 |
 | 5 | Stripe Payment Link Fix | Medium | Not Started | |
 | 6 | Custom Brands Scope Resolution | Medium | Not Started | |
 | 7 | User Data Deletion Completion | Medium | Not Started | |
@@ -106,20 +106,22 @@ This document tracks the implementation progress of security fixes identified in
 
 ### Phase 4: API Rate Limiting
 
-**Status:** Not Started
+**Status:** Completed ✅ (2025-03-31)
 
-**Files to Modify:**
-- [ ] `/api/ebay/route.ts`
+**Files Modified:**
+- [x] `/api/ebay/route.ts` (Completed 2025-03-31)
 
-**Implementation Steps:**
-1. Install required dependencies
-2. Implement rate limiting using Upstash and Vercel KV
-3. Configure appropriate rate limits
-4. Add error handling for rate limit exceeded
+**Implementation Steps Completed:**
+1. Installed required dependencies: `@upstash/ratelimit` and `@vercel/kv`
+2. Implemented rate limiting using Upstash and Vercel KV
+3. Configured rate limits (10 requests per 60 seconds per IP)
+4. Added error handling for when rate limit is exceeded
+5. Added rate limit headers to all responses
 
-**Testing:**
-- Verify legitimate API usage works normally
-- Confirm rate limits are enforced when exceeded
+**Testing Verification:**
+- Verified legitimate API usage works normally
+- Confirmed rate limits are enforced after exceeding the threshold
+- Validated rate limit headers are present in responses
 
 ### Phase 5: Stripe Payment Link Fix
 

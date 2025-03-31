@@ -3,8 +3,6 @@ import axios from 'axios';
 import qs from 'querystring';
 import { isValidUrl, createSecureUrl, getSecurityHeaders } from '@/utils/validate-url';
 import { EbayApiQuerySchema } from '@/lib/schemas/ebay-schemas'; // Import Zod schema
-import { Ratelimit } from '@upstash/ratelimit'; // Import Upstash rate limiter
-import { kv } from '@vercel/kv'; // Import Vercel KV storage
 
 // Tell Next.js this is a dynamic route that shouldn't be statically optimized
 export const dynamic = 'force-dynamic';
@@ -68,15 +66,6 @@ const DEFAULT_REGION = 'UK';
 console.log('EBAY_APP_ID:', EBAY_APP_ID ? 'Set' : 'Not set');
 console.log('EBAY_CERT_ID:', EBAY_CERT_ID ? 'Set' : 'Not set');
 console.log('RAPIDAPI_KEY:', RAPIDAPI_KEY ? 'Set' : 'Not set');
-
-// Configure rate limiting
-// Allow 10 requests per minute per IP address
-const ratelimit = new Ratelimit({
-  redis: kv,
-  limiter: Ratelimit.slidingWindow(10, '60 s'),
-  analytics: true, // Enable analytics to track usage
-  prefix: 'ebay_api_ratelimit', // Prefix for Redis keys
-});
 
 // Function to get eBay OAuth token
 async function getEbayToken() {
@@ -253,35 +242,6 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
 
 export async function GET(request: NextRequest) {
   try {
-    // Get client IP for rate limiting
-    const ip = request.ip ?? request.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    
-    // Apply rate limiting
-    const { success, limit, remaining, reset } = await ratelimit.limit(ip);
-    
-    // If rate limit exceeded, return 429 Too Many Requests
-    if (!success) {
-      console.warn(`Rate limit exceeded for IP: ${ip}`);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Too many requests, please try again later',
-          limit,
-          remaining: 0,
-          reset: reset - Date.now()
-        },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': reset.toString(),
-            'Retry-After': Math.floor((reset - Date.now()) / 1000).toString()
-          }
-        }
-      );
-    }
-    
     // Extract query parameters
     const searchParams = {
       toyName: request.nextUrl.searchParams.get('toyName'),
@@ -304,14 +264,7 @@ export async function GET(request: NextRequest) {
           error: 'Invalid query parameters',
           validationErrors: validationResult.error.format()
         }, 
-        { 
-          status: 400,
-          headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': remaining.toString(),
-            'X-RateLimit-Reset': reset.toString()
-          }
-        }
+        { status: 400 }
       );
     }
     
@@ -322,14 +275,7 @@ export async function GET(request: NextRequest) {
     if (!toyName || !listingType) {
       return NextResponse.json(
         { success: false, error: "Missing required parameters: 'toyName' and 'listingType'" },
-        { 
-          status: 400,
-          headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': remaining.toString(),
-            'X-RateLimit-Reset': reset.toString()
-          }
-        }
+        { status: 400 }
       );
     }
 
@@ -343,36 +289,19 @@ export async function GET(request: NextRequest) {
 
     // Check for potential URL injection
     if (!isValidUrl(toyName)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid toy name" }, 
-        { 
-          status: 400,
-          headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': remaining.toString(),
-            'X-RateLimit-Reset': reset.toString()
-          }
-        }
-      );
+      return NextResponse.json({ success: false, error: "Invalid toy name" }, { status: 400 });
     }
 
     // Fetch prices from eBay
     const prices = await getEbayPrices(toyName, listingType, condition, region);
 
-    // Add rate limit headers to the response
-    const responseHeaders = {
-      'X-RateLimit-Limit': limit.toString(),
-      'X-RateLimit-Remaining': remaining.toString(),
-      'X-RateLimit-Reset': reset.toString()
-    };
-
     if (includeItems && prices.items) {
       // Return with items data
-      return NextResponse.json(prices, { headers: responseHeaders });
+      return NextResponse.json(prices);
     } else {
       // Return only price data (no items)
       const { items, ...priceData } = prices;
-      return NextResponse.json(priceData, { headers: responseHeaders });
+      return NextResponse.json(priceData);
     }
   } catch (error) {
     console.error('eBay API error:', error);
