@@ -56,7 +56,7 @@ export async function createCustomFranchiseAction(data: unknown): Promise<Action
       id: crypto.randomUUID(),
       userId,
       name: validatedData.name,
-      description: validatedData.description
+      description: validatedData.description === null ? undefined : validatedData.description
     });
 
     revalidatePath("/");
@@ -105,7 +105,7 @@ export async function updateCustomFranchiseAction(data: unknown): Promise<Action
 
     const updatedFranchise = await updateCustomFranchise(validatedData.id, {
       name: validatedData.name || '',
-      description: validatedData.description
+      description: validatedData.description === null ? undefined : validatedData.description
     });
 
     revalidatePath("/");
@@ -183,7 +183,7 @@ export async function createCustomFranchiseFromFormAction(formData: FormData) {
       id: crypto.randomUUID(),
       userId,
       name: validatedData.name,
-      description: validatedData.description
+      description: validatedData.description === null ? undefined : validatedData.description
     });
 
     revalidatePath("/");
