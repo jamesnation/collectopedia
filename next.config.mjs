@@ -9,12 +9,24 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     // Enable formats like WebP and AVIF for better compression
     formats: ['image/webp', 'image/avif'],
-    // Remove image size limit for large images
+    // Restrict image hostnames to only legitimate sources
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'sjjbgnzyywlgpmgtmube.supabase.co', // Supabase storage
       },
+      {
+        protocol: 'https',
+        hostname: 'i.ebayimg.com', // eBay images
+      },
+      {
+        protocol: 'https',
+        hostname: '*.clerk.com', // Clerk user avatars/images
+      },
+      {
+        protocol: 'https',
+        hostname: '*.stripe.com', // Stripe images
+      }
     ],
   },
   // Add additional experimental features for performance
