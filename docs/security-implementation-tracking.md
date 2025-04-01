@@ -321,11 +321,19 @@ This document tracks the implementation progress of security fixes identified in
 
 ### Task 2: eBay Actions Refactoring (High)
 
-**Implementation Steps:**
-1. Remove `userId` parameter from `refreshAllItemPricesEnhanced` and `refreshAllEbayPrices`
-2. Add standard `auth()` check to obtain authenticated userId
-3. Use the authenticated userId in downstream function calls
-4. Update any references to these functions to remove the userId parameter
+**Status:** Completed ✅ (2025-04-02)
+
+**Implementation Steps Completed:**
+1. Removed `userId` parameter from `refreshAllItemPricesEnhanced` and `refreshAllEbayPrices` functions
+2. Added standard `auth()` check to obtain authenticated userId in both functions
+3. Updated references to these functions in `collections-tab.tsx` to remove the userId parameter
+4. Added proper error handling for authentication failures
+5. Ensured consistent authentication pattern across both functions
+
+**Testing Verification:**
+- Verified both functions properly authenticate the user before proceeding 
+- Confirmed the functions use the authenticated userId for all downstream operations
+- Validated the client component no longer passes userId parameter to these functions
 
 ### Task 3: Custom Types Input Validation (High)
 

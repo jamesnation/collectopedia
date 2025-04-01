@@ -121,11 +121,7 @@ export function CollectionsTab() {
       // Use the enhanced function that includes image-based search
       const { refreshAllItemPricesEnhanced } = await import('@/actions/ebay-actions');
       
-      if (!userId) {
-        throw new Error("User ID is required to refresh prices");
-      }
-      
-      const result = await refreshAllItemPricesEnhanced(userId);
+      const result = await refreshAllItemPricesEnhanced();
       
       if (result.success) {
         // Set progress to 100% since it's complete

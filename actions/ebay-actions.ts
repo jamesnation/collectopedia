@@ -823,17 +823,21 @@ function calculateCombinedPrice(
  * Updates all items for a user with enhanced eBay prices using both image and text search
  * Performance optimized to process items in batches
  */
-export async function refreshAllItemPricesEnhanced(
-  userId: string
-): Promise<{
+export async function refreshAllItemPricesEnhanced(): Promise<{
   success: boolean;
   totalUpdated: number;
   error?: string;
 }> {
   try {
-    console.log('Starting enhanced batch price refresh for user:', userId);
+    // Get authenticated userId from Clerk session
+    const { userId } = auth();
+    if (!userId) {
+      return { success: false, totalUpdated: 0, error: "Authentication Required: User not logged in." };
+    }
     
-    // Fetch all user's items
+    console.log('Starting enhanced batch price refresh for authenticated user:', userId);
+    
+    // Fetch all user's items using the authenticated userId
     const itemsResult = await getItemsByUserIdAction(userId);
     if (!itemsResult.isSuccess) {
       return { success: false, totalUpdated: 0, error: 'Failed to fetch items' };
@@ -938,17 +942,21 @@ export async function refreshAllItemPricesEnhanced(
 /**
  * Updates all items for a user with eBay prices (text-based search only)
  */
-export async function refreshAllEbayPrices(
-  userId: string
-): Promise<{
+export async function refreshAllEbayPrices(): Promise<{
   success: boolean;
   totalUpdated: number;
   error?: string;
 }> {
   try {
-    console.log('Starting batch price refresh for user:', userId);
+    // Get authenticated userId from Clerk session
+    const { userId } = auth();
+    if (!userId) {
+      return { success: false, totalUpdated: 0, error: "Authentication Required: User not logged in." };
+    }
     
-    // Fetch all user's items
+    console.log('Starting batch price refresh for authenticated user:', userId);
+    
+    // Fetch all user's items using the authenticated userId
     const itemsResult = await getItemsByUserIdAction(userId);
     if (!itemsResult.isSuccess) {
       return { success: false, totalUpdated: 0, error: 'Failed to fetch items' };
