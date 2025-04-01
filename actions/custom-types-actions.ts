@@ -10,11 +10,18 @@ import {
   getCustomTypesByUserId
 } from "@/db/queries/custom-types-queries";
 import { SelectCustomType } from "@/db/schema";
+import { CreateCustomTypeSchema, UpdateCustomTypeWithIdSchema } from "@/lib/schemas/custom-type-schemas";
+import { z } from "zod";
+
+const DeleteCustomTypeSchema = z.object({
+  id: z.string().uuid("Invalid type ID format")
+});
 
 type ActionResult<T> = {
   isSuccess: boolean;
   data?: T;
   error?: string;
+  validationErrors?: Record<string, string[]>;
 };
 
 export async function getCustomTypesAction(): Promise<ActionResult<SelectCustomType[]>> {
@@ -44,13 +51,22 @@ export async function createCustomTypeAction(formData: FormData): Promise<Action
     }
 
     const name = formData.get("name") as string;
-    const description = formData.get("description") as string;
+    const description = formData.get("description") as string | null;
 
-    if (!name) {
-      return { isSuccess: false, error: "Name is required" };
+    const validationResult = CreateCustomTypeSchema.safeParse({ name, description });
+    
+    if (!validationResult.success) {
+      console.error('❌ Validation failed:', validationResult.error);
+      return { 
+        isSuccess: false, 
+        error: "Invalid input data", 
+        validationErrors: validationResult.error.formErrors.fieldErrors
+      };
     }
+    
+    const validatedData = validationResult.data;
 
-    await createCustomType(userId, name, description);
+    await createCustomType(userId, validatedData.name, validatedData.description || undefined);
     revalidatePath("/");
     return { isSuccess: true };
   } catch (error) {
@@ -68,18 +84,27 @@ export async function updateCustomTypeAction(formData: FormData): Promise<Action
 
     const id = formData.get("id") as string;
     const name = formData.get("name") as string;
-    const description = formData.get("description") as string;
+    const description = formData.get("description") as string | null;
 
-    if (!id || !name) {
-      return { isSuccess: false, error: "ID and name are required" };
+    const validationResult = UpdateCustomTypeWithIdSchema.safeParse({ id, name, description });
+    
+    if (!validationResult.success) {
+      console.error('❌ Validation failed:', validationResult.error);
+      return { 
+        isSuccess: false, 
+        error: "Invalid input data", 
+        validationErrors: validationResult.error.formErrors.fieldErrors
+      };
     }
+    
+    const validatedData = validationResult.data;
 
-    const existingType = await getCustomTypeById(id);
+    const existingType = await getCustomTypeById(validatedData.id);
     if (!existingType || existingType.userId !== userId) {
       return { isSuccess: false, error: "Type not found or unauthorized" };
     }
 
-    await updateCustomType(id, name, description);
+    await updateCustomType(validatedData.id, validatedData.name as string, validatedData.description || undefined);
     revalidatePath("/");
     return { isSuccess: true };
   } catch (error) {
@@ -96,16 +121,26 @@ export async function deleteCustomTypeAction(formData: FormData): Promise<Action
     }
 
     const id = formData.get("id") as string;
-    if (!id) {
-      return { isSuccess: false, error: "ID is required" };
+    
+    const validationResult = DeleteCustomTypeSchema.safeParse({ id });
+    
+    if (!validationResult.success) {
+      console.error('❌ Validation failed:', validationResult.error);
+      return { 
+        isSuccess: false, 
+        error: "Invalid input data", 
+        validationErrors: validationResult.error.formErrors.fieldErrors
+      };
     }
+    
+    const validatedData = validationResult.data;
 
-    const existingType = await getCustomTypeById(id);
+    const existingType = await getCustomTypeById(validatedData.id);
     if (!existingType || existingType.userId !== userId) {
       return { isSuccess: false, error: "Type not found or unauthorized" };
     }
 
-    await deleteCustomType(id);
+    await deleteCustomType(validatedData.id);
     revalidatePath("/");
     return { isSuccess: true };
   } catch (error) {
