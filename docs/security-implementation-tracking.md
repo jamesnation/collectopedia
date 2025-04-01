@@ -20,6 +20,7 @@ This document tracks the implementation progress of security fixes identified in
 | 7 | User Data Deletion Completion | Medium | Completed | 2025-04-01 |
 | 8 | HTTP Security Headers | Medium | Completed | 2025-04-01 |
 | 9 | Minor Configuration Fixes | Low | Completed | 2025-04-01 |
+| 10 | Remaining Security Fixes | Critical | Planned | TBD |
 
 ## Phase Details
 
@@ -281,6 +282,75 @@ This document tracks the implementation progress of security fixes identified in
 - Tested with Clerk user avatars to ensure they display
 - Validated that Stripe images appear as expected
 - Ensured application functionality is maintained with restricted image sources
+
+### Phase 10: Remaining Security Fixes
+
+**Status:** Planned 🔄
+
+**Files to Modify:**
+- [ ] `actions/images-actions.ts`
+- [ ] `actions/ebay-actions.ts`
+- [ ] `actions/custom-types-actions.ts`
+- [ ] `actions/profiles-actions.ts`
+- [ ] `/lib/schemas/image-schemas.ts` (New file to create)
+
+### Task 1: Image Actions Security (Critical)
+
+**Status:** Completed ✅ (2025-04-02)
+
+**Implementation Steps Completed:**
+1. Created Zod schemas in new file `/lib/schemas/image-schemas.ts` with proper validation rules for all image operations
+2. Added authentication checks using `auth()` at the start of all image actions
+3. Implemented authorization checks:
+   - For `getImagesByItemIdAction`: Verified user ownership of item before fetching its images
+   - For `getBatchImagesByItemIdsAction`: Filtered out items not owned by the user
+   - For `createImageAction`: Verified user owns the item before creating images
+   - For `deleteImageAction`: Implemented fetch-then-verify pattern to ensure user owns the image
+   - For `createMultipleImagesAction`: Verified ownership of all item IDs and enforced correct userId
+   - For `updateImageOrderAction`: Verified ownership of both item and image
+   - For `reorderImagesAction`: Verified ownership of item and all images being reordered
+4. Added comprehensive input validation using the created Zod schemas
+5. Added proper error handling for validation failures
+6. Ensured all authentication/authorization checks follow the same pattern as other actions
+7. Added detailed comments documenting the security measures
+
+**Testing Verification:**
+- Verified all actions require authentication
+- Confirmed proper ownership checks for all image operations
+- Validated input data formatting and validation
+
+### Task 2: eBay Actions Refactoring (High)
+
+**Implementation Steps:**
+1. Remove `userId` parameter from `refreshAllItemPricesEnhanced` and `refreshAllEbayPrices`
+2. Add standard `auth()` check to obtain authenticated userId
+3. Use the authenticated userId in downstream function calls
+4. Update any references to these functions to remove the userId parameter
+
+### Task 3: Custom Types Input Validation (High)
+
+**Implementation Steps:**
+1. Create Zod schemas for custom type data (if not already created)
+2. Implement input validation for FormData in:
+   - `createCustomTypeAction`
+   - `updateCustomTypeAction`
+   - `deleteCustomTypeAction`
+3. Add proper error handling for validation failures
+4. Ensure consistent validation approach with other form-based actions
+
+### Task 4: Profiles Action Review (Low)
+
+**Decision Required:** Determine if `getAllProfilesAction` should:
+- Option A: Be removed entirely if not needed
+- Option B: Be restricted to admin users only
+
+**Implementation Steps (Option B - Admin Only):**
+1. Keep the `getAllProfilesAction` function
+2. Add Role-Based Access Control check using Clerk session claims
+3. Throw authorization error if the user is not an admin
+4. Document the admin-only nature of this endpoint
+
+**Timeline:** To be determined based on prioritization of critical security fixes
 
 ## Timeline
 
