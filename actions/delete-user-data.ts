@@ -6,6 +6,10 @@ import { itemsTable } from "@/db/schema/items-schema";
 import { customTypesTable } from "@/db/schema/custom-types-schema";
 import { customFranchisesTable } from "@/db/schema/custom-franchises-schema";
 import { customBrandsTable } from "@/db/schema/custom-brands-schema";
+import { imagesTable } from "@/db/schema/images-schema";
+import { soldItemsTable } from "@/db/schema/sold-items-schema";
+import { profilesTable } from "@/db/schema/profiles-schema";
+import { ebayHistoryTable } from "@/db/schema/ebay-history-schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 
@@ -18,10 +22,16 @@ type ActionResult<T = void> = {
 
 /**
  * Server action to delete all user data including:
+ * - User profile
  * - Collection items
+ * - Item images
+ * - Sold items history
+ * - eBay price history
  * - Custom types
  * - Custom franchises
  * - Custom brands
+ * 
+ * This provides complete data deletion in compliance with privacy regulations.
  */
 export const deleteUserDataAction = async (): Promise<ActionResult> => {
   try {
@@ -56,6 +66,26 @@ export const deleteUserDataAction = async (): Promise<ActionResult> => {
       await tx
         .delete(customBrandsTable)
         .where(eq(customBrandsTable.userId, userId));
+        
+      // Delete all images uploaded by the user
+      await tx
+        .delete(imagesTable)
+        .where(eq(imagesTable.userId, userId));
+        
+      // Delete all sold items records for the user
+      await tx
+        .delete(soldItemsTable)
+        .where(eq(soldItemsTable.userId, userId));
+        
+      // Delete all eBay price history for the user
+      await tx
+        .delete(ebayHistoryTable)
+        .where(eq(ebayHistoryTable.userId, userId));
+        
+      // Delete the user's profile
+      await tx
+        .delete(profilesTable)
+        .where(eq(profilesTable.userId, userId));
     });
 
     // Revalidate all paths that might display user data
