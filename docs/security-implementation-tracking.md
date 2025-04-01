@@ -358,17 +358,21 @@ This document tracks the implementation progress of security fixes identified in
 
 ### Task 4: Profiles Action Review (Low)
 
-**Decision Required:** Determine if `getAllProfilesAction` should:
-- Option A: Be removed entirely if not needed
-- Option B: Be restricted to admin users only
+**Status:** Completed ✅ (2025-04-02)
 
-**Implementation Steps (Option B - Admin Only):**
-1. Keep the `getAllProfilesAction` function
-2. Add Role-Based Access Control check using Clerk session claims
-3. Throw authorization error if the user is not an admin
-4. Document the admin-only nature of this endpoint
+**Decision Made:** Option B - Admin Only
 
-**Timeline:** To be determined based on prioritization of critical security fixes
+**Implementation Steps Completed:**
+1. Kept the `getAllProfilesAction` function for admin use
+2. Added Role-Based Access Control using Clerk session claims
+3. Added a check for the 'admin' role in the user's metadata
+4. Return authorization error when non-admin users attempt to access the function
+5. Added proper type safety with TypeScript type assertions
+
+**Testing Verification:**
+- Verified non-admin users receive an authorization error
+- Confirmed code maintains type safety with proper typescript assertions
+- Ensured the function remains available for legitimate administrative use cases
 
 ## Timeline
 

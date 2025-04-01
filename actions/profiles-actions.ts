@@ -75,9 +75,21 @@ export async function getProfileByUserIdAction(userId: string): Promise<Validate
 
 export async function getAllProfilesAction(): Promise<ValidatedActionResult<SelectProfile[]>> {
   try {
-    const { userId } = auth();
-    if (!userId) {
+    const session = auth();
+    
+    if (!session || !session.userId) {
       throw new Error("Authentication Required: User not logged in.");
+    }
+    
+    // Check for admin role in session claims
+    const metadata = session.sessionClaims?.metadata as { role?: string } || {};
+    const isAdmin = metadata.role === 'admin';
+    
+    if (!isAdmin) {
+      return { 
+        isSuccess: false, 
+        message: "Authorization Failed: Only administrators can access all user profiles." 
+      };
     }
     
     const profiles = await getAllProfiles();
