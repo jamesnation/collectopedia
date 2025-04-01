@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { createCustomBrand, getCustomBrandsByUserId, getCustomBrandById, updateCustomBrand, deleteCustomBrand } from "@/db/queries/custom-brands-queries";
+import { createCustomBrand, getCustomBrands, getCustomBrandById, updateCustomBrand, deleteCustomBrand } from "@/db/queries/custom-brands-queries";
 import crypto from 'crypto';
 import { CreateCustomBrandSchema, UpdateCustomBrandWithIdSchema } from "@/lib/schemas/custom-brand-schemas"; // Import Zod schemas
 
@@ -26,7 +26,7 @@ export async function getCustomBrandsAction() {
     }
 
     // Get only brands for the current user
-    const brands = await getCustomBrandsByUserId(userId);
+    const brands = await getCustomBrands(userId);
     return { isSuccess: true, data: brands };
   } catch (error) {
     console.error("Error getting custom brands:", error);

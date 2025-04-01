@@ -10,15 +10,10 @@ export async function createCustomBrand(data: InsertCustomBrand) {
   return brand;
 }
 
-export async function getCustomBrands() {
-  const brands = await db
-    .select()
-    .from(customBrandsTable)
-    .orderBy(customBrandsTable.name);
-  return brands;
-}
+// The global getCustomBrands() function is removed for security
 
-export async function getCustomBrandsByUserId(userId: string) {
+// Renamed from getCustomBrandsByUserId to getCustomBrands to make it the primary function
+export async function getCustomBrands(userId: string) {
   const brands = await db
     .select()
     .from(customBrandsTable)
