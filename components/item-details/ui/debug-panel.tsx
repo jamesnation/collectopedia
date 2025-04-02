@@ -95,7 +95,6 @@ export default function DebugPanel({
   console.log('eBay Debug Data Structure:', {
     hasTextBased: !!debugData.textBased,
     hasImageBased: !!debugData.imageBased,
-    hasCombined: !!debugData.combined,
     textBasedSample: debugData.textBased,
     imageMatches: debugData.imageMatches?.length,
     textMatches: debugData.textMatches?.length,
