@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import axios from 'axios';
 import qs from 'querystring';
 import { isValidUrl, createSecureUrl, getSecurityHeaders } from '@/utils/validate-url';
@@ -18,13 +19,63 @@ const ebayAuthClient = axios.create({
   }
 });
 
+// Simple validation function to replace the schema
+function validateImageSearchBody(body: any): { 
+  isValid: boolean; 
+  data?: { imageBase64: string; title: string; condition: string; debug: boolean };
+  errors?: string[];
+} {
+  const errors: string[] = [];
+  
+  if (!body.imageBase64) {
+    errors.push('Missing required field: imageBase64');
+  } else if (typeof body.imageBase64 !== 'string') {
+    errors.push('imageBase64 must be a string');
+  }
+  
+  if (!body.title) {
+    errors.push('Missing required field: title');
+  } else if (typeof body.title !== 'string') {
+    errors.push('title must be a string');
+  }
+  
+  // Default condition to 'new' if not provided
+  const condition = body.condition || 'new';
+  if (typeof condition !== 'string') {
+    errors.push('condition must be a string');
+  }
+  
+  // Default debug to false if not provided
+  const debug = !!body.debug;
+  
+  if (errors.length > 0) {
+    return { isValid: false, errors };
+  }
+  
+  return { 
+    isValid: true, 
+    data: { 
+      imageBase64: body.imageBase64, 
+      title: body.title, 
+      condition, 
+      debug 
+    } 
+  };
+}
+
 // Get eBay token - reused from main eBay API route
 async function getEbayToken() {
+  // Make sure we have credentials before attempting to get a token
+  if (!EBAY_APP_ID || !EBAY_CERT_ID) {
+    console.error('[getEbayToken] Missing API credentials');
+    throw new Error('Missing eBay API credentials');
+  }
+
   const auth = Buffer.from(`${EBAY_APP_ID}:${EBAY_CERT_ID}`).toString('base64');
   const data = qs.stringify({ grant_type: 'client_credentials', scope: 'https://api.ebay.com/oauth/api_scope' });
 
   try {
-    console.log('Requesting eBay token for image search...');
+    console.log('[getEbayToken] Requesting eBay token for image search...');
     const tokenUrl = '/identity/v1/oauth2/token';
     
     const response = await ebayAuthClient.post(tokenUrl, data, {
@@ -33,48 +84,46 @@ async function getEbayToken() {
       }
     });
     
-    console.log('eBay token response for image search:', response.status);
+    console.log('[getEbayToken] eBay token response for image search:', response.status);
     return response.data.access_token;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error('Error getting eBay token for image search:', error.response?.status);
-      console.error('Error response data:', error.response?.data);
+      console.error('[getEbayToken] Error getting eBay token for image search:', error.response?.status);
+      console.error('[getEbayToken] Error response data:', error.response?.data);
     } else {
-      console.error('Error getting eBay token for image search:', error);
+      console.error('[getEbayToken] Error getting eBay token for image search:', error);
     }
     throw error;
   }
 }
 
-export async function POST(request: Request) {
-  console.log('[eBay API Route] Starting POST request to /api/ebay/search-by-image');
+export async function POST(request: NextRequest) {
+  console.log('[eBay API Route] Starting POST request to /api/ebay/search-by-image - No rate limiting or auth applied');
   
   try {
     // Parse the request body
     const requestBody = await request.json();
-    const { imageBase64, title, condition = 'new', debug = false } = requestBody;
     
-    // Basic request validation
-    if (!imageBase64) {
-      console.error('[eBay API Route] Missing imageBase64 in request');
-      return NextResponse.json({ success: false, error: 'Missing imageBase64' }, { status: 400 });
-    }
+    // Validate using the custom validation function
+    const validationResult = validateImageSearchBody(requestBody);
     
-    // Log image data length for debugging
-    console.log(`[eBay API Route] Received image data (${Math.round(imageBase64.length * 0.75 / 1024)}KB), title: "${title}", condition: "${condition}"`);
-    
-    // Verify image is valid base64
-    try {
-      const bufferSize = Buffer.from(imageBase64, 'base64').length;
-      console.log(`[eBay API Route] Valid base64 image, buffer size: ${bufferSize} bytes`);
-    } catch (base64Error) {
-      console.error('[eBay API Route] Invalid base64 data received:', base64Error);
+    // If validation fails, return validation errors
+    if (!validationResult.isValid || !validationResult.data) {
+      console.error('[eBay API Route] Input validation failed:', validationResult.errors);
       return NextResponse.json({ 
         success: false, 
-        error: 'Invalid base64 image data',
-        details: base64Error instanceof Error ? base64Error.message : 'Unknown error'
-      }, { status: 400 });
+        error: 'Invalid input data',
+        validationErrors: validationResult.errors 
+      }, { 
+        status: 400
+      });
     }
+    
+    // Extract validated data - safely access data since we checked it exists
+    const { imageBase64, title, condition, debug } = validationResult.data;
+    
+    // Log image data length for debugging
+    console.log(`[eBay API Route] Received valid image data (${Math.round(imageBase64.length * 0.75 / 1024)}KB), title: "${title}", condition: "${condition}"`);
     
     // Get eBay OAuth token - wrap with more detailed error handling
     let oauthToken;
@@ -119,10 +168,11 @@ export async function POST(request: Request) {
       q?: string;  // Add search query parameter
     }
     
+    // STEP 1: First search using only the image
     const payload: EbayImageSearchPayload = {
       image: imageBase64,
-      limit: 100, // Increased from 50 to get more potential matches
-      q: title    // Include the item title as a search query
+      limit: 100 // Increased from 50 to get more potential matches
+      // Removed title as query parameter for initial search
     };
     
     if (filterString) {
@@ -130,7 +180,7 @@ export async function POST(request: Request) {
     }
     
     console.log(`[eBay API Route] Making request to eBay API with payload size ~${JSON.stringify(payload).length / 1024}KB`);
-    console.log(`[eBay API Route] Including title in search: "${title}"`);
+    console.log(`[eBay API Route] Initial search using ONLY image (no title)`);
     
     // DETAILED LOGGING: Add request information
     console.log(`[eBay API Route] eBay request details: ${JSON.stringify({
@@ -141,7 +191,7 @@ export async function POST(request: Request) {
       },
       payloadSize: JSON.stringify(payload).length,
       filter: filterString || 'None',
-      searchQuery: title || 'None',
+      searchQuery: 'None',
       imageDataFirstChars: payload.image.substring(0, 50) + '...'
     })}`);
     
@@ -253,23 +303,71 @@ export async function POST(request: Request) {
     // Store original results for debugging
     const originalResults = ebayData.itemSummaries;
     
-    // Apply strict title word filtering - keep only items containing ALL words from the search title
-    const titleWords = title.toLowerCase().split(/\s+/).filter((word: string) => 
-      word.length > 2 && !['the', 'and', 'for', 'with'].includes(word)
-    );
+    // STEP 2: Refine results with title keywords
+    // Extract meaningful keywords from the title
+    const titleWords = title.toLowerCase()
+      .split(/\s+/)
+      .filter((word: string) => 
+        word.length > 2 && !['the', 'and', 'for', 'with', 'this', 'that', 'from'].includes(word)
+      );
     
-    console.log(`[eBay API Route] Filtering results to contain all title words: ${titleWords.join(', ')}`);
+    console.log(`[eBay API Route] STEP 2: Refining results with title keywords: ${titleWords.join(', ')}`);
     
-    // Filter the results to only include items that contain all the words from the title
-    const filteredResults = originalResults.filter((item: any) => {
-      if (!item.title) return false;
+    // Score each result based on title matching
+    const scoredResults = originalResults.map((item: any) => {
+      if (!item.title) return { ...item, score: 0 };
       
       const itemTitleLower = item.title.toLowerCase();
-      // Check if each word from the original title is in the item title
-      return titleWords.every((word: string) => itemTitleLower.includes(word));
+      let score = 0;
+      
+      // Calculate match score based on:
+      // 1. Exact phrase matches (highest weight)
+      if (itemTitleLower.includes(title.toLowerCase())) {
+        score += 100; // Exact phrase match is best
+        console.log(`[eBay API Route] Exact phrase match found: "${item.title}"`);
+      }
+      
+      // 2. Keyword matches (medium weight)
+      const matchingWords = titleWords.filter((word: string) => itemTitleLower.includes(word));
+      const matchPercentage = titleWords.length > 0 ? (matchingWords.length / titleWords.length) : 0;
+      
+      // Add proportional score based on match percentage
+      score += matchPercentage * 50;
+      
+      // 3. Word order similarity (lower weight)
+      // Check if words appear in the same order
+      let orderScore = 0;
+      let lastIndex = -1;
+      let orderMatches = 0;
+      
+      for (const word of titleWords) {
+        const index = itemTitleLower.indexOf(word);
+        if (index > lastIndex && index !== -1) {
+          orderMatches++;
+          lastIndex = index;
+        }
+      }
+      
+      if (titleWords.length > 1) {
+        orderScore = (orderMatches / (titleWords.length - 1)) * 20;
+        score += orderScore;
+      }
+      
+      // Log high-scoring matches
+      if (score > 30) {
+        console.log(`[eBay API Route] High score: ${score.toFixed(1)} for "${item.title}" (matched ${matchingWords.length}/${titleWords.length} keywords)`);
+      }
+      
+      return { ...item, score };
     });
     
-    console.log(`[eBay API Route] Filtered from ${originalResults.length} to ${filteredResults.length} results`);
+    // Sort by score (highest first) and filter low scores
+    const MIN_ACCEPTABLE_SCORE = 50; // Minimum score to keep - increased from 10 for better relevance
+    const filteredResults = scoredResults
+      .filter((item: any) => item.score >= MIN_ACCEPTABLE_SCORE)
+      .sort((a: any, b: any) => b.score - a.score);
+    
+    console.log(`[eBay API Route] Filtered from ${originalResults.length} to ${filteredResults.length} results after title matching`);
     
     // Use the filtered results for price calculations
     // Extract prices from the filtered results

@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache'
 import { getItemsByUserIdAction, updateItemAction } from './items-actions'
 import { recordEbayHistoryAction } from './ebay-history-actions' // Import for recording history
-import { auth } from "@clerk/nextjs/server";
 import { getImagesByItemIdAction } from './images-actions' // Correct import from images-actions
 import { cookies } from 'next/headers';
 
@@ -59,12 +58,13 @@ export async function fetchEbayPrices(
   listingType: string;
   items?: any[];
   error?: string;
+  message?: string;
 }> {
   try {
     // Get region from cookie if not provided
     const effectiveRegion = region || getRegionFromCookie() || 'UK'; // Default to UK if not found
     
-    console.log(`Fetching eBay prices for "${toyName}" (${listingType}, ${condition || 'Any condition'}, Franchise: ${franchise || 'Any'}, Region: ${effectiveRegion})`);
+    console.log(`[DETAILED DEBUG] fetchEbayPrices called for "${toyName}" (${listingType}, ${condition || 'Any condition'}, Franchise: ${franchise || 'Any'}, Region: ${effectiveRegion})`);
     
     // Build the URL with query parameters
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
@@ -74,9 +74,9 @@ export async function fetchEbayPrices(
     let searchTerm = toyName;
     if (franchise && franchise.trim() && !['Other', 'Unknown'].includes(franchise)) {
       searchTerm = `${franchise} ${toyName}`;
-      console.log('Added franchise to search term:', { originalName: toyName, franchise, finalSearchTerm: searchTerm });
+      console.log('[DETAILED DEBUG] Added franchise to search term:', { originalName: toyName, franchise, finalSearchTerm: searchTerm });
     } else {
-      console.log('Using original name without franchise:', { toyName, franchise: franchise || 'None', reason: !franchise ? 'No franchise' : franchise === 'Other' || franchise === 'Unknown' ? 'Excluded franchise' : 'Empty franchise' });
+      console.log('[DETAILED DEBUG] Using original name without franchise:', { toyName, franchise: franchise || 'None', reason: !franchise ? 'No franchise' : franchise === 'Other' || franchise === 'Unknown' ? 'Excluded franchise' : 'Empty franchise' });
     }
     url.searchParams.append('toyName', searchTerm);
     url.searchParams.append('listingType', listingType);
@@ -90,25 +90,49 @@ export async function fetchEbayPrices(
     // Add debug parameter to get item details
     url.searchParams.append('includeItems', 'true');
 
-    console.log('Fetching from URL:', url.toString());
+    console.log('[DETAILED DEBUG] Fetching from URL:', url.toString());
     
     // Fetch the data from our API route
+    console.log('[DETAILED DEBUG] Starting fetch request to eBay API endpoint');
     const response = await fetch(url.toString(), { next: { revalidate: 3600 } });
+    console.log('[DETAILED DEBUG] Fetch response received:', { 
+      status: response.status, 
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries())
+    });
     
     if (!response.ok) {
       const text = await response.text();
-      console.error(`HTTP error fetching eBay prices: ${response.status} ${text}`);
+      console.error(`[DETAILED DEBUG] HTTP error fetching eBay prices: ${response.status} ${text}`);
       throw new Error(`HTTP error! status: ${response.status} ${text}`);
     }
     
     // Parse the response
-    const data = await response.json();
+    const responseText = await response.text();
+    console.log('[DETAILED DEBUG] Raw response text length:', responseText.length);
+    console.log('[DETAILED DEBUG] Raw response preview:', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
     
-    console.log('eBay API response:', {
+    let data;
+    try {
+      data = JSON.parse(responseText);
+      console.log('[DETAILED DEBUG] Successfully parsed JSON response');
+    } catch (parseError) {
+      console.error('[DETAILED DEBUG] Error parsing JSON response:', parseError);
+      throw new Error('Failed to parse response from eBay API');
+    }
+    
+    console.log('[DETAILED DEBUG] eBay API response data:', {
       hasLowest: data.lowest !== null && data.lowest !== undefined,
       hasMedian: data.median !== null && data.median !== undefined,
       hasHighest: data.highest !== null && data.highest !== undefined,
-      itemCount: data.items?.length || 0
+      lowestValue: data.lowest,
+      medianValue: data.median,
+      highestValue: data.highest,
+      itemCount: data.items?.length || 0,
+      message: data.message,
+      success: data.success,
+      error: data.error,
+      firstTwoItems: data.items?.slice(0, 2)
     });
     
     // Ensure we have numeric values or null
@@ -117,20 +141,55 @@ export async function fetchEbayPrices(
       median: data.median !== undefined ? Number(data.median) || null : null,
       highest: data.highest !== undefined ? Number(data.highest) || null : null,
       listingType,
-      items: data.items || []
+      items: data.items || [],
+      message: data.message,
+      error: data.error
     };
     
     // Log the processed result
-    console.log('Processed eBay price data:', {
+    console.log('[DETAILED DEBUG] Processed eBay price data:', {
       lowest: result.lowest,
       median: result.median,
       highest: result.highest,
-      itemCount: result.items.length
+      itemCount: result.items.length,
+      message: result.message,
+      error: result.error
     });
+    
+    // If we got no results AND we were using a franchise in the search term, retry with just the toy name
+    if (result.lowest === null && result.median === null && result.highest === null && 
+        searchTerm !== toyName && franchise && franchise.trim()) {
+      console.log('[DETAILED DEBUG] No results found with franchise in search term. Retrying with just the toy name.');
+      
+      // Use just the toy name without franchise
+      url.searchParams.set('toyName', toyName);
+      
+      console.log('[DETAILED DEBUG] Fetching from fallback URL:', url.toString());
+      const fallbackResponse = await fetch(url.toString(), { next: { revalidate: 3600 } });
+      
+      if (!fallbackResponse.ok) {
+        console.error(`[DETAILED DEBUG] HTTP error in fallback request: ${fallbackResponse.status}`);
+        return result; // Return original (empty) result if fallback failed
+      }
+      
+      // Process the fallback response
+      const fallbackResponseText = await fallbackResponse.text();
+      const fallbackData = JSON.parse(fallbackResponseText);
+      
+      if (fallbackData.lowest !== undefined || fallbackData.median !== undefined || fallbackData.highest !== undefined) {
+        console.log('[DETAILED DEBUG] Fallback search successful, found results with generic search');
+        
+        // Override with fallback data
+        result.lowest = fallbackData.lowest !== undefined ? Number(fallbackData.lowest) || null : null;
+        result.median = fallbackData.median !== undefined ? Number(fallbackData.median) || null : null;
+        result.highest = fallbackData.highest !== undefined ? Number(fallbackData.highest) || null : null;
+        result.items = fallbackData.items || [];
+      }
+    }
     
     return result;
   } catch (error) {
-    console.error('Error fetching eBay prices:', error);
+    console.error('[DETAILED DEBUG] Error fetching eBay prices:', error);
     return { 
       lowest: null, 
       median: null, 
@@ -215,13 +274,11 @@ export async function updateEbayPrices(
  * Updates all items' eBay listed values for a user and records the total
  * This should be called from the cron job
  */
-export async function updateAllEbayListedValues() {
+export async function updateAllEbayListedValues(userId: string) {
   try {
-    // Get current user
-    const { userId } = auth();
-    
+    // Use the passed in userId instead of getting it from auth
     if (!userId) {
-      return { success: false, error: 'User not authenticated' };
+      return { success: false, error: 'User ID not provided' };
     }
     
     // Get all items for the user
@@ -658,6 +715,16 @@ export async function getEnhancedEbayPrices(
     getRegionFromCookie()
   );
   
+  // Add more detailed logging about the text results
+  console.log('[ENHANCED-DEBUG] Text results received:', {
+    hasResults: !!textResults,
+    hasMedian: textResults?.median !== undefined && textResults?.median !== null,
+    medianValue: textResults?.median,
+    hasError: !!textResults?.error,
+    errorMessage: textResults?.error,
+    message: textResults?.message
+  });
+
   if (textResults && typeof textResults === 'object') {
     result.textBased = {
       lowest: textResults.lowest || 0,
@@ -665,42 +732,53 @@ export async function getEnhancedEbayPrices(
       highest: textResults.highest || 0
     };
     
-    console.log('Text-based results:', result.textBased);
+    console.log('[ENHANCED-DEBUG] Text-based results processed:', result.textBased);
     
     // Store raw items data for debug mode
-    if (includeDebugData && textResults.items) {
-      console.log(`Found ${textResults.items.length} text matches for debug`);
-      
-      // Log the first item to debug image structure
-      if (textResults.items.length > 0) {
-        console.log(`First text match item structure:`, {
-          hasImage: !!textResults.items[0].image,
-          imageType: typeof textResults.items[0].image,
-          hasImageUrl: !!textResults.items[0].imageUrl,
-          imageUrlType: typeof textResults.items[0].imageUrl,
-          fullItem: JSON.stringify(textResults.items[0]).substring(0, 500) + '...'
-        });
+    if (includeDebugData) {
+      // Add error information to debug data if available
+      if (textResults.error || textResults.message) {
+        result.debugData.textApiInfo = {
+          error: textResults.error,
+          message: textResults.message,
+          timestamp: new Date().toISOString()
+        };
       }
       
-      result.debugData.textMatches = textResults.items.map((item: any) => {
-        // Create a consistent image object structure
-        let imageObj;
-        if (item.image) {
-          imageObj = typeof item.image === 'string' 
-            ? { imageUrl: item.image } 
-            : item.image;
-        } else if (item.imageUrl) {
-          imageObj = { imageUrl: item.imageUrl };
+      if (textResults.items && textResults.items.length > 0) {
+        console.log(`[ENHANCED-DEBUG] Found ${textResults.items.length} text matches for debug`);
+        
+        // Log the first item to debug image structure
+        if (textResults.items.length > 0) {
+          console.log(`[ENHANCED-DEBUG] First text match item structure:`, {
+            hasImage: !!textResults.items[0].image,
+            imageType: typeof textResults.items[0].image,
+            hasImageUrl: !!textResults.items[0].imageUrl,
+            imageUrlType: typeof textResults.items[0].imageUrl,
+            fullItem: JSON.stringify(textResults.items[0]).substring(0, 500) + '...'
+          });
         }
         
-        return {
-          ...item,
-          searchType: 'text',
-          matchConfidence: item.relevanceScore || 'unknown',
-          // Use the consistent image object
-          image: imageObj
-        };
-      });
+        result.debugData.textMatches = textResults.items.map((item: any) => {
+          // Create a consistent image object structure
+          let imageObj;
+          if (item.image) {
+            imageObj = typeof item.image === 'string' 
+              ? { imageUrl: item.image } 
+              : item.image;
+          } else if (item.imageUrl) {
+            imageObj = { imageUrl: item.imageUrl };
+          }
+          
+          return {
+            ...item,
+            searchType: 'text',
+            matchConfidence: item.relevanceScore || 'unknown',
+            // Use the consistent image object
+            image: imageObj
+          };
+        });
+      }
     }
   } else {
     console.log('No valid text results returned:', textResults);
@@ -787,57 +865,91 @@ function calculateCombinedPrice(
   textBased?: { lowest: number; median: number; highest: number } | null,
   imageBased?: { lowest: number; median: number; highest: number } | null
 ) {
-  console.log('Calculating combined price with inputs:', { textBased, imageBased });
+  console.log('[PRICE DEBUG] calculateCombinedPrice input:', { 
+    textBased: textBased ? {
+      lowest: textBased.lowest,
+      median: textBased.median,
+      highest: textBased.highest,
+      isZeros: textBased.median === 0 && textBased.lowest === 0 && textBased.highest === 0
+    } : null,
+    imageBased: imageBased ? {
+      lowest: imageBased.lowest,
+      median: imageBased.median,
+      highest: imageBased.highest,
+      isZeros: imageBased.median === 0 && imageBased.lowest === 0 && imageBased.highest === 0
+    } : null
+  });
 
   // Handle cases where only one result type is available
   if (!textBased && !imageBased) {
-    console.log('No price data available for combination');
+    console.log('[PRICE DEBUG] No price data available for combination');
     return { lowest: 0, median: 0, highest: 0 };
   }
   
   if (!textBased) {
-    console.log('Only image-based prices available, using those directly');
+    console.log('[PRICE DEBUG] Only image-based prices available, using those directly');
     return imageBased;
   }
   
   if (!imageBased) {
-    console.log('Only text-based prices available, using those directly');
-    return textBased;
+    console.log('[PRICE DEBUG] Only text-based prices available, using those directly');
+    // Check if the text-based result has any non-zero values
+    if (textBased.median > 0 || textBased.lowest > 0 || textBased.highest > 0) {
+      console.log('[PRICE DEBUG] Text-based result has non-zero values, using it');
+      return textBased;
+    } else {
+      console.log('[PRICE DEBUG] Text-based result has all zeros, still using it for consistency');
+      return textBased;
+    }
   }
 
   // Determine if image-based data has zero values
   const imageHasZeros = imageBased.lowest === 0 && imageBased.median === 0 && imageBased.highest === 0;
+  const textHasZeros = textBased.lowest === 0 && textBased.median === 0 && textBased.highest === 0;
+  
+  // Log the decision process for better debugging
+  console.log('[PRICE DEBUG] Price comparison:', {
+    imageHasZeros,
+    textHasZeros,
+    imageMedian: imageBased.median,
+    textMedian: textBased.median
+  });
   
   // If image-based results are available and not all zeros, use them exclusively
   if (!imageHasZeros) {
-    console.log('Image-based prices available, prioritizing them completely');
+    console.log('[PRICE DEBUG] Image-based prices available and not zeros, prioritizing them');
     return imageBased;
   }
   
-  // If image-based results are all zeros, fall back to text-based
-  console.log('Image-based prices are all zeros, falling back to text-based prices');
-  return textBased;
+  // If image-based results are all zeros but text has values, use text
+  if (imageHasZeros && !textHasZeros) {
+    console.log('[PRICE DEBUG] Image-based prices are all zeros but text has values, using text-based');
+    return textBased;
+  }
+  
+  // If both have zeros, prefer image-based for consistency with the rest of the app
+  console.log('[PRICE DEBUG] Both sources have zero prices, defaulting to image-based for consistency');
+  return imageBased;
 }
 
 /**
  * Updates all items for a user with enhanced eBay prices using both image and text search
  * Performance optimized to process items in batches
  */
-export async function refreshAllItemPricesEnhanced(): Promise<{
+export async function refreshAllItemPricesEnhanced(userId: string): Promise<{
   success: boolean;
   totalUpdated: number;
   error?: string;
 }> {
   try {
-    // Get authenticated userId from Clerk session
-    const { userId } = auth();
+    // Use provided userId instead of auth
     if (!userId) {
-      return { success: false, totalUpdated: 0, error: "Authentication Required: User not logged in." };
+      return { success: false, totalUpdated: 0, error: "User ID not provided" };
     }
     
-    console.log('Starting enhanced batch price refresh for authenticated user:', userId);
+    console.log('Starting enhanced batch price refresh for user:', userId);
     
-    // Fetch all user's items using the authenticated userId
+    // Fetch all user's items using the provided userId
     const itemsResult = await getItemsByUserIdAction(userId);
     if (!itemsResult.isSuccess) {
       return { success: false, totalUpdated: 0, error: 'Failed to fetch items' };
@@ -942,21 +1054,20 @@ export async function refreshAllItemPricesEnhanced(): Promise<{
 /**
  * Updates all items for a user with eBay prices (text-based search only)
  */
-export async function refreshAllEbayPrices(): Promise<{
+export async function refreshAllEbayPrices(userId: string): Promise<{
   success: boolean;
   totalUpdated: number;
   error?: string;
 }> {
   try {
-    // Get authenticated userId from Clerk session
-    const { userId } = auth();
+    // Use provided userId instead of auth
     if (!userId) {
-      return { success: false, totalUpdated: 0, error: "Authentication Required: User not logged in." };
+      return { success: false, totalUpdated: 0, error: "User ID not provided" };
     }
     
-    console.log('Starting batch price refresh for authenticated user:', userId);
+    console.log('Starting batch price refresh for user:', userId);
     
-    // Fetch all user's items using the authenticated userId
+    // Fetch all user's items using the provided userId
     const itemsResult = await getItemsByUserIdAction(userId);
     if (!itemsResult.isSuccess) {
       return { success: false, totalUpdated: 0, error: 'Failed to fetch items' };

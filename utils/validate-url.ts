@@ -9,6 +9,11 @@
  * @returns true if the URL is valid and from a trusted domain
  */
 export function isValidUrl(url: string): boolean {
+  // If this looks like a normal search string and not a URL, allow it
+  if (!/^https?:\/\//.test(url) && !url.includes('://')) {
+    return true;
+  }
+  
   try {
     const parsedUrl = new URL(url);
     
@@ -21,6 +26,10 @@ export function isValidUrl(url: string): boolean {
     
     return trustedDomains.includes(parsedUrl.hostname);
   } catch (e) {
+    // If parsing fails, it's likely just a search string, not a URL
+    if (url && typeof url === 'string' && !url.includes('://')) {
+      return true;
+    }
     console.error(`Invalid URL: ${url}`, e);
     return false;
   }
