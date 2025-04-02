@@ -80,7 +80,6 @@ export function useEbayPricing(
       console.log('AI price refresh result:', { 
         hasTextBased: !!result.textBased,
         hasImageBased: !!result.imageBased,
-        hasCombined: !!result.combined,
         hasDebugData: !!result.debugData,
         debugModeStatus: { isDebugMode, isInitialized, shouldUseDebugMode }
       })
@@ -91,12 +90,12 @@ export function useEbayPricing(
         setDebugData(result.debugData)
       }
       
-      // Check if we got pricing results
-      if (result.combined || result.textBased || result.imageBased) {
-        // Prioritize combined results, then image-based, then text-based
-        const bestPrice = result.combined?.median || 
-                         result.imageBased?.median || 
-                         result.textBased?.median
+      // Check if we got pricing results - use image-based if available, otherwise text-based
+      if ((result.imageBased && result.imageBased.median > 0) || (result.textBased && result.textBased.median > 0)) {
+        // Prioritize image-based results if available, otherwise use text-based
+        const bestPrice = (result.imageBased && result.imageBased.median > 0) 
+                         ? result.imageBased.median 
+                         : (result.textBased && result.textBased.median) || 0
         
         if (bestPrice) {
           // Create the updated item with the new price
@@ -113,8 +112,9 @@ export function useEbayPricing(
             ebayListed: bestPrice
           })
           
-          const method = result.combined ? 'combined text+image search' : 
-                       result.imageBased ? 'image search' : 'text search'
+          const method = (result.imageBased && result.imageBased.median > 0) 
+                          ? 'image search' 
+                          : 'text search'
           
           toast({
             title: "AI Price updated",

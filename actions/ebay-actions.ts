@@ -664,7 +664,6 @@ export async function getEnhancedEbayPrices(
 ): Promise<{
   textBased?: { lowest: number; median: number; highest: number };
   imageBased?: { lowest: number; median: number; highest: number };
-  combined?: { lowest: number; median: number; highest: number };
   debugData?: {
     textMatches?: any[];
     imageMatches?: any[];
@@ -833,16 +832,6 @@ export async function getEnhancedEbayPrices(
     console.log('No image provided, skipping image-based search');
   }
   
-  // Calculate combined results with weighted averaging
-  if (result.textBased || result.imageBased) {
-    result.combined = calculateCombinedPrice(result.textBased, result.imageBased);
-    console.log('Combined results calculated:', result.combined);
-  } else {
-    console.log('Unable to calculate combined results - no valid source data');
-    // Set default values to prevent undefined errors
-    result.combined = { lowest: 0, median: 0, highest: 0 };
-  }
-  
   // Log debug info to help troubleshoot
   if (includeDebugData) {
     console.log('Debug data summary:', {
@@ -855,81 +844,6 @@ export async function getEnhancedEbayPrices(
   }
   
   return result;
-}
-
-/**
- * Calculate a combined price from text-based and image-based searches
- * Now completely prioritizes image-based results when available
- */
-function calculateCombinedPrice(
-  textBased?: { lowest: number; median: number; highest: number } | null,
-  imageBased?: { lowest: number; median: number; highest: number } | null
-) {
-  console.log('[PRICE DEBUG] calculateCombinedPrice input:', { 
-    textBased: textBased ? {
-      lowest: textBased.lowest,
-      median: textBased.median,
-      highest: textBased.highest,
-      isZeros: textBased.median === 0 && textBased.lowest === 0 && textBased.highest === 0
-    } : null,
-    imageBased: imageBased ? {
-      lowest: imageBased.lowest,
-      median: imageBased.median,
-      highest: imageBased.highest,
-      isZeros: imageBased.median === 0 && imageBased.lowest === 0 && imageBased.highest === 0
-    } : null
-  });
-
-  // Handle cases where only one result type is available
-  if (!textBased && !imageBased) {
-    console.log('[PRICE DEBUG] No price data available for combination');
-    return { lowest: 0, median: 0, highest: 0 };
-  }
-  
-  if (!textBased) {
-    console.log('[PRICE DEBUG] Only image-based prices available, using those directly');
-    return imageBased;
-  }
-  
-  if (!imageBased) {
-    console.log('[PRICE DEBUG] Only text-based prices available, using those directly');
-    // Check if the text-based result has any non-zero values
-    if (textBased.median > 0 || textBased.lowest > 0 || textBased.highest > 0) {
-      console.log('[PRICE DEBUG] Text-based result has non-zero values, using it');
-      return textBased;
-    } else {
-      console.log('[PRICE DEBUG] Text-based result has all zeros, still using it for consistency');
-      return textBased;
-    }
-  }
-
-  // Determine if image-based data has zero values
-  const imageHasZeros = imageBased.lowest === 0 && imageBased.median === 0 && imageBased.highest === 0;
-  const textHasZeros = textBased.lowest === 0 && textBased.median === 0 && textBased.highest === 0;
-  
-  // Log the decision process for better debugging
-  console.log('[PRICE DEBUG] Price comparison:', {
-    imageHasZeros,
-    textHasZeros,
-    imageMedian: imageBased.median,
-    textMedian: textBased.median
-  });
-  
-  // If image-based results are available and not all zeros, use them exclusively
-  if (!imageHasZeros) {
-    console.log('[PRICE DEBUG] Image-based prices available and not zeros, prioritizing them');
-    return imageBased;
-  }
-  
-  // If image-based results are all zeros but text has values, use text
-  if (imageHasZeros && !textHasZeros) {
-    console.log('[PRICE DEBUG] Image-based prices are all zeros but text has values, using text-based');
-    return textBased;
-  }
-  
-  // If both have zeros, prefer image-based for consistency with the rest of the app
-  console.log('[PRICE DEBUG] Both sources have zero prices, defaulting to image-based for consistency');
-  return imageBased;
 }
 
 /**
@@ -1006,10 +920,10 @@ export async function refreshAllItemPricesEnhanced(userId: string): Promise<{
             region: getRegionFromCookie()
           }, true); // Enable debug mode to help diagnose issues
           
-          // Extract the best price (prefer combined, then image-based, then text-based)
-          const bestPrice = result.combined?.median || 
-                            result.imageBased?.median || 
-                            result.textBased?.median;
+          // Extract the best price (prefer image-based, then text-based)
+          const bestPrice = (result.imageBased && result.imageBased.median > 0) 
+                            ? result.imageBased.median 
+                            : result.textBased?.median || 0;
           
           if (bestPrice) {
             // Update the item in the database
@@ -1162,7 +1076,7 @@ export async function updateItemWithEnhancedPricing(item: any, itemImages: Recor
       }, true); // Enable debug mode to help diagnose issues
       
       // Extract the best price estimate
-      if (enhancedResult.combined?.median || enhancedResult.imageBased?.median || enhancedResult.textBased?.median) {
+      if (enhancedResult.imageBased?.median || enhancedResult.textBased?.median) {
         return { success: true };
       } else {
         return { success: false, error: 'No valid prices found' };
