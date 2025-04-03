@@ -293,6 +293,9 @@ This document tracks the implementation progress of security fixes identified in
 - [ ] `actions/custom-types-actions.ts`
 - [ ] `actions/profiles-actions.ts`
 - [ ] `/lib/schemas/image-schemas.ts` (New file to create)
+- [ ] `app/api/ebay/route.ts`
+- [ ] `app/api/ebay/search-by-image/route.ts`
+- [ ] `/lib/schemas/ebay-schemas.ts`
 
 ### Task 1: Image Actions Security (Critical)
 
@@ -374,11 +377,108 @@ This document tracks the implementation progress of security fixes identified in
 - Confirmed code maintains type safety with proper typescript assertions
 - Ensured the function remains available for legitimate administrative use cases
 
+### Task 5: eBay API Security Remediation (High)
+
+**Status:** Planned 🔄
+
+**Problem Statement:** 
+The eBay API routes currently lack critical security features including rate limiting and robust input validation, which were previously implemented but caused functionality issues. This task will incrementally implement these security features to maintain functionality while improving security.
+
+**Implementation Plan:**
+
+#### Phase 5.1: Input Validation Improvements (Low Risk)
+**Status:** Completed ✅
+
+**Files to Modify:**
+- [x] `app/api/ebay/search-by-image/route.ts`
+- [x] `/lib/schemas/ebay-schemas.ts`
+
+**Implementation Steps Completed:**
+1. Re-implemented Zod schema validation for the image search API:
+   - Created `EbayImageSearchBodySchema` with `.refine()` check for base64 data
+   - Added proper validation for all fields with clear error messages
+   - Created the associated TypeScript type `EbayImageSearchBody`
+2. Updated the route handler to use the Zod schema:
+   - Replaced custom validation with Zod's `safeParse()`
+   - Improved error handling with formatted validation errors
+   - Maintained backward compatibility with client-side code
+3. Enhanced security while preserving functionality:
+   - Added thorough validation without changing API behavior
+   - Kept existing logging for tracking validation results
+   - Ensured consistent error response format
+
+**Testing Verification:**
+- Manually verified normal requests continue to work
+- Confirmed invalid requests are properly rejected with clear error messages
+- Validated that all validation logic maintains backward compatibility
+- End-to-end tested the eBay pricing feature to ensure no regression
+
+#### Phase 5.2: Rate Limiting on Image Search Route (Medium Risk)
+**Status:** Planned
+
+**Files to Modify:**
+- [ ] `app/api/ebay/search-by-image/route.ts`
+
+**Implementation Steps:**
+1. Set up Upstash Ratelimit and Vercel KV (if not already configured)
+2. Implement rate limiting on the image search route first:
+   - Configure for 5 requests per minute per IP address initially
+   - Implement proper 429 error response when limit exceeded
+   - Add rate limit headers to all responses
+3. Add detailed logging for rate limit events
+
+**Testing Verification:**
+- Verify normal usage works without hitting limits
+- Test rapid requests to ensure limits are enforced correctly
+- Confirm rate limit headers are present in responses
+
+#### Phase 5.3: Rate Limiting on Main eBay Route (Medium Risk)
+**Status:** Planned
+
+**Files to Modify:**
+- [ ] `app/api/ebay/route.ts`
+
+**Implementation Steps:**
+1. Apply the same rate limiting approach to the main eBay route:
+   - Initially use more conservative limits (10 requests per minute per IP)
+   - Implement proper 429 error response when limit exceeded
+   - Add rate limit headers to all responses
+2. Gradually adjust limits based on testing results
+3. Ensure consistent implementation between both API routes
+
+**Testing Verification:**
+- Verify normal usage patterns work without hitting limits
+- Test concurrent requests to ensure limits are enforced correctly
+- Ensure client-side error handling properly manages rate limit responses
+
+#### Phase 5.4: Authentication Assessment (Optional)
+**Status:** Pending Decision
+
+**Files to Modify:**
+- [ ] `app/api/ebay/route.ts`
+- [ ] `app/api/ebay/search-by-image/route.ts`
+- [ ] `components/item-details/hooks/use-ebay-pricing.ts`
+- [ ] `actions/ebay-actions.ts`
+
+**Decision Required:**
+- Determine if authentication requirements for these API routes are necessary or if they should remain public
+
+**Implementation Steps (If Required):**
+1. Implement optional authentication check first (log but don't block)
+2. Test thoroughly to ensure compatibility
+3. Update client code to pass authentication tokens
+4. Finally enforce authentication based on decision
+
+**Testing Verification:**
+- Verify no functionality regressions with authentication changes
+- If authentication is required, test error handling for unauthenticated requests
+
 ## Timeline
 
 - **Week 1:** Phases 1-2 (Authentication, Authorization, Input Validation)
 - **Week 2:** Phases 3-5 (Supabase RLS, API Rate Limiting, Stripe Fix)
 - **Week 3:** Phases 6-9 (Custom Brands, User Data Deletion, Headers, Minor Fixes)
+- **Week 4:** Phase 10 (Image Actions, eBay Actions, Custom Types, Profiles, eBay API Security)
 
 ## Completion Checklist
 
