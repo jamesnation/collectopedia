@@ -5,9 +5,15 @@ import { isValidUrl, createSecureUrl, getSecurityHeaders } from '@/utils/validat
 import { EbayApiQuerySchema } from '@/lib/schemas/ebay-schemas'; // Import Zod schema
 import { Ratelimit } from '@upstash/ratelimit';
 import { kv } from '@vercel/kv';
+import { auth } from '@clerk/nextjs/server';
 
 // Tell Next.js this is a dynamic route that shouldn't be statically optimized
 export const dynamic = 'force-dynamic';
+
+// Feature flag to enable/disable auth requirement
+// Set this to "false" to revert to unauthenticated behavior if needed
+const REQUIRE_AUTH = process.env.EBAY_REQUIRE_AUTH !== 'false';
+const AUTH_LOGGING_ONLY = process.env.EBAY_AUTH_LOGGING_ONLY === 'true';
 
 const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
@@ -86,6 +92,8 @@ const DEFAULT_REGION = 'UK';
 console.log('EBAY_APP_ID:', EBAY_APP_ID ? 'Set' : 'Not set');
 console.log('EBAY_CERT_ID:', EBAY_CERT_ID ? 'Set' : 'Not set');
 console.log('RAPIDAPI_KEY:', RAPIDAPI_KEY ? 'Set' : 'Not set');
+console.log('EBAY_REQUIRE_AUTH:', REQUIRE_AUTH ? 'Enabled' : 'Disabled');
+console.log('EBAY_AUTH_LOGGING_ONLY:', AUTH_LOGGING_ONLY ? 'Enabled' : 'Disabled');
 
 // Function to get eBay OAuth token
 async function getEbayToken() {
@@ -386,15 +394,37 @@ export async function GET(request: NextRequest) {
   try {
     console.log('[eBay API Route] Processing request');
     
+    // Check authentication if enabled
+    const { userId } = auth();
+    const isAuthenticated = !!userId;
+    
+    if (REQUIRE_AUTH) {
+      console.log(`[eBay API Route] Authentication check: userId=${userId || 'not authenticated'}`);
+      
+      if (!isAuthenticated && !AUTH_LOGGING_ONLY) {
+        console.warn('[eBay API Route] Unauthenticated request rejected');
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Authentication required',
+            message: 'You must be logged in to access this API'
+          },
+          { status: 401 }
+        );
+      }
+    }
+    
     // Apply rate limiting if initialized
     let rateLimitHeaders = {};
+    let rateLimitKey = userId || request.ip || '127.0.0.1';
+    
     if (ratelimit) {
       try {
-        // Get IP for rate limiting
-        const ip = request.ip || '127.0.0.1';
+        // Use userId for rate limiting if authenticated, otherwise use IP
+        console.log(`[eBay API Route] Using rate limit key: ${rateLimitKey}`);
         
         // Check rate limit - but don't block yet, just warn
-        const { success, limit, remaining, reset } = await ratelimit.limit(ip);
+        const { success, limit, remaining, reset } = await ratelimit.limit(rateLimitKey);
         console.log(`[eBay API Route] Rate limit status: ${success ? 'OK' : 'Exceeded'}, remaining=${remaining}, reset=${reset}`);
         
         rateLimitHeaders = {
@@ -405,7 +435,7 @@ export async function GET(request: NextRequest) {
         
         // Only actually block if rate limit exceeded by a large margin (less than 3 remaining)
         if (!success && remaining < -3) {
-          console.warn(`[eBay API Route] Rate limit significantly exceeded for IP: ${ip}`);
+          console.warn(`[eBay API Route] Rate limit significantly exceeded for key: ${rateLimitKey}`);
           return NextResponse.json({
             success: false,
             error: 'Rate limit exceeded',
@@ -469,7 +499,8 @@ export async function GET(request: NextRequest) {
       listingType, 
       condition: condition || 'Any',
       region, 
-      includeItems
+      includeItems,
+      isAuthenticated
     });
 
     // Comment out the URL validation that's likely causing the issue
@@ -519,8 +550,9 @@ export async function GET(request: NextRequest) {
     let rateLimitHeaders = {};
     try {
       if (ratelimit) {
-        const ip = request?.ip || '127.0.0.1';
-        const { limit, remaining, reset } = await ratelimit.limit(ip);
+        const { userId } = auth();
+        const rateLimitKey = userId || request?.ip || '127.0.0.1';
+        const { limit, remaining, reset } = await ratelimit.limit(rateLimitKey);
         rateLimitHeaders = {
           'X-RateLimit-Limit': limit.toString(),
           'X-RateLimit-Remaining': remaining.toString(),
