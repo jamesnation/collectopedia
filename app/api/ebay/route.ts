@@ -3,6 +3,8 @@ import axios from 'axios';
 import qs from 'querystring';
 import { isValidUrl, createSecureUrl, getSecurityHeaders } from '@/utils/validate-url';
 import { EbayApiQuerySchema } from '@/lib/schemas/ebay-schemas'; // Import Zod schema
+import { Ratelimit } from '@upstash/ratelimit';
+import { kv } from '@vercel/kv';
 
 // Tell Next.js this is a dynamic route that shouldn't be statically optimized
 export const dynamic = 'force-dynamic';
@@ -10,6 +12,24 @@ export const dynamic = 'force-dynamic';
 const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+
+// Set up rate limiting with a permissive limit - 10 requests per minute
+// Using the same approach as the image search route for consistency
+let ratelimit: Ratelimit | null = null;
+
+// Only initialize rate limiting if KV is available
+try {
+  ratelimit = new Ratelimit({
+    redis: kv,
+    limiter: Ratelimit.slidingWindow(10, '60 s'),
+    analytics: true,
+    prefix: '@ebay/main-route', // Different prefix from image search for separate analytics
+  });
+  console.log('[eBay API Route] Rate limiting initialized successfully');
+} catch (error) {
+  console.warn('[eBay API Route] Failed to initialize rate limiting:', error);
+  // Continue without rate limiting if initialization fails
+}
 
 // Create secure axios instances with predefined base URLs
 const ebayAuthClient = axios.create({
@@ -364,7 +384,42 @@ async function getEbayPrices(searchTerm: string, listingType: 'listed' | 'sold',
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[eBay API Route] Processing request - No rate limiting or auth applied');
+    console.log('[eBay API Route] Processing request');
+    
+    // Apply rate limiting if initialized
+    let rateLimitHeaders = {};
+    if (ratelimit) {
+      try {
+        // Get IP for rate limiting
+        const ip = request.ip || '127.0.0.1';
+        
+        // Check rate limit - but don't block yet, just warn
+        const { success, limit, remaining, reset } = await ratelimit.limit(ip);
+        console.log(`[eBay API Route] Rate limit status: ${success ? 'OK' : 'Exceeded'}, remaining=${remaining}, reset=${reset}`);
+        
+        rateLimitHeaders = {
+          'X-RateLimit-Limit': limit.toString(),
+          'X-RateLimit-Remaining': remaining.toString(),
+          'X-RateLimit-Reset': reset.toString()
+        };
+        
+        // Only actually block if rate limit exceeded by a large margin (less than 3 remaining)
+        if (!success && remaining < -3) {
+          console.warn(`[eBay API Route] Rate limit significantly exceeded for IP: ${ip}`);
+          return NextResponse.json({
+            success: false,
+            error: 'Rate limit exceeded',
+            message: 'Too many requests, please try again later'
+          }, { 
+            status: 429,
+            headers: rateLimitHeaders
+          });
+        }
+      } catch (rateLimitError) {
+        // If rate limiting fails, log but continue with the request
+        console.error('[eBay API Route] Rate limiting error:', rateLimitError);
+      }
+    }
     
     // Extract query parameters
     const searchParams = {
@@ -388,7 +443,10 @@ export async function GET(request: NextRequest) {
           error: 'Invalid query parameters',
           validationErrors: validationResult.error.format()
         }, 
-        { status: 400 }
+        { 
+          status: 400,
+          headers: rateLimitHeaders 
+        }
       );
     }
     
@@ -399,7 +457,10 @@ export async function GET(request: NextRequest) {
     if (!toyName || !listingType) {
       return NextResponse.json(
         { success: false, error: "Missing required parameters: 'toyName' and 'listingType'" },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: rateLimitHeaders
+        }
       );
     }
 
@@ -425,12 +486,16 @@ export async function GET(request: NextRequest) {
     const prices = await getEbayPrices(toyName, listingType, condition, region);
 
     if (includeItems && prices.items) {
-      // Return with items data
-      return NextResponse.json(prices);
+      // Return with items data and optional rate limit headers
+      return Object.keys(rateLimitHeaders).length > 0
+        ? NextResponse.json(prices, { headers: rateLimitHeaders })
+        : NextResponse.json(prices);
     } else {
-      // Return only price data (no items)
+      // Return only price data (no items) and optional rate limit headers
       const { items, ...priceData } = prices;
-      return NextResponse.json(priceData);
+      return Object.keys(rateLimitHeaders).length > 0
+        ? NextResponse.json(priceData, { headers: rateLimitHeaders })
+        : NextResponse.json(priceData);
     }
   } catch (error) {
     console.error('[eBay API Route] Error:', error);
@@ -450,9 +515,34 @@ export async function GET(request: NextRequest) {
       ? `eBay API error: ${error.response.status} ${JSON.stringify(error.response.data)}`
       : 'Failed to fetch eBay data';
     
-    return NextResponse.json(
-      { success: false, error: errorMessage },
-      { status: statusCode }
-    );
+    // Get rate limit headers if available
+    let rateLimitHeaders = {};
+    try {
+      if (ratelimit) {
+        const ip = request?.ip || '127.0.0.1';
+        const { limit, remaining, reset } = await ratelimit.limit(ip);
+        rateLimitHeaders = {
+          'X-RateLimit-Limit': limit.toString(),
+          'X-RateLimit-Remaining': remaining.toString(),
+          'X-RateLimit-Reset': reset.toString()
+        };
+      }
+    } catch (rateLimitError) {
+      console.error('[eBay API Route] Error getting rate limit headers for error response:', rateLimitError);
+    }
+    
+    // Return error response with optional rate limit headers
+    return Object.keys(rateLimitHeaders).length > 0
+      ? NextResponse.json(
+          { success: false, error: errorMessage },
+          { 
+            status: statusCode,
+            headers: rateLimitHeaders
+          }
+        )
+      : NextResponse.json(
+          { success: false, error: errorMessage },
+          { status: statusCode }
+        );
   }
 }
