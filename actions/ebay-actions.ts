@@ -5,6 +5,7 @@ import { getItemsByUserIdAction, updateItemAction } from './items-actions'
 import { recordEbayHistoryAction } from './ebay-history-actions' // Import for recording history
 import { getImagesByItemIdAction } from './images-actions' // Correct import from images-actions
 import { cookies } from 'next/headers';
+import { auth } from '@clerk/nextjs/server'; // Corrected import path for server actions
 
 // Remove the API_BASE_URL constant and use absolute URL instead
 const API_URL = '/api/ebay';
@@ -868,4 +869,141 @@ export async function getEnhancedEbayPrices(
   }
   
   return result;
+}
+
+/**
+ * Updates all items for the authenticated user with enhanced eBay prices using both image and text search.
+ * Fetches user items, gets primary images, processes in batches, and updates prices.
+ */
+export async function refreshAllItemPricesEnhanced(): Promise<{
+  success: boolean;
+  totalUpdated: number;
+  error?: string;
+}> {
+  // Add Clerk authentication check
+  const { userId } = auth();
+  if (!userId) {
+    console.error('[refreshAllItemPricesEnhanced] Authentication required.');
+    return { success: false, totalUpdated: 0, error: "Authentication required." };
+  }
+  
+  try {
+    console.log('Starting enhanced batch price refresh for user:', userId);
+    
+    // Fetch all user's items using the authenticated userId
+    const itemsResult = await getItemsByUserIdAction(userId); // Relies on auth check within getItemsByUserIdAction
+    if (!itemsResult.isSuccess) {
+      console.error('[refreshAllItemPricesEnhanced] Failed to fetch items:', itemsResult.error);
+      return { success: false, totalUpdated: 0, error: 'Failed to fetch items' };
+    }
+    
+    const items = itemsResult.data || [];
+    if (items.length === 0) {
+      console.log('[refreshAllItemPricesEnhanced] No items found for user, exiting.');
+      return { success: true, totalUpdated: 0 };
+    }
+    console.log(`[refreshAllItemPricesEnhanced] Found ${items.length} items to process`);
+    
+    // Get image info for each item (we'll need the primary image for visual search)
+    const itemImages: Record<string, string | undefined> = {};
+    
+    // Batch the image fetching in groups of 10 to avoid overwhelming the connection
+    const IMAGE_BATCH_SIZE = 10;
+    console.log(`[refreshAllItemPricesEnhanced] Fetching images in batches of ${IMAGE_BATCH_SIZE}`);
+    for (let i = 0; i < items.length; i += IMAGE_BATCH_SIZE) {
+      const batch = items.slice(i, i + IMAGE_BATCH_SIZE);
+      
+      // Fetch images for this batch in parallel
+      await Promise.all(batch.map(async (item) => {
+        try {
+          // getImagesByItemIdAction already checks auth internally
+          const imagesResult = await getImagesByItemIdAction(item.id);
+          if (imagesResult.isSuccess && imagesResult.data && imagesResult.data.length > 0) {
+            itemImages[item.id] = imagesResult.data[0].url; // Use primary image
+          }
+        } catch (error) {
+          console.warn(`[refreshAllItemPricesEnhanced] Couldn't fetch images for item ${item.id}:`, error);
+        }
+      }));
+      console.log(`[refreshAllItemPricesEnhanced] Processed image batch ${Math.floor(i / IMAGE_BATCH_SIZE) + 1}`);
+    }
+    
+    console.log(`[refreshAllItemPricesEnhanced] Found images for ${Object.keys(itemImages).length} items`);
+    
+    // Process items in batches to prevent overwhelming the system
+    let totalUpdated = 0;
+    let totalListedValue = 0;
+    const PRICE_BATCH_SIZE = 5; // Smaller batch size for pricing to avoid rate limits
+    console.log(`[refreshAllItemPricesEnhanced] Processing prices in batches of ${PRICE_BATCH_SIZE}`);
+
+    for (let i = 0; i < items.length; i += PRICE_BATCH_SIZE) {
+      const batch = items.slice(i, i + PRICE_BATCH_SIZE);
+      
+      // Process this batch in parallel
+      await Promise.all(batch.map(async (item) => {
+        try {
+          console.log(`[refreshAllItemPricesEnhanced] Processing item: ${item.name} (ID: ${item.id})`);
+          
+          // Get the enhanced prices using both text and image search
+          const result = await getEnhancedEbayPrices({
+            title: item.name.trim(),
+            image: itemImages[item.id],
+            condition: item.condition,
+            franchise: item.franchise,
+            region: getRegionFromCookie() // Use region from cookie preference
+          }, false); // Keep debug mode off for batch updates
+          
+          // Extract the best price (prefer image-based, then text-based)
+          const bestPrice = (result.imageBased && result.imageBased.median > 0) 
+                            ? result.imageBased.median 
+                            : result.textBased?.median || 0;
+          
+          if (bestPrice > 0) {
+            console.log(`[refreshAllItemPricesEnhanced] Updating item ${item.id} with price: ${bestPrice}`);
+            // updateItemAction already checks auth internally
+            await updateItemAction(item.id, {
+              ebayListed: bestPrice,
+              ebayLastUpdated: new Date()
+            });
+            
+            // Track total value and count
+            totalListedValue += bestPrice;
+            totalUpdated++;
+          } else {
+            console.log(`[refreshAllItemPricesEnhanced] No valid price found for item ${item.id}, skipping update.`);
+          }
+        } catch (itemError) {
+          console.error(`[refreshAllItemPricesEnhanced] Failed to process item ${item.id}:`, itemError);
+        }
+      }));
+      
+      console.log(`[refreshAllItemPricesEnhanced] Processed price batch ${Math.floor(i / PRICE_BATCH_SIZE) + 1}`);
+      // Small delay between batches to avoid rate limits
+      if (i + PRICE_BATCH_SIZE < items.length) {
+        console.log(`[refreshAllItemPricesEnhanced] Waiting 500ms before next batch...`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    
+    // Record the eBay history if any items were updated
+    if (totalUpdated > 0) {
+      console.log(`[refreshAllItemPricesEnhanced] Recording eBay history: ${totalUpdated} items, total value ${totalListedValue}`);
+      // recordEbayHistoryAction already checks auth internally
+      await recordEbayHistoryAction(totalListedValue);
+    }
+    
+    console.log(`[refreshAllItemPricesEnhanced] Batch update completed. Total items updated: ${totalUpdated}`);
+    revalidatePath('/settings'); // Revalidate settings page where this is often triggered
+    return {
+      success: true,
+      totalUpdated
+    };
+  } catch (error) {
+    console.error('[refreshAllItemPricesEnhanced] Error in batch update:', error);
+    return {
+      success: false,
+      totalUpdated: 0,
+      error: error instanceof Error ? error.message : 'Failed to update all eBay prices'
+    };
+  }
 }
