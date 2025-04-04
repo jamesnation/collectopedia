@@ -4,6 +4,8 @@
  * Displays debug information for eBay price searches when debug mode is enabled.
  * Shows both image-based and text-based search results, along with detailed
  * diagnostic information about the search process.
+ * 
+ * This component is only visible to admin users.
  */
 
 import React from 'react'
@@ -35,6 +37,7 @@ import {
 } from "@/components/ui/accordion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { useAdminCheck } from "@/hooks/use-admin-check"
 
 interface DebugPanelProps {
   debugData: any
@@ -51,16 +54,20 @@ export default function DebugPanel({
   item,
   images
 }: DebugPanelProps) {
+  // Add additional admin check for extra security
+  const { isAdmin } = useAdminCheck();
+  
   // Add console log to check debug status
   console.log('Debug Mode Status:', { 
     isDebugMode, 
     isInitialized,
+    isAdmin,
     hasDebugData: !!debugData,
-    shouldShowDebugPanel: isDebugMode && isInitialized 
+    shouldShowDebugPanel: isDebugMode && isInitialized && isAdmin
   });
   
-  // Only show debug panel if debug mode is enabled and initialized
-  if (!isDebugMode || !isInitialized) return null;
+  // Only show debug panel if debug mode is enabled, initialized, and user is admin
+  if (!isDebugMode || !isInitialized || !isAdmin) return null;
   
   if (!debugData) {
     return (

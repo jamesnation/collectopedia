@@ -21,6 +21,7 @@ import { useSoldStatus } from './hooks/use-sold-status'
 import { useFieldEditing } from './hooks/use-field-editing'
 import { useItemDeletion } from './hooks/use-item-deletion'
 import { useCustomMetadata } from './hooks/use-custom-metadata'
+import { useAdminCheck } from "@/hooks/use-admin-check"
 
 // Import UI components
 import ImageGallery from './ui/image-gallery'
@@ -37,6 +38,9 @@ interface ItemDetailsPageProps {
 export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
   const router = useRouter()
   const { formatCurrency } = useRegionContext()
+  
+  // Use the admin check hook
+  const { isAdmin } = useAdminCheck();
   
   // Use the hooks to manage state and functions
   const { item, isLoading, updateItem } = useItemData(id)
@@ -149,8 +153,8 @@ export default function ItemDetailsPage({ id }: ItemDetailsPageProps) {
               onReorder={handleImageReorder}
             />
             
-            {/* Debug panel (only visible in debug mode) - moved under the image */}
-            {isDebugMode && (
+            {/* Debug panel (only visible in debug mode and for admin users) */}
+            {isDebugMode && isAdmin && (
               <DebugPanel
                 debugData={debugData}
                 item={item}
