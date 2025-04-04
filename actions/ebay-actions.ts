@@ -239,61 +239,100 @@ export async function updateEbayPrices(
 
 /**
  * Updates all items' eBay listed values for a user and records the total
- * This should be called from the cron job
+ * This should be called from the cron job OR triggered by the authenticated user.
  */
-export async function updateAllEbayListedValues(userId: string) {
+export async function updateAllEbayListedValues() {
   try {
-    // Use the passed in userId instead of getting it from auth
+    // Get authenticated userId from Clerk session
+    const { userId } = auth();
     if (!userId) {
-      return { success: false, error: 'User ID not provided' };
+      console.error('Authentication Required for updateAllEbayListedValues');
+      return { success: false, error: 'Authentication Required' };
     }
     
-    // Get all items for the user
-    const itemsResult = await getItemsByUserIdAction(userId);
-    
+    // Fetch items for the authenticated user
+    console.log(`Updating all eBay listed values for user: ${userId}`);
+    // Note: getItemsByUserIdAction internally checks if its passed userId matches auth().userId,
+    // but we fetch using the confirmed authenticated userId here for clarity and safety.
+    const itemsResult = await getItemsByUserIdAction(userId); 
+
     if (!itemsResult.isSuccess || !itemsResult.data) {
-      return { success: false, error: 'Failed to fetch items' };
+      console.error('Failed to fetch items for user:', itemsResult.error);
+      return { success: false, error: itemsResult.error || 'Failed to fetch items' };
     }
-    
-    const items = itemsResult.data.filter(item => !item.isSold); // Only update items that aren't sold
-    
-    console.log(`Updating eBay listed values for ${items.length} items`);
-    
-    // Update each item's eBay listed price
-    let totalListedValue = 0;
+
+    const items = itemsResult.data;
+    console.log(`Found ${items.length} items to update for user ${userId}`);
     let updatedCount = 0;
-    
-    for (const item of items) {
+    let totalValue = 0;
+    const errors: string[] = [];
+
+    // Use Promise.allSettled for concurrent updates
+    const updatePromises = items.map(async (item) => {
       try {
-        // Skip items without a name
-        if (!item.name) continue;
-        
-        // Update the eBay listed price - pass the item's condition and franchise
-        const result = await updateEbayPrices(item.id, item.name, 'listed', item.condition, getRegionFromCookie());
-        
-        if (result.success && result.prices && result.prices.median) {
-          totalListedValue += result.prices.median;
-          updatedCount++;
+        // Determine condition, default to 'Used' if not specified
+        const condition = item.condition === 'New' ? 'New' : 'Used';
+        const region = getRegionFromCookie() || 'UK'; // Get region preference
+
+        console.log(`Fetching listed price for item: ${item.name} (ID: ${item.id})`);
+        const prices = await fetchEbayPrices(item.name, 'listed', condition, item.franchise, region);
+
+        if (prices.median !== null && prices.median !== undefined) {
+          const roundedPrice = Math.round(prices.median);
+          console.log(`Updating item ${item.id} with listed price: ${roundedPrice}`);
+          
+          // Use updateItemAction which performs owner check again (defense-in-depth)
+          const updateResult = await updateItemAction(item.id, { 
+            ebayListed: roundedPrice,
+            ebayLastUpdated: new Date() 
+          });
+
+          if (updateResult.isSuccess) {
+            totalValue += roundedPrice;
+            return { status: 'fulfilled', id: item.id };
+          } else {
+            console.error(`Failed to update item ${item.id}:`, updateResult.error);
+            errors.push(`Item ${item.id} (${item.name}): ${updateResult.error}`);
+            return { status: 'rejected', id: item.id, reason: updateResult.error };
+          }
+        } else {
+           console.log(`No median price found for item ${item.id} (${item.name}). Skipping update.`);
+           return { status: 'skipped', id: item.id }; // Indicate skipped due to no price
         }
-      } catch (itemError) {
-        console.error(`Failed to update item ${item.id}:`, itemError);
-        // Continue with the next item
+      } catch (error) {
+        console.error(`Error processing item ${item.id}:`, error);
+        errors.push(`Item ${item.id} (${item.name}): ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return { status: 'rejected', id: item.id, reason: error instanceof Error ? error.message : 'Unknown processing error' };
       }
-    }
+    });
+
+    const results = await Promise.allSettled(updatePromises);
     
-    // Record the total value for historical tracking
+    results.forEach(result => {
+      if (result.status === 'fulfilled' && result.value?.status === 'fulfilled') {
+        updatedCount++;
+      }
+    });
+
+    console.log(`Finished updating eBay listed values for user ${userId}. ${updatedCount} items updated.`);
+
+    // Record the history only if some items were successfully updated
     if (updatedCount > 0) {
-      await recordEbayHistoryAction(totalListedValue);
+      console.log(`Recording eBay history for user ${userId} with total value: ${totalValue}`);
+      await recordEbayHistoryAction(totalValue);
+    } else {
+       console.log(`No items were updated for user ${userId}, skipping history record.`);
     }
-    
-    // Return success
-    return { 
-      success: true, 
-      message: `Updated ${updatedCount} of ${items.length} items with a total value of £${totalListedValue.toFixed(2)}` 
-    };
+
+    revalidatePath('/my-collection'); // Revalidate relevant path
+    return { success: true, updatedCount, totalValue, errors: errors.length > 0 ? errors : undefined };
+
   } catch (error) {
-    console.error('Error updating all eBay prices:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to update all eBay prices' };
+    console.error('Error in updateAllEbayListedValues:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to update eBay listed values' 
+    };
   }
 }
 
@@ -646,134 +685,100 @@ export async function getEnhancedEbayPrices(
 }
 
 /**
- * Updates all items for the authenticated user with enhanced eBay prices using both image and text search.
- * Fetches user items, gets primary images, processes in batches, and updates prices.
+ * Refreshes prices for all items owned by the current user using the enhanced method.
+ * @returns {Promise<{success: boolean, totalUpdated: number, error?: string}>}
  */
-export async function refreshAllItemPricesEnhanced(userId: string): Promise<{
+export async function refreshAllItemPricesEnhanced(): Promise<{
   success: boolean;
   totalUpdated: number;
   error?: string;
 }> {
-  // Check for userId instead of using auth()
-  if (!userId) {
-    console.error('[refreshAllItemPricesEnhanced] User ID not provided.');
-    return { success: false, totalUpdated: 0, error: "User ID not provided." };
-  }
-  
   try {
-    console.log('Starting enhanced batch price refresh for user:', userId);
-    
-    // Fetch all user's items using the provided userId
-    const itemsResult = await getItemsByUserIdAction(userId);
-    if (!itemsResult.isSuccess) {
-      console.error('Failed to fetch items:', itemsResult.error);
-      return { success: false, totalUpdated: 0, error: 'Failed to fetch items' };
+    // Get authenticated userId from Clerk session
+    const { userId } = auth();
+    if (!userId) {
+      console.error('Authentication Required for refreshAllItemPricesEnhanced');
+      return { success: false, totalUpdated: 0, error: 'Authentication Required' };
     }
-    
-    const items = itemsResult.data || [];
-    if (items.length === 0) {
-      console.log('No items found for user, exiting.');
-      return { success: true, totalUpdated: 0 };
-    }
-    console.log(`Found ${items.length} items to process`);
-    
-    // Get image info for each item (we'll need the primary image for visual search)
-    const itemImages: Record<string, string | undefined> = {};
-    
-    // Batch the image fetching in groups of 10 to avoid overwhelming the connection
-    const IMAGE_BATCH_SIZE = 10;
-    console.log(`Fetching images in batches of ${IMAGE_BATCH_SIZE}`);
-    for (let i = 0; i < items.length; i += IMAGE_BATCH_SIZE) {
-      const batch = items.slice(i, i + IMAGE_BATCH_SIZE);
-      
-      // Fetch images for this batch in parallel
-      await Promise.all(batch.map(async (item) => {
-        try {
-          // getImagesByItemIdAction already checks auth internally
-          const imagesResult = await getImagesByItemIdAction(item.id);
-          if (imagesResult.isSuccess && imagesResult.data && imagesResult.data.length > 0) {
-            itemImages[item.id] = imagesResult.data[0].url; // Use primary image
-          }
-        } catch (error) {
-          console.warn(`Couldn't fetch images for item ${item.id}:`, error);
-        }
-      }));
-    }
-    
-    console.log(`Found images for ${Object.keys(itemImages).length} items`);
-    
-    // Process items in batches to prevent overwhelming the system
-    let totalUpdated = 0;
-    let totalListedValue = 0;
-    const PRICE_BATCH_SIZE = 5; // Smaller batch size for pricing to avoid rate limits
-    console.log(`Processing prices in batches of ${PRICE_BATCH_SIZE}`);
 
-    for (let i = 0; i < items.length; i += PRICE_BATCH_SIZE) {
-      const batch = items.slice(i, i + PRICE_BATCH_SIZE);
-      
-      // Process this batch in parallel
-      await Promise.all(batch.map(async (item) => {
-        try {
-          console.log(`Processing item: ${item.name} (ID: ${item.id})`);
+    console.log(`Starting enhanced price refresh for user: ${userId}`);
+    // Fetch items for the authenticated user
+    const itemsResult = await getItemsByUserIdAction(userId);
+
+    if (!itemsResult.isSuccess || !itemsResult.data) {
+      console.error('Failed to fetch items for enhanced refresh:', itemsResult.error);
+      return { success: false, totalUpdated: 0, error: itemsResult.error || 'Failed to fetch items' };
+    }
+
+    const items = itemsResult.data;
+    let totalUpdated = 0;
+    const errors: string[] = [];
+    const region = getRegionFromCookie() || 'UK'; // Get region preference once
+
+    console.log(`Found ${items.length} items for enhanced refresh for user ${userId}`);
+
+    // Process items sequentially or in batches to avoid overwhelming APIs/DB
+    // Using sequential processing for simplicity here
+    for (const item of items) {
+      try {
+        console.log(`Processing enhanced price refresh for item: ${item.name} (ID: ${item.id})`);
+        const prices = await getEnhancedEbayPrices({
+          title: item.name,
+          image: item.image || undefined,
+          condition: item.condition || 'Used',
+          franchise: item.franchise || undefined,
+          region: region,
+        });
+
+        // Determine the best median price (prefer image-based if available)
+        let medianPrice: number | undefined | null = undefined;
+        if (prices.imageBased?.median !== null && prices.imageBased?.median !== undefined) {
+          medianPrice = prices.imageBased.median;
+        } else if (prices.textBased?.median !== null && prices.textBased?.median !== undefined) {
+          medianPrice = prices.textBased.median;
+        }
+
+        if (medianPrice !== null && medianPrice !== undefined) {
+          const roundedPrice = Math.round(medianPrice);
+          console.log(`Updating item ${item.id} with enhanced listed price: ${roundedPrice}`);
           
-          // Get the enhanced prices using both text and image search
-          const result = await getEnhancedEbayPrices({
-            title: item.name.trim(),
-            image: itemImages[item.id],
-            condition: item.condition,
-            franchise: item.franchise,
-            region: getRegionFromCookie() // Use region from cookie preference
-          }, false); // Keep debug mode off for batch updates
-          
-          // Extract the best price (prefer image-based, then text-based)
-          const bestPrice = (result.imageBased && result.imageBased.median > 0) 
-                            ? result.imageBased.median 
-                            : result.textBased?.median || 0;
-          
-          if (bestPrice > 0) {
-            console.log(`Updating item ${item.id} with price: ${bestPrice}`);
-            // updateItemAction already checks auth internally
-            await updateItemAction(item.id, {
-              ebayListed: bestPrice,
-              ebayLastUpdated: new Date()
-            });
-            
-            // Track total value and count
-            totalListedValue += bestPrice;
+          // Use updateItemAction which performs owner check
+          const updateResult = await updateItemAction(item.id, {
+            ebayListed: roundedPrice,
+            ebayLastUpdated: new Date()
+          });
+
+          if (updateResult.isSuccess) {
             totalUpdated++;
           } else {
-            console.log(`No valid price found for item ${item.id}, skipping update.`);
+            console.error(`Failed to update item ${item.id} during enhanced refresh:`, updateResult.error);
+            errors.push(`Item ${item.id} (${item.name}): ${updateResult.error}`);
           }
-        } catch (itemError) {
-          console.error(`Failed to process item ${item.id}:`, itemError);
+        } else {
+           console.log(`No median price found via enhanced search for item ${item.id} (${item.name}). Skipping update.`);
         }
-      }));
-      
-      // Small delay between batches to avoid rate limits
-      if (i + PRICE_BATCH_SIZE < items.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        console.error(`Error processing item ${item.id} during enhanced refresh:`, error);
+        errors.push(`Item ${item.id} (${item.name}): ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
-    
-    // Record the eBay history if any items were updated
-    if (totalUpdated > 0) {
-      console.log(`Recording eBay history: ${totalUpdated} items, total value ${totalListedValue}`);
-      // recordEbayHistoryAction already checks auth internally
-      await recordEbayHistoryAction(totalListedValue);
+
+    console.log(`Finished enhanced price refresh for user ${userId}. ${totalUpdated} items updated.`);
+    if (errors.length > 0) {
+      console.warn('Errors occurred during enhanced refresh:', errors);
     }
     
-    console.log(`Batch update completed. Total items updated: ${totalUpdated}`);
-    revalidatePath('/settings'); // Revalidate settings page where this is often triggered
-    return {
-      success: true,
-      totalUpdated
-    };
+    // Optionally record history here as well if needed
+
+    revalidatePath('/my-collection'); // Revalidate relevant path
+    return { success: true, totalUpdated };
+
   } catch (error) {
-    console.error('Error in batch update:', error);
-    return {
-      success: false,
-      totalUpdated: 0,
-      error: error instanceof Error ? error.message : 'Failed to update all eBay prices'
+    console.error('Error in refreshAllItemPricesEnhanced:', error);
+    return { 
+      success: false, 
+      totalUpdated: 0, 
+      error: error instanceof Error ? error.message : 'Failed to refresh enhanced prices' 
     };
   }
 }
