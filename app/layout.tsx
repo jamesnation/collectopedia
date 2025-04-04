@@ -54,6 +54,9 @@ export default async function RootLayout({
     }
   }
 
+  // Determine if this is a marketing route
+  const isMarketingRoute = false; // This is handled by the route groups
+
   return (
     <ClerkProvider>
       <html lang="en">
@@ -70,9 +73,10 @@ export default async function RootLayout({
             disableTransitionOnChange
           >
             <RegionProvider>
+              {/* Only show sidebar if the user is authenticated and not in a route group with custom layout */}
               <div className="flex h-screen dark:bg-black/30">
-                <Sidebar />
-                <main className="flex-1 overflow-auto pt-16 md:pt-0">
+                {userId && <Sidebar />}
+                <main className={`flex-1 overflow-auto ${userId ? 'pt-16 md:pt-0' : ''}`}>
                   {children}
                 </main>
               </div>

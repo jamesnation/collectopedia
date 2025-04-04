@@ -30,29 +30,6 @@ const sampleData = [
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-purple-950/90 to-black text-gray-100">
-      <header className="hidden md:block sticky top-0 z-50 bg-gray-900/80 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-end h-16">
-            <nav className="flex space-x-4">
-              <SignedIn>
-                <Link href="/my-collection">
-                  <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
-                    My Collection
-                  </Button>
-                </Link>
-              </SignedIn>
-              <SignedOut>
-                <Link href="/signup">
-                  <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
-                    Sign Up
-                  </Button>
-                </Link>
-              </SignedOut>
-            </nav>
-          </div>
-        </div>
-      </header>
-
       <main>
         <section className="relative py-20 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -136,7 +113,7 @@ export default function HomePage() {
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>
         </section>
 
-        <section className="py-20">
+        <section id="features" className="py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="lg:text-center">
               <h2 className="text-base text-purple-400 font-semibold tracking-wide uppercase">Collectopedia</h2>
@@ -190,6 +167,149 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section id="pricing" className="py-20 bg-gray-900">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold text-white">
+                Simple, transparent pricing
+              </h2>
+              <p className="mt-4 text-lg text-gray-300">
+                Choose the plan that's right for your collection
+              </p>
+            </div>
+            
+            <div className="mt-12 space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6 lg:max-w-4xl lg:mx-auto xl:max-w-none xl:grid-cols-3">
+              <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-sm divide-y divide-gray-700">
+                <div className="p-6">
+                  <h3 className="text-xl font-semibold text-white">Starter</h3>
+                  <p className="mt-4 text-gray-300">Perfect for beginners with small collections.</p>
+                  <p className="mt-8">
+                    <span className="text-5xl font-extrabold text-white">$0</span>
+                    <span className="text-base font-medium text-gray-400">/month</span>
+                  </p>
+                  <Link href="/signup">
+                    <Button className="mt-8 w-full bg-purple-600 hover:bg-purple-700">Get started</Button>
+                  </Link>
+                </div>
+                <div className="pt-6 pb-8 px-6">
+                  <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wide">What's included</h4>
+                  <ul className="mt-6 space-y-4">
+                    <li className="flex space-x-3">
+                      <svg className="flex-shrink-0 h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-gray-300">Up to 50 items</span>
+                    </li>
+                    <li className="flex space-x-3">
+                      <svg className="flex-shrink-0 h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-gray-300">Basic analytics</span>
+                    </li>
+                    <li className="flex space-x-3">
+                      <svg className="flex-shrink-0 h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-gray-300">Market price tracking</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 border border-purple-400 rounded-lg shadow-sm divide-y divide-gray-700">
+                <div className="p-6">
+                  <h3 className="text-xl font-semibold text-white">Collector</h3>
+                  <p className="mt-4 text-gray-300">For serious collectors with growing collections.</p>
+                  <p className="mt-8">
+                    <span className="text-5xl font-extrabold text-white">$9.99</span>
+                    <span className="text-base font-medium text-gray-400">/month</span>
+                  </p>
+                  <Link href="/signup">
+                    <Button className="mt-8 w-full bg-purple-600 hover:bg-purple-700">Get started</Button>
+                  </Link>
+                </div>
+                <div className="pt-6 pb-8 px-6">
+                  <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wide">What's included</h4>
+                  <ul className="mt-6 space-y-4">
+                    <li className="flex space-x-3">
+                      <svg className="flex-shrink-0 h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-gray-300">Unlimited items</span>
+                    </li>
+                    <li className="flex space-x-3">
+                      <svg className="flex-shrink-0 h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-gray-300">Advanced analytics</span>
+                    </li>
+                    <li className="flex space-x-3">
+                      <svg className="flex-shrink-0 h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-gray-300">Market predictions</span>
+                    </li>
+                    <li className="flex space-x-3">
+                      <svg className="flex-shrink-0 h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-gray-300">Priority support</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="lg:text-center">
+              <h2 className="text-base text-purple-400 font-semibold tracking-wide uppercase">Questions &amp; Answers</h2>
+              <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl">
+                Frequently Asked Questions
+              </p>
+              <p className="mt-4 max-w-2xl text-xl text-gray-300 lg:mx-auto">
+                Everything you need to know about Collectopedia
+              </p>
+            </div>
+
+            <div className="mt-12 max-w-3xl mx-auto divide-y divide-gray-800">
+              {[
+                {
+                  question: "What types of collectibles can I track?",
+                  answer: "Collectopedia supports a wide range of collectibles including toys, action figures, trading cards, video games, comic books, vinyl records, and more. If you have a special collection type, contact us and we'll work to support it."
+                },
+                {
+                  question: "How accurate are the price estimates?",
+                  answer: "Our pricing data comes from multiple market sources including eBay, specialized marketplaces, and auction houses. We update prices daily to ensure you have the most accurate valuation possible."
+                },
+                {
+                  question: "Can I import my existing collection data?",
+                  answer: "Yes! Collectopedia supports importing from CSV files and several other collection management systems. Contact support if you need assistance with a specific format."
+                },
+                {
+                  question: "Is there a mobile app available?",
+                  answer: "Our responsive web application works great on mobile devices. We're also developing native iOS and Android apps that will be released soon."
+                },
+                {
+                  question: "How do I cancel my subscription?",
+                  answer: "You can cancel your subscription anytime from your account settings. Your data will remain accessible until the end of your billing period."
+                }
+              ].map((faq, index) => (
+                <div key={index} className="pt-6 pb-8">
+                  <dt className="text-lg font-medium text-white">
+                    {faq.question}
+                  </dt>
+                  <dd className="mt-2 text-base text-gray-400">
+                    {faq.answer}
+                  </dd>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="py-20 bg-gray-900">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
@@ -197,7 +317,7 @@ export default function HomePage() {
               <span className="block text-purple-400">Try Collectopedia for free today.</span>
             </h2>
             <p className="mt-4 text-lg leading-6 text-gray-300">
-           Value your collection now.
+              Value your collection now.
             </p>
             <div className="mt-8">
               <Link href="/signup">
