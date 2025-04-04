@@ -4,11 +4,11 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 import { RegionProvider } from "@/contexts/region-context";
-import Sidebar from "@/components/sidebar";
 import { auth } from "@clerk/nextjs/server";
 import { getProfileByUserIdAction } from "@/actions/profiles-actions";
 import { createProfile } from "@/db/queries/profiles-queries";
 import { cookies } from "next/headers";
+import AppLayout from "@/components/app-layout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -73,13 +73,9 @@ export default async function RootLayout({
             disableTransitionOnChange
           >
             <RegionProvider>
-              {/* Only show sidebar if the user is authenticated and not in a route group with custom layout */}
-              <div className="flex h-screen dark:bg-black/30">
-                {userId && <Sidebar />}
-                <main className={`flex-1 overflow-auto ${userId ? 'pt-16 md:pt-0' : ''}`}>
-                  {children}
-                </main>
-              </div>
+              <AppLayout userId={userId}>
+                {children}
+              </AppLayout>
             </RegionProvider>
           </ThemeProvider>
         </body>
