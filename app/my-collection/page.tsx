@@ -1,4 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { getProfileByUserId } from "@/db/queries/profiles-queries";
 import { getCustomBrandsAction } from "@/actions/custom-brands-actions";
 import { getCustomTypesAction } from "@/actions/custom-types-actions";
 import { getCustomFranchisesAction } from "@/actions/custom-franchises-actions";
@@ -11,6 +13,20 @@ export const dynamic = 'force-dynamic';
 export default async function CollectionPage() {
   const { userId } = auth();
   
+  if (!userId) {
+    return redirect("/login");
+  }
+
+  const profile = await getProfileByUserId(userId);
+  
+  if (!profile) {
+    return redirect("/signup");
+  }
+
+  if (profile.membership === "free") {
+    return redirect("/pricing");
+  }
+  
   // Fetch initial data on the server in parallel
   const [
     brandsResult,
@@ -21,7 +37,7 @@ export default async function CollectionPage() {
     getCustomBrandsAction(),
     getCustomTypesAction(),
     getCustomFranchisesAction(),
-    userId ? getItemsByUserIdAction(userId) : { isSuccess: false, data: [] }
+    getItemsByUserIdAction(userId)
   ]);
 
   // Pass the data as props to the client component

@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isProtectedRoute = createRouteMatcher(["/notes(.*)"]);
+const isProtectedRoute = createRouteMatcher(["/my-collection(.*)", "/settings(.*)"]);
 
 // Static assets that can be cached for longer periods
 const isStaticAsset = createRouteMatcher([

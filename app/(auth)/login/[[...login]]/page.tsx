@@ -9,7 +9,7 @@ export default function LoginPage() {
 
   return (
     <SignIn
-      forceRedirectUrl="/notes"
+      forceRedirectUrl="/my-collection"
       appearance={{ baseTheme: theme === "dark" ? dark : undefined }}
     />
   );
