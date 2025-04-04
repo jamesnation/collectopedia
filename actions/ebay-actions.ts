@@ -65,7 +65,7 @@ export async function fetchEbayPrices(
     // Get region from cookie if not provided
     const effectiveRegion = region || getRegionFromCookie() || 'UK'; // Default to UK if not found
     
-    console.log(`[DETAILED DEBUG] fetchEbayPrices called for "${toyName}" (${listingType}, ${condition || 'Any condition'}, Franchise: ${franchise || 'Any'}, Region: ${effectiveRegion})`);
+    console.log(`Fetching eBay prices for "${toyName}" (${listingType}, ${condition || 'Any condition'}, Region: ${effectiveRegion})`);
     
     // Build the URL with query parameters
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
@@ -75,9 +75,7 @@ export async function fetchEbayPrices(
     let searchTerm = toyName;
     if (franchise && franchise.trim() && !['Other', 'Unknown'].includes(franchise)) {
       searchTerm = `${franchise} ${toyName}`;
-      console.log('[DETAILED DEBUG] Added franchise to search term:', { originalName: toyName, franchise, finalSearchTerm: searchTerm });
-    } else {
-      console.log('[DETAILED DEBUG] Using original name without franchise:', { toyName, franchise: franchise || 'None', reason: !franchise ? 'No franchise' : franchise === 'Other' || franchise === 'Unknown' ? 'Excluded franchise' : 'Empty franchise' });
+      console.log('Added franchise to search term:', franchise);
     }
     url.searchParams.append('toyName', searchTerm);
     url.searchParams.append('listingType', listingType);
@@ -90,51 +88,26 @@ export async function fetchEbayPrices(
     
     // Add debug parameter to get item details
     url.searchParams.append('includeItems', 'true');
-
-    console.log('[DETAILED DEBUG] Fetching from URL:', url.toString());
     
     // Fetch the data from our API route
-    console.log('[DETAILED DEBUG] Starting fetch request to eBay API endpoint');
     const response = await fetch(url.toString(), { next: { revalidate: 3600 } });
-    console.log('[DETAILED DEBUG] Fetch response received:', { 
-      status: response.status, 
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries())
-    });
     
     if (!response.ok) {
       const text = await response.text();
-      console.error(`[DETAILED DEBUG] HTTP error fetching eBay prices: ${response.status} ${text}`);
+      console.error(`HTTP error fetching eBay prices: ${response.status} ${text}`);
       throw new Error(`HTTP error! status: ${response.status} ${text}`);
     }
     
     // Parse the response
     const responseText = await response.text();
-    console.log('[DETAILED DEBUG] Raw response text length:', responseText.length);
-    console.log('[DETAILED DEBUG] Raw response preview:', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
     
     let data;
     try {
       data = JSON.parse(responseText);
-      console.log('[DETAILED DEBUG] Successfully parsed JSON response');
     } catch (parseError) {
-      console.error('[DETAILED DEBUG] Error parsing JSON response:', parseError);
+      console.error('Error parsing JSON response:', parseError);
       throw new Error('Failed to parse response from eBay API');
     }
-    
-    console.log('[DETAILED DEBUG] eBay API response data:', {
-      hasLowest: data.lowest !== null && data.lowest !== undefined,
-      hasMedian: data.median !== null && data.median !== undefined,
-      hasHighest: data.highest !== null && data.highest !== undefined,
-      lowestValue: data.lowest,
-      medianValue: data.median,
-      highestValue: data.highest,
-      itemCount: data.items?.length || 0,
-      message: data.message,
-      success: data.success,
-      error: data.error,
-      firstTwoItems: data.items?.slice(0, 2)
-    });
     
     // Ensure we have numeric values or null
     const result = {
@@ -147,29 +120,18 @@ export async function fetchEbayPrices(
       error: data.error
     };
     
-    // Log the processed result
-    console.log('[DETAILED DEBUG] Processed eBay price data:', {
-      lowest: result.lowest,
-      median: result.median,
-      highest: result.highest,
-      itemCount: result.items.length,
-      message: result.message,
-      error: result.error
-    });
-    
     // If we got no results AND we were using a franchise in the search term, retry with just the toy name
     if (result.lowest === null && result.median === null && result.highest === null && 
         searchTerm !== toyName && franchise && franchise.trim()) {
-      console.log('[DETAILED DEBUG] No results found with franchise in search term. Retrying with just the toy name.');
+      console.log('No results found with franchise in search term. Retrying with just the toy name.');
       
       // Use just the toy name without franchise
       url.searchParams.set('toyName', toyName);
       
-      console.log('[DETAILED DEBUG] Fetching from fallback URL:', url.toString());
       const fallbackResponse = await fetch(url.toString(), { next: { revalidate: 3600 } });
       
       if (!fallbackResponse.ok) {
-        console.error(`[DETAILED DEBUG] HTTP error in fallback request: ${fallbackResponse.status}`);
+        console.error(`HTTP error in fallback request: ${fallbackResponse.status}`);
         return result; // Return original (empty) result if fallback failed
       }
       
@@ -178,7 +140,7 @@ export async function fetchEbayPrices(
       const fallbackData = JSON.parse(fallbackResponseText);
       
       if (fallbackData.lowest !== undefined || fallbackData.median !== undefined || fallbackData.highest !== undefined) {
-        console.log('[DETAILED DEBUG] Fallback search successful, found results with generic search');
+        console.log('Fallback search successful, found results with generic search');
         
         // Override with fallback data
         result.lowest = fallbackData.lowest !== undefined ? Number(fallbackData.lowest) || null : null;
@@ -190,7 +152,7 @@ export async function fetchEbayPrices(
     
     return result;
   } catch (error) {
-    console.error('[DETAILED DEBUG] Error fetching eBay prices:', error);
+    console.error('Error fetching eBay prices:', error);
     return { 
       lowest: null, 
       median: null, 
@@ -225,8 +187,6 @@ export async function updateEbayPrices(
     
     const prices = await fetchEbayPrices(name, type, condition, undefined, effectiveRegion);
 
-    console.log(`${type.charAt(0).toUpperCase() + type.slice(1)} Prices (${condition || 'Any Condition'}):`, prices);
-
     // Check if prices.median is undefined or null
     if (prices.median === undefined || prices.median === null) {
       console.error('No valid median price found');
@@ -235,8 +195,7 @@ export async function updateEbayPrices(
 
     // Round the median price to the nearest whole number
     const roundedPrice = Math.round(prices.median);
-    console.log(`Rounded median price: ${roundedPrice}`);
-
+    
     // Update the database with the new prices
     const updateData = {
       [type === 'listed' ? 'ebayListed' : 'ebaySold']: roundedPrice,
@@ -333,11 +292,6 @@ export async function updateAllEbayListedValues(userId: string) {
 
 /**
  * Search eBay by image for pricing data
- * Performance optimized by:
- * - Using a debounce system to prevent excessive API calls
- * - Only processing primary images
- * - Adding lightweight caching
- * - Limiting results to essential data
  */
 export async function searchEbayByImage(
   imageUrl: string | null,
@@ -345,21 +299,14 @@ export async function searchEbayByImage(
   condition: string = "new",
   cacheKey?: string
 ): Promise<EbaySearchResult> {
-  const startTime = Date.now();
-  
-  // DIAGNOSTIC LOG: Starting point
-  console.log(`[eBay Image Search] STARTING with image URL: ${imageUrl?.substring(0, 30)}...`);
-  console.log(`[eBay Image Search] Item title: "${itemTitle}", Condition: "${condition}"`);
-  
   if (!imageUrl) {
-    console.warn("[searchEbayByImage] No image URL provided");
+    console.warn("No image URL provided for eBay image search");
     return {
       success: true,
       prices: { lowest: 0, median: 0, highest: 0 },
       items: [],
       debugData: {
         imageSearchDetails: {
-          error: "Image processing error",
           message: "No image URL provided",
           timestamp: new Date().toISOString()
         }
@@ -388,165 +335,47 @@ export async function searchEbayByImage(
     }
   }
 
-  console.log(`[searchEbayByImage] Starting search for image: ${imageUrl.substring(0, 30)}...`);
+  console.log(`Starting image search for "${itemTitle}" with condition: ${condition}`);
   
   try {
     // Fetch the image and convert to base64
-    console.log(`[eBay Image Search] STEP 1: Fetching image from URL`);
-    
-    // DIAGNOSTIC LOG: Add pre-fetch logging
-    console.log(`[eBay Image Search] Full image URL being fetched: ${imageUrl}`);
-    
-    let imageResponse;
-    try {
-      imageResponse = await fetch(imageUrl);
-      
-      // DIAGNOSTIC LOG: Response status
-      console.log(`[eBay Image Search] Image fetch response status: ${imageResponse.status} ${imageResponse.statusText}`);
-      console.log(`[eBay Image Search] Image fetch headers:`, Object.fromEntries([...imageResponse.headers.entries()]));
-      
-    } catch (fetchError) {
-      console.error(`[eBay Image Search] ERROR FETCHING IMAGE: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
-      throw new Error(`Failed to fetch image: ${fetchError instanceof Error ? fetchError.message : 'Network error'}`);
-    }
+    const imageResponse = await fetch(imageUrl);
     
     if (!imageResponse.ok) {
       throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
     }
     
-    // DIAGNOSTIC LOG: After successful fetch
-    console.log(`[eBay Image Search] Image successfully fetched with status: ${imageResponse.status}`);
-    
-    let imageBuffer;
-    try {
-      imageBuffer = await imageResponse.arrayBuffer();
-      // DIAGNOSTIC LOG: Buffer size
-      console.log(`[eBay Image Search] Image array buffer size: ${imageBuffer.byteLength} bytes`);
-    } catch (bufferError) {
-      console.error(`[eBay Image Search] ERROR CREATING BUFFER: ${bufferError instanceof Error ? bufferError.message : String(bufferError)}`);
-      throw new Error(`Failed to process image data: ${bufferError instanceof Error ? bufferError.message : 'Buffer processing error'}`);
-    }
-    
-    let base64Image;
-    try {
-      base64Image = Buffer.from(imageBuffer).toString('base64');
-      const imageSizeKB = Math.round(base64Image.length * 0.75 / 1024);
-      console.log(`[eBay Image Search] Image converted to base64 (${imageSizeKB}KB), first 100 chars: ${base64Image.substring(0, 100)}...`);
-      
-      if (imageSizeKB > 5000) {
-        console.warn(`[eBay Image Search] WARNING: Image is large (${imageSizeKB}KB), which may cause issues`);
-      }
-    } catch (base64Error) {
-      console.error(`[eBay Image Search] ERROR CONVERTING TO BASE64: ${base64Error instanceof Error ? base64Error.message : String(base64Error)}`);
-      throw new Error(`Failed to encode image: ${base64Error instanceof Error ? base64Error.message : 'Encoding error'}`);
-    }
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const base64Image = Buffer.from(imageBuffer).toString('base64');
     
     // Construct absolute URL for the API endpoint
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
     const apiUrl = `${baseUrl}/api/ebay/search-by-image`;
-    console.log(`[eBay Image Search] STEP 2: Using API endpoint: ${apiUrl}`);
-    
-    // DIAGNOSTIC LOG: Request payload
-    console.log(`[eBay Image Search] Request payload: title = "${itemTitle}", condition = "${condition}", image data length = ${base64Image.length} chars`);
     
     // Send the image to our API
-    let response;
-    try {
-      console.log('[VERBOSE-CLIENT] About to send request to image search API:', {
-        url: apiUrl,
-        withCredentials: true,
-        titleLength: itemTitle.length,
-        imageDataLength: base64Image.length
-      });
-      
-      response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Added to include authentication cookies
-        body: JSON.stringify({
-          imageBase64: base64Image,
-          title: itemTitle,
-          condition: condition,
-          debug: true
-        }),
-      });
-      
-      // DIAGNOSTIC LOG: Response status
-      console.log(`[VERBOSE-CLIENT] API response status: ${response.status} ${response.statusText}`);
-      console.log(`[VERBOSE-CLIENT] API response ok: ${response.ok}`);
-      console.log(`[VERBOSE-CLIENT] API response headers:`, Object.fromEntries([...response.headers.entries()]));
-      
-    } catch (apiError) {
-      console.error(`[VERBOSE-CLIENT] ERROR CALLING API:`, apiError);
-      console.error(`[eBay Image Search] ERROR CALLING API: ${apiError instanceof Error ? apiError.message : String(apiError)}`);
-      throw new Error(`Failed to call search API: ${apiError instanceof Error ? apiError.message : 'API request error'}`);
-    }
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        imageBase64: base64Image,
+        title: itemTitle,
+        condition: condition,
+        debug: true
+      }),
+    });
 
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
     
-    // DIAGNOSTIC LOG: After successful API call
-    console.log(`[VERBOSE-CLIENT] STEP 3: API call successful with status: ${response.status}`);
-    
     // Parse the response
-    let data;
-    try {
-      console.log('[VERBOSE-CLIENT] Getting response text...');
-      const responseText = await response.text();
-      console.log(`[VERBOSE-CLIENT] Response text length: ${responseText.length}`);
-      console.log(`[VERBOSE-CLIENT] Response text preview: ${responseText.substring(0, 200)}...`);
-      
-      console.log('[VERBOSE-CLIENT] Parsing JSON...');
-      data = JSON.parse(responseText);
-      
-      // DIAGNOSTIC LOG: Raw response data
-      console.log(`[VERBOSE-CLIENT] Raw API response data:`, {
-        success: data.success,
-        hasItems: !!(data.itemSummaries?.length || data.items?.length),
-        itemCount: (data.itemSummaries?.length || data.items?.length || 0),
-        hasPrices: !!data.prices,
-        hasDebugData: !!data.debugData
-      });
-      
-      // Add detailed logging for the first item to debug image structure
-      if (data.itemSummaries?.length > 0) {
-        console.log(`[VERBOSE-CLIENT] First itemSummary image structure:`, {
-          hasImage: !!data.itemSummaries[0].image,
-          imageType: typeof data.itemSummaries[0].image,
-          imageUrlExists: !!data.itemSummaries[0].image?.imageUrl,
-          imageUrl: data.itemSummaries[0].image?.imageUrl
-        });
-      } else if (data.items?.length > 0) {
-        console.log(`[VERBOSE-CLIENT] First item image structure:`, {
-          hasImage: !!data.items[0].image,
-          imageType: typeof data.items[0].image,
-          imageUrlExists: !!data.items[0].image?.imageUrl,
-          imageUrl: data.items[0].image?.imageUrl
-        });
-      } else {
-        console.log('[VERBOSE-CLIENT] No items found in response');
-      }
-    } catch (jsonError) {
-      console.error(`[VERBOSE-CLIENT] ERROR PARSING JSON:`, jsonError);
-      console.error(`[eBay Image Search] ERROR PARSING JSON: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
-      throw new Error(`Failed to parse API response: ${jsonError instanceof Error ? jsonError.message : 'JSON parsing error'}`);
-    }
-    
-    // DIAGNOSTIC LOG: Debug data
-    if (data.debugData?.imageSearchDetails) {
-      console.log(`[eBay Image Search] Debug data from API:`, {
-        originalResultCount: data.debugData.imageSearchDetails.originalResultCount,
-        error: data.debugData.imageSearchDetails.error,
-        message: data.debugData.imageSearchDetails.message,
-        imageSearchSuccess: data.debugData.imageSearchDetails.imageSearchSuccess
-      });
-    }
+    const responseText = await response.text();
+    const data = JSON.parse(responseText);
 
     // Check if there was an error in the API response
     if (data.error) {
       console.error('eBay image search API returned error:', data.error);
-      console.error('Details:', data.details);
       
       // Even with an error, we return success: true so the UI doesn't break
       // but we include the error message in the debug data
@@ -631,19 +460,11 @@ export async function searchEbayByImage(
       debugData: data.debugData
     };
   } catch (imageError: unknown) {
-    // Detailed error logging
-    const errorType = imageError instanceof Error ? imageError.constructor.name : typeof imageError;
-    const errorMessage = imageError instanceof Error ? imageError.message : String(imageError);
-    const errorStack = imageError instanceof Error ? imageError.stack : undefined;
-    
-    console.error(`[searchEbayByImage] Image processing error:`, {
-      type: errorType,
-      message: errorMessage,
-      imageUrl: imageUrl?.substring(0, 50) + '...',
-      stack: errorStack
-    });
-    
     // Create a descriptive error message based on error type
+    const errorMessage = imageError instanceof Error ? imageError.message : String(imageError);
+    
+    console.error('Error in eBay image search:', errorMessage);
+    
     let userMessage = "Failed to process the image.";
     
     if (errorMessage.includes("fetch")) {
@@ -664,8 +485,6 @@ export async function searchEbayByImage(
         imageSearchDetails: {
           error: "Image processing error",
           message: userMessage,
-          errorType: errorType,
-          imageUrl: imageUrl?.substring(0, 100) + '...',
           timestamp: new Date().toISOString()
         }
       }
@@ -675,7 +494,6 @@ export async function searchEbayByImage(
 
 /**
  * Enhanced function to get eBay pricing data using both text and image search
- * When debug mode is enabled, it also returns the matching items
  */
 export async function getEnhancedEbayPrices(
   item: { 
@@ -702,19 +520,12 @@ export async function getEnhancedEbayPrices(
     };
   };
 }> {
-  console.log(`getEnhancedEbayPrices called with debug mode: ${includeDebugData}`);
-  console.log('Item details:', { 
-    title: item.title, 
-    franchise: item.franchise, 
-    condition: item.condition,
-    region: item.region
-  });
+  console.log(`Getting enhanced eBay prices for "${item.title}" (${item.condition || 'Any condition'}, Region: ${item.region || getRegionFromCookie() || 'UK'})`);
   
   const result: any = {};
   
   // Initialize debug data if requested
   if (includeDebugData) {
-    console.log('Debug mode is enabled, initializing debug data structure');
     result.debugData = {
       textMatches: [],
       imageMatches: [],
@@ -726,8 +537,6 @@ export async function getEnhancedEbayPrices(
         region: item.region
       }
     };
-  } else {
-    console.log('Debug mode is disabled, no debug data will be collected');
   }
   
   // Get text-based results with franchise
@@ -738,16 +547,6 @@ export async function getEnhancedEbayPrices(
     item.franchise,
     getRegionFromCookie()
   );
-  
-  // Add more detailed logging about the text results
-  console.log('[ENHANCED-DEBUG] Text results received:', {
-    hasResults: !!textResults,
-    hasMedian: textResults?.median !== undefined && textResults?.median !== null,
-    medianValue: textResults?.median,
-    hasError: !!textResults?.error,
-    errorMessage: textResults?.error,
-    message: textResults?.message
-  });
 
   if (textResults && typeof textResults === 'object') {
     result.textBased = {
@@ -755,8 +554,6 @@ export async function getEnhancedEbayPrices(
       median: textResults.median || 0,
       highest: textResults.highest || 0
     };
-    
-    console.log('[ENHANCED-DEBUG] Text-based results processed:', result.textBased);
     
     // Store raw items data for debug mode
     if (includeDebugData) {
@@ -770,19 +567,6 @@ export async function getEnhancedEbayPrices(
       }
       
       if (textResults.items && textResults.items.length > 0) {
-        console.log(`[ENHANCED-DEBUG] Found ${textResults.items.length} text matches for debug`);
-        
-        // Log the first item to debug image structure
-        if (textResults.items.length > 0) {
-          console.log(`[ENHANCED-DEBUG] First text match item structure:`, {
-            hasImage: !!textResults.items[0].image,
-            imageType: typeof textResults.items[0].image,
-            hasImageUrl: !!textResults.items[0].imageUrl,
-            imageUrlType: typeof textResults.items[0].imageUrl,
-            fullItem: JSON.stringify(textResults.items[0]).substring(0, 500) + '...'
-          });
-        }
-        
         result.debugData.textMatches = textResults.items.map((item: any) => {
           // Create a consistent image object structure
           let imageObj;
@@ -805,7 +589,6 @@ export async function getEnhancedEbayPrices(
       }
     }
   } else {
-    console.log('No valid text results returned:', textResults);
     // Set default values to prevent undefined errors
     result.textBased = { lowest: 0, median: 0, highest: 0 };
   }
@@ -813,7 +596,6 @@ export async function getEnhancedEbayPrices(
   // Get image-based results if an image is available
   if (item.image) {
     try {
-      console.log('Fetching image-based results for image URL:', item.image.substring(0, 50) + '...');
       const imageResults = await searchEbayByImage(
         item.image,
         item.title,
@@ -823,12 +605,10 @@ export async function getEnhancedEbayPrices(
       
       if (imageResults.success && imageResults.prices) {
         result.imageBased = imageResults.prices;
-        console.log('Image-based results:', result.imageBased);
         
         // Store raw items data for debug mode
         if (includeDebugData && (imageResults.items || imageResults.itemSummaries)) {
           const imageItems = imageResults.itemSummaries || imageResults.items || [];
-          console.log(`Found ${imageItems.length} image matches for debug`);
           result.debugData.imageMatches = imageItems.map((item: any) => ({
             ...item,
             searchType: 'image',
@@ -840,11 +620,9 @@ export async function getEnhancedEbayPrices(
           // Store additional debug data if available
           if (imageResults.debugData) {
             result.debugData.imageSearchDetails = imageResults.debugData;
-            console.log('Added detailed image search debug data');
           }
         }
       } else {
-        console.log('Image search unsuccessful or no prices returned:', imageResults);
         // Set default values to prevent undefined errors
         result.imageBased = { lowest: 0, median: 0, highest: 0 };
       }
@@ -855,17 +633,6 @@ export async function getEnhancedEbayPrices(
     }
   } else {
     console.log('No image provided, skipping image-based search');
-  }
-  
-  // Log debug info to help troubleshoot
-  if (includeDebugData) {
-    console.log('Debug data summary:', {
-      hasTextMatches: result.debugData.textMatches?.length > 0,
-      textMatchCount: result.debugData.textMatches?.length || 0,
-      hasImageMatches: result.debugData.imageMatches?.length > 0,
-      imageMatchCount: result.debugData.imageMatches?.length || 0,
-      searchParams: result.debugData.searchParams
-    });
   }
   
   return result;
@@ -892,23 +659,23 @@ export async function refreshAllItemPricesEnhanced(userId: string): Promise<{
     // Fetch all user's items using the provided userId
     const itemsResult = await getItemsByUserIdAction(userId);
     if (!itemsResult.isSuccess) {
-      console.error('[refreshAllItemPricesEnhanced] Failed to fetch items:', itemsResult.error);
+      console.error('Failed to fetch items:', itemsResult.error);
       return { success: false, totalUpdated: 0, error: 'Failed to fetch items' };
     }
     
     const items = itemsResult.data || [];
     if (items.length === 0) {
-      console.log('[refreshAllItemPricesEnhanced] No items found for user, exiting.');
+      console.log('No items found for user, exiting.');
       return { success: true, totalUpdated: 0 };
     }
-    console.log(`[refreshAllItemPricesEnhanced] Found ${items.length} items to process`);
+    console.log(`Found ${items.length} items to process`);
     
     // Get image info for each item (we'll need the primary image for visual search)
     const itemImages: Record<string, string | undefined> = {};
     
     // Batch the image fetching in groups of 10 to avoid overwhelming the connection
     const IMAGE_BATCH_SIZE = 10;
-    console.log(`[refreshAllItemPricesEnhanced] Fetching images in batches of ${IMAGE_BATCH_SIZE}`);
+    console.log(`Fetching images in batches of ${IMAGE_BATCH_SIZE}`);
     for (let i = 0; i < items.length; i += IMAGE_BATCH_SIZE) {
       const batch = items.slice(i, i + IMAGE_BATCH_SIZE);
       
@@ -921,19 +688,18 @@ export async function refreshAllItemPricesEnhanced(userId: string): Promise<{
             itemImages[item.id] = imagesResult.data[0].url; // Use primary image
           }
         } catch (error) {
-          console.warn(`[refreshAllItemPricesEnhanced] Couldn't fetch images for item ${item.id}:`, error);
+          console.warn(`Couldn't fetch images for item ${item.id}:`, error);
         }
       }));
-      console.log(`[refreshAllItemPricesEnhanced] Processed image batch ${Math.floor(i / IMAGE_BATCH_SIZE) + 1}`);
     }
     
-    console.log(`[refreshAllItemPricesEnhanced] Found images for ${Object.keys(itemImages).length} items`);
+    console.log(`Found images for ${Object.keys(itemImages).length} items`);
     
     // Process items in batches to prevent overwhelming the system
     let totalUpdated = 0;
     let totalListedValue = 0;
     const PRICE_BATCH_SIZE = 5; // Smaller batch size for pricing to avoid rate limits
-    console.log(`[refreshAllItemPricesEnhanced] Processing prices in batches of ${PRICE_BATCH_SIZE}`);
+    console.log(`Processing prices in batches of ${PRICE_BATCH_SIZE}`);
 
     for (let i = 0; i < items.length; i += PRICE_BATCH_SIZE) {
       const batch = items.slice(i, i + PRICE_BATCH_SIZE);
@@ -941,7 +707,7 @@ export async function refreshAllItemPricesEnhanced(userId: string): Promise<{
       // Process this batch in parallel
       await Promise.all(batch.map(async (item) => {
         try {
-          console.log(`[refreshAllItemPricesEnhanced] Processing item: ${item.name} (ID: ${item.id})`);
+          console.log(`Processing item: ${item.name} (ID: ${item.id})`);
           
           // Get the enhanced prices using both text and image search
           const result = await getEnhancedEbayPrices({
@@ -958,7 +724,7 @@ export async function refreshAllItemPricesEnhanced(userId: string): Promise<{
                             : result.textBased?.median || 0;
           
           if (bestPrice > 0) {
-            console.log(`[refreshAllItemPricesEnhanced] Updating item ${item.id} with price: ${bestPrice}`);
+            console.log(`Updating item ${item.id} with price: ${bestPrice}`);
             // updateItemAction already checks auth internally
             await updateItemAction(item.id, {
               ebayListed: bestPrice,
@@ -969,36 +735,34 @@ export async function refreshAllItemPricesEnhanced(userId: string): Promise<{
             totalListedValue += bestPrice;
             totalUpdated++;
           } else {
-            console.log(`[refreshAllItemPricesEnhanced] No valid price found for item ${item.id}, skipping update.`);
+            console.log(`No valid price found for item ${item.id}, skipping update.`);
           }
         } catch (itemError) {
-          console.error(`[refreshAllItemPricesEnhanced] Failed to process item ${item.id}:`, itemError);
+          console.error(`Failed to process item ${item.id}:`, itemError);
         }
       }));
       
-      console.log(`[refreshAllItemPricesEnhanced] Processed price batch ${Math.floor(i / PRICE_BATCH_SIZE) + 1}`);
       // Small delay between batches to avoid rate limits
       if (i + PRICE_BATCH_SIZE < items.length) {
-        console.log(`[refreshAllItemPricesEnhanced] Waiting 500ms before next batch...`);
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
     
     // Record the eBay history if any items were updated
     if (totalUpdated > 0) {
-      console.log(`[refreshAllItemPricesEnhanced] Recording eBay history: ${totalUpdated} items, total value ${totalListedValue}`);
+      console.log(`Recording eBay history: ${totalUpdated} items, total value ${totalListedValue}`);
       // recordEbayHistoryAction already checks auth internally
       await recordEbayHistoryAction(totalListedValue);
     }
     
-    console.log(`[refreshAllItemPricesEnhanced] Batch update completed. Total items updated: ${totalUpdated}`);
+    console.log(`Batch update completed. Total items updated: ${totalUpdated}`);
     revalidatePath('/settings'); // Revalidate settings page where this is often triggered
     return {
       success: true,
       totalUpdated
     };
   } catch (error) {
-    console.error('[refreshAllItemPricesEnhanced] Error in batch update:', error);
+    console.error('Error in batch update:', error);
     return {
       success: false,
       totalUpdated: 0,
