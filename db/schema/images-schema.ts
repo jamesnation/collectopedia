@@ -7,6 +7,7 @@ export const imagesTable = pgTable("images", {
   userId: text("user_id").notNull(),
   url: text("url").notNull(),
   order: integer("order").default(0).notNull(),
+  version: text("version").default("0"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

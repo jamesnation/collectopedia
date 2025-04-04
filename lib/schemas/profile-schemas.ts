@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 // Schema for creating a new profile
 export const CreateProfileSchema = z.object({
-  membership: z.enum(["free", "pro"]).default("free"),
+  membership: z.enum(["free", "pro", "admin"]).default("free"),
   stripeCustomerId: z.string().optional().nullable(),
   stripeSubscriptionId: z.string().optional().nullable(),
 });

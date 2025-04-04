@@ -10,17 +10,20 @@ import { Separator } from "@/components/ui/separator"
 import { useEffect } from "react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useTheme } from "next-themes"
+import { useAdminCheck } from "@/hooks/use-admin-check"
 
 export function PreferencesTab() {
   const { isDebugMode, isInitialized, toggleDebugMode } = useEbayDebugMode();
   const { region, regionData, isInitialized: isRegionInitialized, changeRegion } = useRegionPreference();
   const { theme, setTheme, systemTheme } = useTheme();
+  const { isAdmin, isLoading: isAdminLoading } = useAdminCheck();
 
   useEffect(() => {
     console.log('PreferencesTab - Debug mode status:', { isDebugMode, isInitialized });
     console.log('PreferencesTab - Region status:', { region, isRegionInitialized });
     console.log('PreferencesTab - Theme status:', { theme, systemTheme });
-  }, [isDebugMode, isInitialized, region, isRegionInitialized, theme, systemTheme]);
+    console.log('PreferencesTab - Admin status:', { isAdmin, isAdminLoading });
+  }, [isDebugMode, isInitialized, region, isRegionInitialized, theme, systemTheme, isAdmin, isAdminLoading]);
 
   const handleRegionChange = (value: string) => {
     changeRegion(value as RegionCode);
@@ -117,43 +120,46 @@ export function PreferencesTab() {
         </CardContent>
       </Card>
 
-      <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 dark:text-foreground">
-            <BugIcon className="h-5 w-5 text-purple-400" />
-            Developer Options
-          </CardTitle>
-          <CardDescription className="dark:text-muted-foreground">
-            Advanced features for debugging and development
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="ebay-debug-mode" className="flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                eBay Image Search Debug
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Show matched eBay images when using AI price estimation
-              </p>
+      {/* Only show Developer Options for admin users */}
+      {isAdmin && (
+        <Card className="border shadow-sm dark:bg-card/60 dark:border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 dark:text-foreground">
+              <BugIcon className="h-5 w-5 text-purple-400" />
+              Developer Options
+            </CardTitle>
+            <CardDescription className="dark:text-muted-foreground">
+              Advanced features for debugging and development
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="ebay-debug-mode" className="flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                  eBay Image Search Debug
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Show matched eBay images when using AI price estimation
+                </p>
+              </div>
+              <Switch
+                id="ebay-debug-mode"
+                checked={isDebugMode}
+                onCheckedChange={toggleDebugMode}
+                disabled={!isInitialized}
+              />
             </div>
-            <Switch
-              id="ebay-debug-mode"
-              checked={isDebugMode}
-              onCheckedChange={toggleDebugMode}
-              disabled={!isInitialized}
-            />
-          </div>
-          
-          <Separator className="my-4" />
-          
-          <p className="text-xs text-muted-foreground italic">
-            These options are intended for development and debugging purposes only.
-            Enabling them may affect application performance.
-          </p>
-        </CardContent>
-      </Card>
+            
+            <Separator className="my-4" />
+            
+            <p className="text-xs text-muted-foreground italic">
+              These options are intended for development and debugging purposes only.
+              Enabling them may affect application performance.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 } 

@@ -62,7 +62,7 @@ export const manageSubscriptionStatusChange = async (subscriptionId: string, cus
 
     const product = await stripe.products.retrieve(productId);
     const membership = product.metadata.membership as MembershipStatus;
-    if (!["free", "pro"].includes(membership)) {
+    if (!["free", "pro", "admin"].includes(membership)) {
       throw new Error(`Invalid membership type in product metadata: ${membership}`);
     }
 
