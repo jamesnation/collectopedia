@@ -174,7 +174,7 @@ export default function HomePage() {
                 Simple, transparent pricing
               </h2>
               <p className="mt-4 text-lg text-gray-300">
-                Choose the plan that's right for your collection
+                Choose the plan that&apos;s right for your collection
               </p>
             </div>
             
@@ -192,7 +192,7 @@ export default function HomePage() {
                   </Link>
                 </div>
                 <div className="pt-6 pb-8 px-6">
-                  <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wide">What's included</h4>
+                  <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wide">What&apos;s included</h4>
                   <ul className="mt-6 space-y-4">
                     <li className="flex space-x-3">
                       <svg className="flex-shrink-0 h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
@@ -229,7 +229,7 @@ export default function HomePage() {
                   </Link>
                 </div>
                 <div className="pt-6 pb-8 px-6">
-                  <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wide">What's included</h4>
+                  <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wide">What&apos;s included</h4>
                   <ul className="mt-6 space-y-4">
                     <li className="flex space-x-3">
                       <svg className="flex-shrink-0 h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
@@ -278,7 +278,7 @@ export default function HomePage() {
               {[
                 {
                   question: "What types of collectibles can I track?",
-                  answer: "Collectopedia supports a wide range of collectibles including toys, action figures, trading cards, video games, comic books, vinyl records, and more. If you have a special collection type, contact us and we'll work to support it."
+                  answer: "Collectopedia supports a wide range of collectibles including toys, action figures, trading cards, video games, comic books, vinyl records, and more. If you have a special collection type, contact us and we&apos;ll work to support it."
                 },
                 {
                   question: "How accurate are the price estimates?",
@@ -290,7 +290,7 @@ export default function HomePage() {
                 },
                 {
                   question: "Is there a mobile app available?",
-                  answer: "Our responsive web application works great on mobile devices. We're also developing native iOS and Android apps that will be released soon."
+                  answer: "Our responsive web application works great on mobile devices. We&apos;re also developing native iOS and Android apps that will be released soon."
                 },
                 {
                   question: "How do I cancel my subscription?",
