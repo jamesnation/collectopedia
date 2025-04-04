@@ -875,23 +875,22 @@ export async function getEnhancedEbayPrices(
  * Updates all items for the authenticated user with enhanced eBay prices using both image and text search.
  * Fetches user items, gets primary images, processes in batches, and updates prices.
  */
-export async function refreshAllItemPricesEnhanced(): Promise<{
+export async function refreshAllItemPricesEnhanced(userId: string): Promise<{
   success: boolean;
   totalUpdated: number;
   error?: string;
 }> {
-  // Add Clerk authentication check
-  const { userId } = auth();
+  // Check for userId instead of using auth()
   if (!userId) {
-    console.error('[refreshAllItemPricesEnhanced] Authentication required.');
-    return { success: false, totalUpdated: 0, error: "Authentication required." };
+    console.error('[refreshAllItemPricesEnhanced] User ID not provided.');
+    return { success: false, totalUpdated: 0, error: "User ID not provided." };
   }
   
   try {
     console.log('Starting enhanced batch price refresh for user:', userId);
     
-    // Fetch all user's items using the authenticated userId
-    const itemsResult = await getItemsByUserIdAction(userId); // Relies on auth check within getItemsByUserIdAction
+    // Fetch all user's items using the provided userId
+    const itemsResult = await getItemsByUserIdAction(userId);
     if (!itemsResult.isSuccess) {
       console.error('[refreshAllItemPricesEnhanced] Failed to fetch items:', itemsResult.error);
       return { success: false, totalUpdated: 0, error: 'Failed to fetch items' };
