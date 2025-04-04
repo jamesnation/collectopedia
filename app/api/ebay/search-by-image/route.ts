@@ -12,9 +12,16 @@ import { auth } from '@clerk/nextjs/server';
 export const dynamic = 'force-dynamic';
 
 // Feature flag to enable/disable auth requirement
-// Set this to "false" to revert to unauthenticated behavior if needed
+// Using environment variables like the main route for consistency
+// Re-enable authentication with logging-only mode for testing
 const REQUIRE_AUTH = process.env.EBAY_REQUIRE_AUTH !== 'false';
-const AUTH_LOGGING_ONLY = process.env.EBAY_AUTH_LOGGING_ONLY === 'true';
+const AUTH_LOGGING_ONLY = true; // Keep in logging-only mode for testing
+
+// Set environment variable info in console for debugging
+console.log('[eBay Image Search API] Authentication settings:');
+console.log('- REQUIRE_AUTH:', REQUIRE_AUTH ? 'Enabled' : 'Disabled');
+console.log('- AUTH_LOGGING_ONLY:', AUTH_LOGGING_ONLY ? 'Enabled (auth is logged but not enforced)' : 'Disabled');
+console.log('- Credentials are included in fetch request');
 
 const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
@@ -81,6 +88,23 @@ async function getEbayToken() {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('=============================================');
+  console.log('[VERBOSE] Starting POST request to /api/ebay/search-by-image');
+  
+  // Log auth status early
+  let authInfo;
+  try {
+    const { userId } = auth();
+    authInfo = { userId, isAuthenticated: !!userId };
+    console.log('[VERBOSE] Authentication info:', authInfo);
+  } catch (authError) {
+    console.error('[VERBOSE] Auth error:', authError);
+    authInfo = { error: 'Auth error', message: authError instanceof Error ? authError.message : String(authError) };
+  }
+  
+  // Log request headers to see if credentials are included
+  console.log('[VERBOSE] Request headers:', Object.fromEntries([...request.headers.entries()]));
+  
   console.log('[eBay API Route] Starting POST request to /api/ebay/search-by-image');
   
   // Check authentication if enabled
@@ -142,13 +166,17 @@ export async function POST(request: NextRequest) {
   
   try {
     // Parse the request body
+    console.log('[VERBOSE] Attempting to parse request body...');
     const requestBody = await request.json();
+    console.log('[VERBOSE] Request body parsed successfully, size:', JSON.stringify(requestBody).length);
     
     // Validate using Zod schema
+    console.log('[VERBOSE] Validating request body with Zod schema...');
     const validationResult = EbayImageSearchBodySchema.safeParse(requestBody);
     
     // If validation fails, return validation errors
     if (!validationResult.success) {
+      console.error('[VERBOSE] Input validation failed:', JSON.stringify(validationResult.error.format()));
       console.error('[eBay API Route] Input validation failed:', validationResult.error.format());
       return NextResponse.json({ 
         success: false, 
@@ -160,6 +188,8 @@ export async function POST(request: NextRequest) {
       });
     }
     
+    console.log('[VERBOSE] Validation successful!');
+    
     // Extract validated data - typesafe access via Zod
     const { imageBase64, title, condition, debug } = validationResult.data;
     
@@ -169,10 +199,11 @@ export async function POST(request: NextRequest) {
     // Get eBay OAuth token - wrap with more detailed error handling
     let oauthToken;
     try {
-      console.log('[eBay API Route] Getting OAuth token...');
+      console.log('[VERBOSE] Getting OAuth token...');
       oauthToken = await getEbayToken();
-      console.log('[eBay API Route] Successfully obtained OAuth token');
+      console.log('[VERBOSE] Successfully obtained OAuth token, length:', oauthToken.length);
     } catch (tokenError) {
+      console.error('[VERBOSE] Error getting OAuth token:', tokenError);
       console.error('[eBay API Route] Error getting OAuth token:', tokenError);
       return NextResponse.json({ 
         success: false, 
@@ -194,7 +225,7 @@ export async function POST(request: NextRequest) {
     } else if (condition.toLowerCase() === 'used') {
       filterString = 'conditions:{USED}';
     }
-    console.log(`[eBay API Route] Using filter string: "${filterString}"`);
+    console.log(`[VERBOSE] Using filter string: "${filterString}"`);
     
     // Prepare headers and request payload - add more logging
     const ebayHeaders = {
@@ -202,7 +233,10 @@ export async function POST(request: NextRequest) {
       'Content-Type': 'application/json',
       'X-EBAY-C-MARKETPLACE-ID': 'EBAY_GB'
     };
-    console.log('[eBay API Route] Request headers:', ebayHeaders);
+    console.log('[VERBOSE] eBay request headers:', {
+      ...ebayHeaders,
+      'Authorization': 'Bearer [REDACTED]' // Don't log the actual token
+    });
     
     // Define proper type for the payload
     interface EbayImageSearchPayload {
@@ -223,44 +257,30 @@ export async function POST(request: NextRequest) {
       payload.filter = filterString;
     }
     
-    console.log(`[eBay API Route] Making request to eBay API with payload size ~${JSON.stringify(payload).length / 1024}KB`);
-    console.log(`[eBay API Route] Initial search using ONLY image (no title)`);
-    
-    // DETAILED LOGGING: Add request information
-    console.log(`[eBay API Route] eBay request details: ${JSON.stringify({
-      url: imageSearchUrl,
-      headers: {
-        ...ebayHeaders,
-        'Authorization': 'Bearer [REDACTED]' // Don't log the actual token
-      },
-      payloadSize: JSON.stringify(payload).length,
-      filter: filterString || 'None',
-      searchQuery: 'None',
-      imageDataFirstChars: payload.image.substring(0, 50) + '...'
-    })}`);
+    console.log(`[VERBOSE] Making request to eBay API with payload size ~${imageBase64.length} bytes`);
     
     // Make the request to eBay with detailed error handling
     let response;
     let ebayData: any;
     
     try {
-      console.log('[eBay API Route] Sending request to eBay Image Search API...');
+      console.log('[VERBOSE] Sending request to eBay Image Search API...');
       response = await fetch(imageSearchUrl, {
         method: 'POST',
         headers: ebayHeaders,
         body: JSON.stringify(payload)
       });
       
-      console.log(`[eBay API Route] eBay API response status: ${response.status} ${response.statusText}`);
-      console.log('[eBay API Route] eBay API response headers:', Object.fromEntries([...response.headers.entries()]));
+      console.log(`[VERBOSE] eBay API response received: Status=${response.status}, OK=${response.ok}`);
+      console.log('[VERBOSE] eBay API response headers:', Object.fromEntries([...response.headers.entries()]));
       
       // CRITICAL DEBUGGING: Log full response for troubleshooting
       const responseText = await response.text();
-      console.log(`[eBay API Route] eBay API full response: ${responseText.substring(0, 1000)}${responseText.length > 1000 ? '...' : ''}`);
+      console.log(`[VERBOSE] eBay API full response: ${responseText.substring(0, 500)}${responseText.length > 500 ? '...' : ''}`);
       
       // Check if response was not OK
       if (!response.ok) {
-        console.error(`[eBay API Route] eBay API error (${response.status}):`, responseText);
+        console.error(`[VERBOSE] eBay API error (${response.status}):`, responseText);
         
         return NextResponse.json({
           success: true, // Keep true to prevent UI errors

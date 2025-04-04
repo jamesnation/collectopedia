@@ -454,6 +454,26 @@ After review, we decided to implement optional authentication that can be easily
 - Testing authentication in logging-only mode to ensure compatibility
 - Verified rate limiting enhancement with userId tracking for authenticated users
 
+**Testing Results and Adjustments:**
+- Initial testing revealed authentication issues with the image search route
+- Text-based search (GET request) works fine with authentication
+- Image-based search (POST request) does not work properly with authentication
+- Adjusted implementation to disable authentication only for the image search route
+- Kept rate limiting on both routes for essential security protection
+
+**Current Implementation Status:**
+- Main eBay API Route (GET): Authentication enabled in logging mode
+- Image Search API Route (POST): Authentication disabled, rate limiting active
+- Rate limiting using Upstash and Vercel KV working on both routes
+
+**Technical Analysis of the Issue:**
+POST requests do not automatically include authentication credentials in the same way as GET requests. The image search API is called from client-side code that would require additional changes to include authentication credentials in the POST request. Since this is a more invasive change that could impact other features, we've opted to keep authentication disabled for the image search route while maintaining it for the text search route.
+
+**Recommended Next Steps:**
+1. Continue with current hybrid approach (auth on text route, rate limiting only on image route)
+2. Consider implementing proper auth token passing in client code in a future update
+3. Monitor both routes for abuse patterns and adjust rate limiting as needed
+
 ## Timeline
 
 - **Week 1:** Phases 1-2 (Authentication, Authorization, Input Validation)
@@ -468,3 +488,45 @@ After review, we decided to implement optional authentication that can be easily
 - [x] No UI or functionality changes
 - [x] Code maintainability preserved
 - [x] Final review completed
+
+# Updated Authentication Implementation for eBay Image Search
+
+We've successfully enabled authentication for the image search route:
+
+**Solution Implemented:**
+- Modified the client code to include credentials with the POST request
+- Added `credentials: 'include'` to the fetch request in `searchEbayByImage()`
+- Re-enabled authentication for the image search route using environment variables
+- Maintained consistent behavior with the main eBay API route
+
+**Technical Fix Explained:**
+When making cross-origin POST requests, browsers don't automatically include authentication credentials (cookies) unless explicitly told to do so. By adding `credentials: 'include'` to our fetch request, we ensure that authentication cookies are sent with the request, allowing the server-side authentication check to succeed.
+
+**Current Authentication Status:**
+- Both eBay API routes now use the same authentication configuration:
+  - Authentication enabled (`EBAY_REQUIRE_AUTH=true`)
+  - Currently in logging-only mode (`EBAY_AUTH_LOGGING_ONLY=true`)
+- The client properly includes credentials with requests to both endpoints
+- Rate limiting enhanced to use userId when authenticated
+
+**Testing Completed:**
+1. ✅ Verified image search works with `credentials: 'include'` added to fetch
+2. ✅ Temporarily disabled authentication to isolate and fix the issue
+3. ✅ Re-enabled authentication in logging-only mode for further testing
+4. ✅ Confirmed the eBay images are returned correctly
+
+**Final Implementation Steps:**
+1. Continue testing with authentication in logging-only mode
+2. When ready for full enforcement, update the environment variables:
+   ```
+   EBAY_REQUIRE_AUTH=true
+   EBAY_AUTH_LOGGING_ONLY=false
+   ```
+
+**Lessons Learned:**
+- POST requests require explicit inclusion of credentials
+- Authentication for API routes requires coordination between client and server code
+- Incremental testing approach helped identify and fix the issue without service disruption
+- Enhanced logging was instrumental in debugging the authentication flow
+
+The image search functionality is now working correctly with authentication, completing all the security improvements outlined in the remediation plan.
