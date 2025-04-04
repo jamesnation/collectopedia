@@ -72,7 +72,7 @@ export const images = pgTable("images", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
 	order: integer("order").default(0).notNull(),
-	version: text("version").default(0),
+	version: text("version").default("0"),
 });
 
 export const customFranchises = pgTable("custom_franchises", {
