@@ -89,8 +89,11 @@ export async function fetchEbayPrices(
     // Add debug parameter to get item details
     url.searchParams.append('includeItems', 'true');
     
-    // Fetch the data from our API route
-    const response = await fetch(url.toString(), { next: { revalidate: 3600 } });
+    // Fetch the data from our API route - add credentials:include to ensure cookies are sent
+    const response = await fetch(url.toString(), { 
+      next: { revalidate: 3600 },
+      credentials: 'include' // Add credentials to include auth cookies
+    });
     
     if (!response.ok) {
       const text = await response.text();
@@ -128,7 +131,11 @@ export async function fetchEbayPrices(
       // Use just the toy name without franchise
       url.searchParams.set('toyName', toyName);
       
-      const fallbackResponse = await fetch(url.toString(), { next: { revalidate: 3600 } });
+      // Use credentials here too for the fallback request
+      const fallbackResponse = await fetch(url.toString(), { 
+        next: { revalidate: 3600 },
+        credentials: 'include'
+      });
       
       if (!fallbackResponse.ok) {
         console.error(`HTTP error in fallback request: ${fallbackResponse.status}`);
