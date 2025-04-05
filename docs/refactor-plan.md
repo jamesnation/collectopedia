@@ -4,7 +4,7 @@ This plan outlines the steps to refactor the Collectopedia application based on 
 
 **Phase 2: Implementation (Applying Changes)**
 
-**Part A: Consolidate Custom Attributes (High Impact)**
+**Part A: Consolidate Custom Attributes (High Impact) [COMPLETED]**
 
 *   **Goal:** Reduce redundancy by merging `custom_brands`, `custom_franchises`, and `custom_types` into a single `custom_attributes` structure.
 *   **Step A1: Update Database Schema**

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Inter } from "next/font/google";
-import { ClerkProvider, SignedIn, SignedOut } from "@clerk/nextjs";
+import { ClerkProvider, SignedIn, SignedOut, SignOutButton } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 import { RegionProvider } from "@/contexts/region-context";
 import Link from 'next/link';
@@ -57,8 +57,8 @@ function MarketingNavbar() {
             </Link>
           </div>
           
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
+          {/* Desktop Navigation Links (Centered) */}
+          <nav className="hidden md:flex flex-1 justify-center items-center space-x-6">
             <button 
               onClick={() => scrollToSection('features')}
               className="text-gray-300 hover:text-white transition-colors"
@@ -77,39 +77,51 @@ function MarketingNavbar() {
             >
               FAQ
             </button>
-            
-            <SignedIn>
-              <Link href="/my-collection">
-                <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
-                  My Collection
-                </Button>
-              </Link>
-            </SignedIn>
-            
-            <SignedOut>
-              <div className="flex items-center space-x-3">
-                <Link href="/login">
-                  <Button variant="outline" className="text-white border-gray-600 hover:bg-gray-800">
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
-                    Get Started
-                  </Button>
-                </Link>
-              </div>
-            </SignedOut>
           </nav>
-          
-          {/* Mobile Menu Button */}
-          <div className="md:hidden">
-            <button
-              onClick={toggleMenu}
-              className="p-2 text-gray-300 rounded-md hover:bg-gray-800"
-            >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+
+          {/* Desktop Auth Buttons & Mobile Menu Toggle */}
+          <div className="flex items-center space-x-3">
+            <div className="hidden md:flex items-center space-x-3">
+              <SignedIn>
+                <div className="flex items-center space-x-3">
+                  <Link href="/my-collection">
+                    <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
+                      My Collection
+                    </Button>
+                  </Link>
+                  <SignOutButton redirectUrl="/">
+                    <Button variant="outline" className="text-white border-gray-600 hover:bg-gray-800">
+                      Sign Out
+                    </Button>
+                  </SignOutButton>
+                </div>
+              </SignedIn>
+              
+              <SignedOut>
+                <div className="flex items-center space-x-3">
+                  <Link href="/login">
+                    <Button variant="outline" className="text-white border-gray-600 hover:bg-gray-800">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/signup">
+                    <Button variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
+                      Get Started
+                    </Button>
+                  </Link>
+                </div>
+              </SignedOut>
+            </div>
+            
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <button
+                onClick={toggleMenu}
+                className="p-2 text-gray-300 rounded-md hover:bg-gray-800"
+              >
+                {isOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -138,13 +150,20 @@ function MarketingNavbar() {
             </button>
             
             <SignedIn>
-              <Link 
-                href="/my-collection"
-                className="block px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md"
-                onClick={() => setIsOpen(false)}
-              >
-                My Collection
-              </Link>
+              <div className="space-y-2 px-3 py-2 border-t border-gray-800 mt-2">
+                <Link 
+                  href="/my-collection"
+                  className="block px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md"
+                  onClick={() => setIsOpen(false)}
+                >
+                  My Collection
+                </Link>
+                <SignOutButton redirectUrl="/">
+                  <Button variant="outline" className="w-full text-white border-gray-600 hover:bg-gray-800">
+                    Sign Out
+                  </Button>
+                </SignOutButton>
+              </div>
             </SignedIn>
             
             <SignedOut>
