@@ -205,7 +205,7 @@ export function CustomAttributeList({ attributeType }: CustomAttributeListProps)
                           <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete the custom {attributeType} "{attr.name}".
+                              This action cannot be undone. This will permanently delete the custom {attributeType} &quot;{attr.name}&quot;.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
