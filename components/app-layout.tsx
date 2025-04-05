@@ -26,13 +26,9 @@ export default function AppLayout({ userId, children }: AppLayoutProps) {
 
       {/* 
          The main content area. 
-         - flex-1 makes it take up remaining space.
-         - overflow-auto allows scrolling within the main area if content overflows.
-         - We might need to adjust padding based on whether the sidebar is shown. 
-           For now, let's keep the original top padding logic based on userId. 
-           We can refine padding later if needed (e.g., adding left padding if showSidebar is true).
+         Apply top padding ONLY when the sidebar is actually shown.
       */}
-      <main className={`flex-1 overflow-auto ${userId ? "pt-16 md:pt-0" : ""}`}>
+      <main className={`flex-1 overflow-auto ${showSidebar ? "pt-16 md:pt-0" : ""}`}>
         {children}
       </main>
     </div>
