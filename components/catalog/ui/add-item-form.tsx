@@ -18,16 +18,17 @@ import {
 import { itemTypeEnum, franchiseEnum } from "@/db/schema/items-schema"
 import { CatalogItem } from '../utils/schema-adapter'
 import { generateYearOptions } from "@/lib/utils"
-import { CustomTypeModal } from "@/components/custom-type-modal"
-import { CustomFranchiseModal } from "@/components/custom-franchise-modal"
-import { CustomBrandModal } from "@/components/custom-brand-modal"
+import { CustomAttributeModal } from '@/components/custom-attribute-modal'
 import { CONDITION_OPTIONS, DEFAULT_BRANDS } from '../utils/schema-adapter'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
-import { X } from 'lucide-react'
+import { X, Plus } from 'lucide-react'
 
 // Dynamically import the image upload component to avoid SSR issues
 const DynamicImageUpload = dynamic(() => import('@/components/image-upload'), { ssr: false })
+
+// Define the attribute type literal
+type AttributeType = 'brand' | 'franchise' | 'type';
 
 interface AddItemFormProps {
   onSubmit: (item: Omit<CatalogItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>
@@ -81,6 +82,11 @@ export function AddItemForm({
   const [newItemImages, setNewItemImages] = useState<string[]>([])
   const yearOptions = generateYearOptions()
   
+  // --- State for controlling the attribute modal --- 
+  const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
+  const [attributeModalType, setAttributeModalType] = useState<AttributeType>('type'); // Default or track which button was clicked
+  // --- End State --- 
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setNewItem(prev => ({
@@ -206,6 +212,24 @@ export function AddItemForm({
     }
   }
 
+  // --- Handlers to open the modal for specific types --- 
+  const handleOpenModal = (type: AttributeType) => {
+    setAttributeModalType(type);
+    setIsAttributeModalOpen(true);
+  };
+
+  const handleModalSuccess = () => {
+    // Call the appropriate refresh function based on which type was added
+    if (attributeModalType === 'type') {
+      onLoadCustomTypes();
+    } else if (attributeModalType === 'franchise') {
+      onLoadCustomFranchises();
+    } else if (attributeModalType === 'brand') {
+      onLoadCustomBrands();
+    }
+  };
+  // --- End Handlers --- 
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 [&_*:focus]:z-10">
       <div className="space-y-2">
@@ -222,72 +246,86 @@ export function AddItemForm({
       
       <div className="space-y-2">
         <Label htmlFor="type" className="text-sm font-medium dark:text-foreground">Type</Label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <Select 
-              name="type" 
-              value={newItem.type} 
-              onValueChange={handleTypeChange}
-            >
-              <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-black/90 dark:border-border">
-                <SelectGroup>
-                  <SelectLabel className="dark:text-muted-foreground">Default Types</SelectLabel>
-                  {itemTypeEnum.enumValues.map((type) => (
-                    <SelectItem key={`new-type-${type}`} value={type} className="dark:text-foreground dark:focus:bg-primary/20">{type}</SelectItem>
-                  ))}
-                </SelectGroup>
-                <SelectSeparator className="dark:bg-border" />
-                <SelectGroup>
-                  <SelectLabel className="dark:text-muted-foreground">Custom Types</SelectLabel>
-                  {customTypes.map((type) => (
-                    <SelectItem key={`new-type-custom-${type.id}`} value={type.name} className="dark:text-foreground dark:focus:bg-primary/20">{type.name}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <CustomTypeModal onSuccess={onLoadCustomTypes} />
-          </div>
+        <div className="flex items-center space-x-2">
+          <Select 
+            name="type" 
+            value={newItem.type} 
+            onValueChange={handleTypeChange}
+          >
+            <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent className="dark:bg-black/90 dark:border-border">
+              <SelectGroup>
+                <SelectLabel className="dark:text-muted-foreground">Default Types</SelectLabel>
+                {itemTypeEnum.enumValues.map((type) => (
+                  <SelectItem key={`new-type-${type}`} value={type} className="dark:text-foreground dark:focus:bg-primary/20">{type}</SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator className="dark:bg-border" />
+              <SelectGroup>
+                <SelectLabel className="dark:text-muted-foreground">Custom Types</SelectLabel>
+                {customTypes.map((type) => (
+                  <SelectItem key={`new-type-custom-${type.id}`} value={type.name} className="dark:text-foreground dark:focus:bg-primary/20">{type.name}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="icon" 
+            onClick={() => handleOpenModal('type')}
+            aria-label="Add new type"
+            className="flex-shrink-0 dark:border-border dark:hover:bg-primary/10"
+          >
+             <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </div>
       
       <div className="space-y-2">
         <Label htmlFor="franchise" className="text-sm font-medium dark:text-foreground">Franchise</Label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <Select
-              value={newItem.franchise || ""}
-              onValueChange={handleFranchiseChange}
-            >
-              <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
-                <SelectValue placeholder="Select franchise" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-black/90 dark:border-border">
-                <SelectGroup>
-                  <SelectLabel className="dark:text-muted-foreground">Default Franchises</SelectLabel>
-                  {franchiseEnum.enumValues.map((franchise) => (
-                    <SelectItem key={`new-franchise-${franchise}`} value={franchise} className="dark:text-foreground dark:focus:bg-primary/20">{franchise}</SelectItem>
-                  ))}
-                </SelectGroup>
-                <SelectSeparator className="dark:bg-border" />
-                <SelectGroup>
-                  <SelectLabel className="dark:text-muted-foreground">Custom Franchises</SelectLabel>
-                  {customFranchises.map((franchise) => (
-                    <SelectItem key={`new-franchise-custom-${franchise.id}`} value={franchise.name} className="dark:text-foreground dark:focus:bg-primary/20">{franchise.name}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          <CustomFranchiseModal onSuccess={onLoadCustomFranchises} />
+        <div className="flex items-center space-x-2">
+          <Select
+            value={newItem.franchise || ""}
+            onValueChange={handleFranchiseChange}
+          >
+            <SelectTrigger className="dark:bg-card/40 dark:border-border dark:text-foreground">
+              <SelectValue placeholder="Select franchise" />
+            </SelectTrigger>
+            <SelectContent className="dark:bg-black/90 dark:border-border">
+              <SelectGroup>
+                <SelectLabel className="dark:text-muted-foreground">Default Franchises</SelectLabel>
+                {franchiseEnum.enumValues.map((franchise) => (
+                  <SelectItem key={`new-franchise-${franchise}`} value={franchise} className="dark:text-foreground dark:focus:bg-primary/20">{franchise}</SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator className="dark:bg-border" />
+              <SelectGroup>
+                <SelectLabel className="dark:text-muted-foreground">Custom Franchises</SelectLabel>
+                {customFranchises.map((franchise) => (
+                  <SelectItem key={`new-franchise-custom-${franchise.id}`} value={franchise.name} className="dark:text-foreground dark:focus:bg-primary/20">{franchise.name}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="icon" 
+            onClick={() => handleOpenModal('franchise')}
+            aria-label="Add new franchise"
+            className="flex-shrink-0 dark:border-border dark:hover:bg-primary/10"
+          >
+             <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </div>
       
       <div className="space-y-2">
         <Label htmlFor="brand" className="text-sm font-medium dark:text-foreground">Brand</Label>
-        <div className="flex gap-2">
+        <div className="flex items-center space-x-2">
           <Select
             value={newItem.brand || ""}
             onValueChange={handleBrandChange}
@@ -316,7 +354,16 @@ export function AddItemForm({
               </SelectGroup>
             </SelectContent>
           </Select>
-          <CustomBrandModal onSuccess={onLoadCustomBrands} />
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="icon" 
+            onClick={() => handleOpenModal('brand')}
+            aria-label="Add new brand"
+            className="flex-shrink-0 dark:border-border dark:hover:bg-primary/10"
+          >
+             <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </div>
       
@@ -461,6 +508,16 @@ export function AddItemForm({
         )}
       </div>
       
+      {/* --- Render the Modal --- */} 
+      <CustomAttributeModal
+        isOpen={isAttributeModalOpen}
+        onOpenChange={setIsAttributeModalOpen}
+        mode="create" // Always create from this form
+        attributeType={attributeModalType}
+        onSuccess={handleModalSuccess} // Refresh list on success
+      />
+      {/* --- End Modal --- */} 
+
       {!hideSubmitButton && (
         <Button 
           type="submit" 

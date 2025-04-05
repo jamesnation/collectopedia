@@ -1,12 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { profilesTable } from "./schema/profiles-schema";
-import { itemsTable } from "./schema/items-schema";
-import { soldItemsTable } from "./schema/sold-items-schema";
-import { imagesTable } from "./schema/images-schema";
-import { customTypesTable } from "./schema/custom-types-schema";
-import { customFranchisesTable } from "./schema/custom-franchises-schema";
-import { customBrandsTable } from "./schema/custom-brands-schema";
+import * as schema from "./schema";
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
@@ -27,14 +21,4 @@ if (!connectionString) {
 }
 
 const client = postgres(connectionString);
-export const db = drizzle(client, {
-  schema: {
-    profiles: profilesTable,
-    items: itemsTable,
-    soldItems: soldItemsTable,
-    images: imagesTable,
-    customTypes: customTypesTable,
-    customFranchises: customFranchisesTable,
-    customBrands: customBrandsTable,
-  },
-});
+export const db = drizzle(client, { schema });

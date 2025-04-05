@@ -1,9 +1,7 @@
 "use client"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CustomTypesList } from "@/components/settings/custom-types-list"
-import { CustomFranchisesList } from "@/components/settings/custom-franchises-list"
-import { CustomBrandsList } from "@/components/settings/custom-brands-list"
+import { CustomAttributeList } from "@/components/settings/custom-attribute-list"
 
 interface CustomizationTabProps {
   onSave?: () => void
@@ -34,13 +32,13 @@ export function CustomizationTab({ onSave }: CustomizationTabProps) {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="types">
-          <CustomTypesList />
+          <CustomAttributeList attributeType="type" />
         </TabsContent>
         <TabsContent value="franchises">
-          <CustomFranchisesList />
+          <CustomAttributeList attributeType="franchise" />
         </TabsContent>
         <TabsContent value="brands">
-          <CustomBrandsList />
+          <CustomAttributeList attributeType="brand" />
         </TabsContent>
       </Tabs>
     </div>

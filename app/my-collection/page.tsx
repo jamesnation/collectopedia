@@ -1,9 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getProfileByUserId } from "@/db/queries/profiles-queries";
-import { getCustomBrandsAction } from "@/actions/custom-brands-actions";
-import { getCustomTypesAction } from "@/actions/custom-types-actions";
-import { getCustomFranchisesAction } from "@/actions/custom-franchises-actions";
+import { getCustomAttributesAction } from "@/actions/custom-attribute-actions";
 import { getItemsByUserIdAction } from "@/actions/items-actions";
 import CatalogPage from "@/components/catalog-page";
 
@@ -20,7 +18,7 @@ export default async function CollectionPage() {
   const profile = await getProfileByUserId(userId);
   
   if (!profile) {
-    return redirect("/signup");
+    return redirect("/onboarding");
   }
 
   if (profile.membership === "free") {
@@ -34,11 +32,24 @@ export default async function CollectionPage() {
     franchisesResult,
     itemsResult
   ] = await Promise.all([
-    getCustomBrandsAction(),
-    getCustomTypesAction(),
-    getCustomFranchisesAction(),
+    getCustomAttributesAction('brand'),
+    getCustomAttributesAction('type'),
+    getCustomAttributesAction('franchise'),
     getItemsByUserIdAction(userId)
   ]);
+
+  // Handle potential errors (optional but recommended)
+  if (!brandsResult.isSuccess || !typesResult.isSuccess || !franchisesResult.isSuccess || !itemsResult.isSuccess) {
+    // Log the errors or show an error page
+    console.error("Failed to fetch initial collection data:", {
+      brandsError: brandsResult.error,
+      typesError: typesResult.error,
+      franchisesError: franchisesResult.error,
+      itemsError: itemsResult.error
+    });
+    // Consider returning an error component or message
+    // return <div>Error loading collection data. Please try again later.</div>;
+  }
 
   // Pass the data as props to the client component
   return (
