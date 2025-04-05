@@ -178,7 +178,7 @@ export default function HomePage() {
               </p>
             </div>
             
-            <div className="mt-12 space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6 lg:max-w-4xl lg:mx-auto xl:max-w-none xl:grid-cols-3">
+            <div className="mt-12 space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6 lg:max-w-4xl lg:mx-auto xl:max-w-6xl xl:mx-auto justify-center">
               <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-sm divide-y divide-gray-700">
                 <div className="p-6">
                   <h3 className="text-xl font-semibold text-white">Starter</h3>
